@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
   Users,
@@ -14,34 +15,36 @@ import {
 } from 'lucide-react';
 
 const adminLinks = [
-  { to: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/admin/clients', icon: Users, label: 'Clients' },
-  { to: '/admin/team', icon: UserCircle, label: 'Team' },
-  { to: '/admin/projects', icon: FolderKanban, label: 'Projects' },
-  { to: '/admin/tasks', icon: CheckSquare, label: 'Tasks' },
-  { to: '/admin/files', icon: FileText, label: 'Files' },
-  { to: '/admin/messages', icon: MessageSquare, label: 'Messages' },
-  { to: '/admin/invoices', icon: Receipt, label: 'Invoices' },
-  { to: '/admin/payments', icon: CreditCard, label: 'Payments' },
+  { to: '/admin', icon: LayoutDashboard, labelKey: 'dashboard' },
+  { to: '/admin/clients', icon: Users, labelKey: 'clients' },
+  { to: '/admin/team', icon: UserCircle, labelKey: 'team' },
+  { to: '/admin/projects', icon: FolderKanban, labelKey: 'projects' },
+  { to: '/admin/tasks', icon: CheckSquare, labelKey: 'tasks' },
+  { to: '/admin/files', icon: FileText, labelKey: 'files' },
+  { to: '/admin/messages', icon: MessageSquare, labelKey: 'messages' },
+  { to: '/admin/invoices', icon: Receipt, labelKey: 'invoices' },
+  { to: '/admin/payments', icon: CreditCard, labelKey: 'payments' },
 ];
 
 const teamLinks = [
-  { to: '/team', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/team/tasks', icon: CheckSquare, label: 'My Tasks' },
-  { to: '/team/files', icon: FileText, label: 'Files' },
+  { to: '/team', icon: LayoutDashboard, labelKey: 'dashboard' },
+  { to: '/team/tasks', icon: CheckSquare, labelKey: 'my_tasks' },
+  { to: '/team/files', icon: FileText, labelKey: 'files' },
 ];
 
 const clientLinks = [
-  { to: '/client', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/client/files', icon: FileText, label: 'Files' },
-  { to: '/client/tasks', icon: CheckSquare, label: 'Tasks' },
-  { to: '/client/messages', icon: MessageSquare, label: 'Messages' },
-  { to: '/client/invoices', icon: Receipt, label: 'Invoices' },
+  { to: '/client', icon: LayoutDashboard, labelKey: 'dashboard' },
+  { to: '/client/files', icon: FileText, labelKey: 'files' },
+  { to: '/client/tasks', icon: CheckSquare, labelKey: 'tasks' },
+  { to: '/client/messages', icon: MessageSquare, labelKey: 'messages' },
+  { to: '/client/invoices', icon: Receipt, labelKey: 'invoices' },
 ];
 
 const Sidebar = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
 
   const getLinks = () => {
     switch (user?.role) {
@@ -58,7 +61,11 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 glass-panel border-r border-white/5 flex flex-col transition-transform duration-300 lg:translate-x-0 -translate-x-full">
+    <aside className={`fixed top-0 z-40 h-screen w-64 glass-panel border-white/5 flex flex-col transition-transform duration-300 ${
+      isRTL 
+        ? 'right-0 border-l lg:translate-x-0 translate-x-full' 
+        : 'left-0 border-r lg:-translate-x-0 -translate-x-full'
+    }`}>
       {/* Brand */}
       <div className="flex items-center gap-3 px-7 py-6">
         <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 via-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
@@ -69,14 +76,14 @@ const Sidebar = () => {
             Creziax
           </span>
           <span className="text-[10px] font-medium text-violet-400/80 uppercase tracking-[0.2em] -mt-1">
-            Agency Portal
+            {t('agency_portal')}
           </span>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1.5 custom-scrollbar">
-        {getLinks().map(({ to, icon: Icon, label }) => (
+        {getLinks().map(({ to, icon: Icon, labelKey }) => (
           <NavLink
             key={to}
             to={to}
@@ -89,8 +96,8 @@ const Sidebar = () => {
               }`
             }
           >
-            <Icon size={19} className="transition-transform group-hover:scale-110" />
-            {label}
+            <Icon size={19} className={`transition-transform group-hover:scale-110 ${isRTL ? 'ml-1' : ''}`} />
+            {t(labelKey)}
           </NavLink>
         ))}
       </nav>
@@ -107,7 +114,7 @@ const Sidebar = () => {
                 {user?.firstName} {user?.lastName}
               </p>
               <p className="text-[11px] font-medium text-slate-500 truncate uppercase tracking-wider mt-0.5">
-                {user?.role}
+                {t(user?.role?.toLowerCase() || '')}
               </p>
             </div>
           </div>
@@ -115,8 +122,8 @@ const Sidebar = () => {
             onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-300 hover:text-red-400 bg-white/5 hover:bg-red-500/10 rounded-xl transition-all duration-300 border border-white/5 hover:border-red-500/20"
           >
-            <LogOut size={14} />
-            Sign Out
+            <LogOut size={14} className={isRTL ? 'ml-1' : ''} />
+            {t('sign_out')}
           </button>
         </div>
       </div>
