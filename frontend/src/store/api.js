@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Use Vite environment variable for the API URL, fallback to local
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+// Hardcoded API URL to bypass Vercel environment variable issues
+const API_URL = 'https://api.creziax.cloud/api';
 
 const api = axios.create({
   baseURL: API_URL,
