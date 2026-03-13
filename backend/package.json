@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
+    "build": "npx prisma generate",
+    "postinstall": "prisma generate",
     "seed": "node services/seed.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
