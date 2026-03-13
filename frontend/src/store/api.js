@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Use relative path so it works on any domain (Coolify, VPS, localhost, etc.)
-const API_URL = '/api';
+// Use Vite environment variable for the API URL, fallback to local
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_URL,
