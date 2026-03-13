@@ -58,56 +58,67 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-gray-950 border-r border-gray-800 flex flex-col">
+    <aside className="fixed left-0 top-0 z-40 h-screen w-64 glass-panel border-r border-white/5 flex flex-col transition-transform duration-300 lg:translate-x-0 -translate-x-full">
       {/* Brand */}
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-800">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/20">
-          <span className="text-sm font-black text-white">C</span>
+      <div className="flex items-center gap-3 px-7 py-6">
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 via-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
+          <span className="text-lg font-black text-white tracking-tighter">C</span>
         </div>
-        <span className="text-lg font-bold bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
-          Creziax
-        </span>
+        <div className="flex flex-col">
+          <span className="text-lg font-bold tracking-tight text-white">
+            Creziax
+          </span>
+          <span className="text-[10px] font-medium text-violet-400/80 uppercase tracking-[0.2em] -mt-1">
+            Agency Portal
+          </span>
+        </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+      <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1.5 custom-scrollbar">
         {getLinks().map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}
             end={to === '/admin' || to === '/team' || to === '/client'}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+              `flex items-center gap-3.5 px-4 py-3 rounded-2xl text-[13.5px] font-medium transition-all duration-300 group ${
                 isActive
-                  ? 'bg-violet-600/10 text-violet-400 border border-violet-500/20'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                  ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/20'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
               }`
             }
           >
-            <Icon size={18} />
+            <Icon size={19} className="transition-transform group-hover:scale-110" />
             {label}
           </NavLink>
         ))}
       </nav>
 
       {/* User Info & Logout */}
-      <div className="border-t border-gray-800 p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-xs font-bold text-white">
-            {user?.firstName?.[0]}{user?.lastName?.[0]}
+      <div className="p-4 mt-auto">
+        <div className="rounded-3xl bg-white/[0.03] border border-white/5 p-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-emerald-500/20">
+              {user?.firstName?.[0]}{user?.lastName?.[0]}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white truncate leading-tight">
+                {user?.firstName} {user?.lastName}
+              </p>
+              <p className="text-[11px] font-medium text-slate-500 truncate uppercase tracking-wider mt-0.5">
+                {user?.role}
+              </p>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">{user?.firstName} {user?.lastName}</p>
-            <p className="text-xs text-gray-500 truncate">{user?.role}</p>
-          </div>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-300 hover:text-red-400 bg-white/5 hover:bg-red-500/10 rounded-xl transition-all duration-300 border border-white/5 hover:border-red-500/20"
+          >
+            <LogOut size={14} />
+            Sign Out
+          </button>
         </div>
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
-        >
-          <LogOut size={16} />
-          Sign Out
-        </button>
       </div>
     </aside>
   );
