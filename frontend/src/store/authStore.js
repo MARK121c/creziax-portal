@@ -25,9 +25,11 @@ const useAuthStore = create((set) => ({
     try {
       const { data } = await getProfileAPI();
       set({ user: data });
-    } catch {
-      set({ user: null, token: null });
-      localStorage.removeItem('token');
+    } catch (err) {
+      if (err.response?.status === 401) {
+        set({ user: null, token: null });
+        localStorage.removeItem('token');
+      }
     }
   },
 
