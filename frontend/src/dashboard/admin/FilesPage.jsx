@@ -3,6 +3,7 @@ import { getFilesAPI, uploadFileAPI, deleteFileAPI, getProjectsAPI } from '../..
 import { FileText, Upload, Trash2, Search, Cloud, HardDrive, Download, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
+import useNotificationStore from '../../store/notificationStore';
 
 const FilesPage = () => {
   const { t } = useTranslation();
@@ -13,6 +14,7 @@ const FilesPage = () => {
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const addNotification = useNotificationStore(state => state.addNotification);
 
   const fetchData = async () => {
     setLoading(true);
@@ -46,11 +48,13 @@ const FilesPage = () => {
     try {
       await uploadFileAPI(formData);
       toast.success(t('synchronize_asset'), { id: loadingToast });
+      addNotification(`${t('synchronize_asset')}: ${selectedFile.name}`, 'success');
       setSelectedFile(null);
       e.target.reset();
       fetchData();
     } catch (err) {
       toast.error(t('loading'), { id: loadingToast });
+      addNotification(`${t('loading')}: ${selectedFile.name}`, 'error');
     } finally {
       setUploading(false);
     }
@@ -62,9 +66,11 @@ const FilesPage = () => {
     try { 
       await deleteFileAPI(id); 
       toast.success(t('client_removed'), { id: loadingToast });
+      addNotification(`${t('client_removed')}: ${name}`, 'success');
       fetchData(); 
     } catch (err) {
       toast.error(t('failed_remove_client'), { id: loadingToast });
+      addNotification(`${t('failed_remove_client')}: ${name}`, 'error');
     }
   };
 

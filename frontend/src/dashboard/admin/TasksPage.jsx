@@ -62,9 +62,11 @@ const TasksPage = () => {
     try { 
       await updateTaskAPI(id, { status }); 
       toast.success(t('status'), { id: loadingToast });
+      addNotification(`${t('status')}: ${status}`, 'success');
       fetchData(); 
     } catch (err) {
       toast.error(t('loading'), { id: loadingToast });
+      addNotification(t('loading'), 'error');
     }
   };
 
@@ -74,9 +76,11 @@ const TasksPage = () => {
     try { 
       await deleteTaskAPI(id); 
       toast.success(t('client_removed'), { id: loadingToast });
+      addNotification(`${t('client_removed')}: ${title}`, 'success');
       fetchData(); 
     } catch (err) {
       toast.error(t('failed_remove_client'), { id: loadingToast });
+      addNotification(t('failed_remove_client'), 'error');
     }
   };
 

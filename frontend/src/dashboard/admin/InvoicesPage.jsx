@@ -3,6 +3,7 @@ import { getInvoicesAPI, createInvoiceAPI, updateInvoiceAPI, deleteInvoiceAPI, g
 import { Plus, X, Trash2, Receipt, Search, Loader2, DollarSign } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
+import useNotificationStore from '../../store/notificationStore';
 
 const InvoicesPage = () => {
   const { t } = useTranslation();
@@ -13,6 +14,7 @@ const InvoicesPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const addNotification = useNotificationStore(state => state.addNotification);
   
   const [form, setForm] = useState({ 
     invoiceNumber: '', clientId: '', service: '', amount: '', dueDate: '' 
@@ -41,6 +43,7 @@ const InvoicesPage = () => {
     try {
       await createInvoiceAPI({ ...form, amount: parseFloat(form.amount), dueDate: form.dueDate || undefined });
       toast.success(t('confirm_issue'), { id: loadingToast });
+      addNotification(`${t('confirm_issue')}: ${form.invoiceNumber}`, 'success');
       setShowModal(false);
       setForm({ invoiceNumber: '', clientId: '', service: '', amount: '', dueDate: '' });
       fetchData();
@@ -48,6 +51,7 @@ const InvoicesPage = () => {
       const msg = err.response?.data?.message || t('loading');
       setError(msg);
       toast.error(msg, { id: loadingToast });
+      addNotification(`${t('loading')}: ${msg}`, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -59,9 +63,11 @@ const InvoicesPage = () => {
     try { 
       await updateInvoiceAPI(id, { status: newStatus }); 
       toast.success(t('status'), { id: loadingToast });
+      addNotification(`${t('status')}: ${newStatus}`, 'success');
       fetchData(); 
     } catch (err) {
       toast.error(t('loading'), { id: loadingToast });
+      addNotification(`${t('loading')}`, 'error');
     }
   };
 
@@ -71,9 +77,11 @@ const InvoicesPage = () => {
     try { 
       await deleteInvoiceAPI(id); 
       toast.success(t('client_removed'), { id: loadingToast });
+      addNotification(`${t('client_removed')}: ${num}`, 'success');
       fetchData(); 
     } catch (err) {
       toast.error(t('failed_remove_client'), { id: loadingToast });
+      addNotification(`${t('failed_remove_client')}: ${num}`, 'error');
     }
   };
 

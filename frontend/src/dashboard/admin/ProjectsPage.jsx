@@ -3,6 +3,7 @@ import { getProjectsAPI, createProjectAPI, updateProjectAPI, deleteProjectAPI, g
 import { Plus, X, Trash2, Layout, Search, Briefcase, Calendar, Loader2, CheckCircle2, Clock, PlayCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
+import useNotificationStore from '../../store/notificationStore';
 
 const statusConfig = {
   CHANNEL_SETUP: { color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10', border: 'border-blue-100 dark:border-blue-500/20', icon: Layout },
@@ -22,6 +23,7 @@ const ProjectsPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
+  const addNotification = useNotificationStore(state => state.addNotification);
   const [form, setForm] = useState({ name: '', description: '', clientId: '', status: 'CHANNEL_SETUP' });
 
   const fetchData = async () => {
@@ -47,6 +49,7 @@ const ProjectsPage = () => {
     try { 
       await createProjectAPI(form); 
       toast.success(t('launch_workspace'), { id: loadingToast });
+      addNotification(`${t('launch_workspace')}: ${form.name}`, 'success');
       setShowModal(false); 
       setForm({ name: '', description: '', clientId: '', status: 'CHANNEL_SETUP' }); 
       fetchData(); 
@@ -54,6 +57,7 @@ const ProjectsPage = () => {
       const msg = err.response?.data?.message || t('loading');
       setError(msg);
       toast.error(msg, { id: loadingToast });
+      addNotification(msg, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -64,9 +68,11 @@ const ProjectsPage = () => {
     try { 
       await updateProjectAPI(id, { status }); 
       toast.success(t('status'), { id: loadingToast });
+      addNotification(`${t('status')}: ${status}`, 'success');
       fetchData(); 
     } catch (err) {
       toast.error(t('loading'), { id: loadingToast });
+      addNotification(t('loading'), 'error');
     }
   };
 
@@ -76,9 +82,11 @@ const ProjectsPage = () => {
     try { 
       await deleteProjectAPI(id); 
       toast.success(t('client_removed'), { id: loadingToast });
+      addNotification(`${t('client_removed')}: ${name}`, 'success');
       fetchData(); 
     } catch (err) {
       toast.error(t('failed_remove_client'), { id: loadingToast });
+      addNotification(t('failed_remove_client'), 'error');
     }
   };
 

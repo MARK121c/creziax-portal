@@ -3,6 +3,7 @@ import { getTasksAPI, updateTaskAPI } from '../../store/api';
 import { CheckCircle2, Clock, Play, AlertCircle, Search, Loader2, Workflow, Target } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
+import useNotificationStore from '../../store/notificationStore';
 
 const taskStatusColors = {
   PENDING: 'from-slate-400 to-slate-500 shadow-slate-200/50',
@@ -16,6 +17,7 @@ const TeamDashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const addNotification = useNotificationStore(state => state.addNotification);
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -36,9 +38,11 @@ const TeamDashboard = () => {
     try { 
       await updateTaskAPI(id, { status }); 
       toast.success(t('status'), { id: loadingToast });
+      addNotification(`${t('status')}: ${status}`, 'success');
       fetchTasks(); 
     } catch (err) {
       toast.error(t('loading'), { id: loadingToast });
+      addNotification(t('loading'), 'error');
     }
   };
 
