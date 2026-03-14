@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getUsersAPI, createUserAPI, deleteUserAPI } from '../../store/api';
-import { Trash2, X, User, Mail, Calendar, Search, Loader2, UserPlus, MoreHorizontal, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { getUsersAPI, createUserAPI, deleteUserAPI, uploadImageAPI } from '../../store/api';
+import { Trash2, X, User, Mail, Calendar, Search, Loader2, UserPlus, MoreHorizontal, ShieldAlert, ShieldCheck, Camera, UploadCloud } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
@@ -12,7 +12,8 @@ const TeamPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', position: '', role: 'TEAM' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', position: '', role: 'TEAM', avatarUrl: '' });
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const addNotification = useNotificationStore(state => state.addNotification);
 
   const fetchMembers = async () => {
@@ -38,13 +39,37 @@ const TeamPage = () => {
       toast.success(t('onboard_specialist'), { id: loadingToast });
       addNotification(`تم إضافة أصل جديد: ${form.firstName} ${form.lastName} بصلاحية ${form.role}`, 'success');
       setShowModal(false);
-      setForm({ firstName: '', lastName: '', email: '', password: '', position: '', role: 'TEAM' });
+      setForm({ firstName: '', lastName: '', email: '', password: '', position: '', role: 'TEAM', avatarUrl: '' });
       fetchMembers();
     } catch (err) {
       toast.error(t('loading'), { id: loadingToast });
       addNotification(`فشل في إضافة العضو الجديد`, 'error');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("حجم الصورة يجب أن يكون أقل من 2 ميجا");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const { data } = await uploadImageAPI(formData);
+      setForm({ ...form, avatarUrl: data.url });
+      toast.success("تم رفع الصورة بنجاح");
+    } catch (err) {
+      toast.error("فشل رفع الصورة");
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -133,8 +158,12 @@ const TeamPage = () => {
                   <tr key={m.id} className="group hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-colors duration-300">
                     <td className="px-6 md:px-10 py-5 md:py-7">
                       <div className="flex items-center gap-3 md:gap-4">
-                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center font-black text-base md:text-lg ${m.role === 'ADMIN' ? 'bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20 text-brand-600 dark:text-brand-400'}`}>
-                          {m.firstName?.[0]}
+                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center font-black text-base md:text-lg overflow-hidden ${m.role === 'ADMIN' ? 'bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20 text-brand-600 dark:text-brand-400'}`}>
+                          {m.avatarUrl ? (
+                            <img src={m.avatarUrl} alt={m.firstName} className="w-full h-full object-cover" />
+                          ) : (
+                            <span>{m.firstName?.[0]}</span>
+                          )}
                         </div>
                         <div>
                           <div className="text-sm md:text-base font-black text-slate-800 dark:text-white uppercase tracking-tight flex items-center gap-2">
@@ -200,6 +229,32 @@ const TeamPage = () => {
             </div>
 
             <form onSubmit={handleCreate} className="p-6 md:p-10 space-y-5 md:space-y-7">
+              {/* Avatar Upload Section */}
+              <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-[2rem] bg-slate-50/50 dark:bg-white/[0.02] group transition-all hover:border-brand-500/50">
+                <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-[2rem] bg-white dark:bg-white/5 shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-white/10 overflow-hidden flex items-center justify-center">
+                  {form.avatarUrl ? (
+                    <img src={form.avatarUrl} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-slate-300 dark:text-slate-600 flex flex-col items-center">
+                      <User size={32} />
+                      <span className="text-[10px] font-black uppercase tracking-tighter mt-1">Photo</span>
+                    </div>
+                  )}
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center">
+                      <Loader2 className="animate-spin text-white" size={24} />
+                    </div>
+                  )}
+                  <label className="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-all">
+                    <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                    <Camera size={24} className="text-white opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0" />
+                  </label>
+                </div>
+                <div className="mt-4 text-center">
+                  <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{form.avatarUrl ? 'تحديث الصورة' : 'رفع الصورة الشخصية'}</p>
+                  <p className="text-[10px] font-medium text-slate-400 mt-1">JPG, PNG or WebP • Max 2MB</p>
+                </div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-7">
                 <div className="space-y-2.5">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('label_first_name')}</label>

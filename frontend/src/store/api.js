@@ -71,4 +71,7 @@ export const createBroadcastAPI = (data) => api.post('/broadcasts', data);
 export const updateBroadcastAPI = (id, data) => api.put(`/broadcasts/${id}`, data);
 export const deleteBroadcastAPI = (id) => api.delete(`/broadcasts/${id}`);
 
+// Uploads
+export const uploadImageAPI = (formData) => api.post('/upload/image', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+
 export default api;
