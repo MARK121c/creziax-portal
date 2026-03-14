@@ -65,4 +65,10 @@ export const deleteInvoiceAPI = (id) => api.delete(`/invoices/${id}`);
 export const getPaymentsAPI = (invoiceId) => api.get(`/payments?invoiceId=${invoiceId}`);
 export const createPaymentAPI = (data) => api.post('/payments', data);
 
+// Broadcasts
+export const getActiveBroadcastsAPI = () => api.get('/broadcasts');
+export const createBroadcastAPI = (data) => api.post('/broadcasts', data);
+export const updateBroadcastAPI = (id, data) => api.put(`/broadcasts/${id}`, data);
+export const deleteBroadcastAPI = (id) => api.delete(`/broadcasts/${id}`);
+
 export default api;

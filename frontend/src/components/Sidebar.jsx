@@ -73,7 +73,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       {/* Brand Section - Professional & Minimal */}
       <div className="flex items-center gap-3 px-8 h-20 border-b border-slate-100 dark:border-white/5">
         <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/20">
-          <span className="text-sm font-black text-white tracking-tighter">CRX</span>
+          <span className="text-sm font-black text-white tracking-tighter">X</span>
         </div>
         <div className="flex flex-col">
           <span className="text-base font-bold tracking-tight text-slate-800 dark:text-white">
