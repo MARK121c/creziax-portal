@@ -61,71 +61,70 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className={`fixed top-0 z-40 h-screen w-64 glass-panel border-white/5 flex flex-col transition-transform duration-300 ${
+    <aside className={`fixed top-0 z-40 h-screen w-64 bg-white dark:bg-[#0a0a0c] border-slate-200 dark:border-white/5 flex flex-col transition-all duration-300 ${
       isRTL 
         ? 'right-0 border-l lg:translate-x-0 translate-x-full' 
-        : 'left-0 border-r lg:-translate-x-0 -translate-x-full'
+        : 'left-0 border-r lg:translate-x-0 -translate-x-full'
     }`}>
-      {/* Brand */}
-      <div className="flex items-center gap-3 px-7 py-6">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 via-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
-          <span className="text-lg font-black text-white tracking-tighter">C</span>
+      {/* Brand Section - Professional & Minimal */}
+      <div className="flex items-center gap-3 px-8 h-20 border-b border-slate-100 dark:border-white/5">
+        <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/20">
+          <span className="text-sm font-black text-white tracking-tighter">CRX</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-lg font-bold tracking-tight text-white">
+          <span className="text-base font-bold tracking-tight text-slate-800 dark:text-white">
             Creziax
           </span>
-          <span className="text-[10px] font-medium text-violet-400/80 uppercase tracking-[0.2em] -mt-1">
+          <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] -mt-0.5">
             {t('agency_portal')}
           </span>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1.5 custom-scrollbar">
+      {/* Navigation - Better Spacing & Subtle Hovers */}
+      <nav className="flex-1 overflow-y-auto py-8 px-4 space-y-1.5 custom-scrollbar">
         {getLinks().map(({ to, icon: Icon, labelKey }) => (
           <NavLink
             key={to}
             to={to}
             end={to === '/admin' || to === '/team' || to === '/client'}
             className={({ isActive }) =>
-              `flex items-center gap-3.5 px-4 py-3 rounded-2xl text-[13.5px] font-medium transition-all duration-300 group ${
+              `flex items-center gap-3.5 px-4 py-3 rounded-2xl text-[13px] font-bold transition-all duration-300 group ${
                 isActive
-                  ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/20'
-                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-brand-600 text-white shadow-md shadow-brand-500/10'
+                  : 'text-slate-500 dark:text-slate-500 hover:text-brand-600 dark:hover:text-slate-200 hover:bg-brand-50/50 dark:hover:bg-white/5'
               }`
             }
           >
-            <Icon size={19} className={`transition-transform group-hover:scale-110 ${isRTL ? 'ml-1' : ''}`} />
+            <Icon size={18} className={`transition-transform group-hover:scale-110 ${isRTL ? 'ml-0.5' : ''}`} />
             {t(labelKey)}
           </NavLink>
         ))}
       </nav>
 
-      {/* User Info & Logout */}
-      <div className="p-4 mt-auto">
-        <div className="rounded-3xl bg-white/[0.03] border border-white/5 p-4">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-emerald-500/20">
-              {user?.firstName?.[0]}{user?.lastName?.[0]}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white truncate leading-tight">
-                {user?.firstName} {user?.lastName}
-              </p>
-              <p className="text-[11px] font-medium text-slate-500 truncate uppercase tracking-wider mt-0.5">
-                {t(user?.role?.toLowerCase() || '')}
-              </p>
-            </div>
+      {/* User Area - Clean Border Box */}
+      <div className="p-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01]">
+        <div className="flex items-center gap-3 px-2 py-3 rounded-2xl">
+          <div className="w-10 h-10 rounded-2xl bg-slate-200 dark:bg-white/5 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-400">
+            {user?.firstName?.[0]}{user?.lastName?.[0]}
           </div>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-300 hover:text-red-400 bg-white/5 hover:bg-red-500/10 rounded-xl transition-all duration-300 border border-white/5 hover:border-red-500/20"
-          >
-            <LogOut size={14} className={isRTL ? 'ml-1' : ''} />
-            {t('sign_out')}
-          </button>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-slate-800 dark:text-white truncate leading-tight">
+              {user?.firstName} {user?.lastName}
+            </p>
+            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-wider mt-0.5">
+              {t(user?.role?.toLowerCase() || '')}
+            </p>
+          </div>
         </div>
+        
+        <button
+          onClick={handleLogout}
+          className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-3 text-xs font-black text-rose-500 hover:text-white bg-rose-500/5 hover:bg-rose-500 rounded-2xl transition-all duration-300 border border-rose-500/10 hover:border-rose-500 shadow-sm"
+        >
+          <LogOut size={14} className={isRTL ? 'ml-1' : ''} />
+          {t('sign_out')}
+        </button>
       </div>
     </aside>
   );

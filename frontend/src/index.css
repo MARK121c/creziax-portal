@@ -1,24 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
-
-:root {
-  --bg-main: #0a0a0c;
-  --bg-card: rgba(23, 23, 26, 0.7);
-  --accent: #7c3aed;
-  --accent-light: #a78bfa;
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --border-glow: rgba(124, 58, 237, 0.2);
-}
-
 body {
-  background-color: var(--bg-main);
-  color: var(--text-main);
   font-family: 'Outfit', sans-serif;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
 }
 
 /* Custom Scrollbar */
@@ -26,44 +19,52 @@ body {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-main);
+  background-color: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2d2d33;
-  border-radius: 10px;
+  background-color: #cbd5e1; /* slate-300 */
+  border-radius: 9999px;
+  transition: background-color 0.3s;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #334155; /* slate-700 */
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
+  background-color: #8b5cf6; /* brand-500 */
 }
 
-/* Glassmorphism Utility */
+/* Base UI Components (Clean & Spacious) */
 .glass-panel {
-  background: var(--bg-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
-.glass-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.dark .glass-panel {
+  background-color: rgba(10, 10, 12, 0.8);
+  border-color: rgba(255, 255, 255, 0.05);
 }
 
-.glass-card:hover {
-  border-color: var(--border-glow);
-  box-shadow: 0 0 20px rgba(124, 58, 237, 0.1);
-  transform: translateY(-2px);
+.card-hover {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+.card-hover:hover {
+  border-color: rgba(139, 92, 246, 0.5); /* brand-500/50 */
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.05);
 }
 
-/* Background Blobs */
+/* Extremely subtle gradient blob for background texture without being overwhelming */
 .bg-blob {
-  position: fixed;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.08) 0%, rgba(124, 58, 237, 0) 70%);
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.05) 0%, rgba(124, 58, 237, 0) 70%);
   border-radius: 50%;
-  z-index: -1;
+  z-index: 0;
+  pointer-events: none;
   filter: blur(60px);
 }
