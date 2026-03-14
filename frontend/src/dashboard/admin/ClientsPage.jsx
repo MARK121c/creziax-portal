@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getUsersAPI, createUserAPI, deleteUserAPI, updateClientAPI } from '../../store/api';
-import { Trash2, Plus, X, Building2, Mail, Phone, Calendar, Loader2, Search, UserPlus, Edit2 } from 'lucide-react';
+import { Trash2, Plus, X, Building2, Mail, Phone, Calendar, Loader2, Search, UserPlus, Edit2, Star } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
@@ -19,16 +19,16 @@ const ClientsPage = () => {
   
   const [form, setForm] = useState({ 
     firstName: '', lastName: '', email: '', password: '', company: '', phone: '',
-    tier: 'REGULAR', budget: ''
+    tier: 'REGULAR', budget: '', isVip: false
   });
 
   const tiers = [
     { value: 'REGULAR', label: 'Regular', color: 'bg-slate-500' },
-    { value: 'VIP_1X', label: '1x VIP', color: 'bg-indigo-500' },
-    { value: 'VIP_2X', label: '2x VIP', color: 'bg-blue-500' },
-    { value: 'VIP_3X', label: '3x VIP', color: 'bg-purple-500' },
-    { value: 'VIP_4X', label: '4x VIP', color: 'bg-pink-500' },
-    { value: 'VIP_5X', label: '5x VIP', color: 'bg-amber-500' },
+    { value: 'VIP_1X', label: '1x Multiplier', color: 'bg-indigo-500' },
+    { value: 'VIP_2X', label: '2x Multiplier', color: 'bg-blue-500' },
+    { value: 'VIP_3X', label: '3x Multiplier', color: 'bg-purple-500' },
+    { value: 'VIP_4X', label: '4x Multiplier', color: 'bg-pink-500' },
+    { value: 'VIP_5X', label: '5x Multiplier', color: 'bg-amber-500' },
   ];
 
   const suggestTier = (amount) => {
@@ -66,17 +66,18 @@ const ClientsPage = () => {
         await updateClientAPI(editId, { 
           company: form.company, 
           phone: form.phone, 
-          tier: form.tier 
+          tier: form.tier,
+          isVip: form.isVip
         });
         toast.success(t('loading'), { id: loadingToast });
         addNotification(`تم تحديث بيانات العميل: ${form.firstName} ${form.lastName}`, 'success');
       } else {
         await createUserAPI({ ...form, role: 'CLIENT' });
         toast.success(`${form.firstName} ${t('client_added')}`, { id: loadingToast });
-        addNotification(`تم إضافة العميل الجديد: ${form.firstName} ${form.lastName} (فئة ${form.tier})`, 'success');
+        addNotification(`تم إضافة العميل الجديد: ${form.firstName} ${form.lastName}`, 'success');
       }
       setShowModal(false);
-      setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '', tier: 'REGULAR', budget: '' });
+      setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '', tier: 'REGULAR', budget: '', isVip: false });
       setIsEditing(false);
       setEditId(null);
       fetchClients();
@@ -99,7 +100,8 @@ const ClientsPage = () => {
       company: client.clientInfo?.company || '',
       phone: client.clientInfo?.phone || '',
       tier: client.clientInfo?.tier || 'REGULAR',
-      budget: ''
+      budget: '',
+      isVip: client.clientInfo?.isVip || false
     });
     setEditId(client.clientInfo?.id);
     setIsEditing(true);
@@ -194,16 +196,18 @@ const ClientsPage = () => {
                              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1.5 uppercase tracking-wide">
                               <Building2 size={12} className="text-brand-500 flex-shrink-0" /> {c.clientInfo?.company || t('add_client')}
                             </p>
-                            {c.clientInfo?.tier && c.clientInfo.tier !== 'REGULAR' && (
-                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm border ${
-                                c.clientInfo.tier === 'VIP_5X' 
-                                  ? 'bg-amber-400/20 text-amber-600 border-amber-400/30' 
-                                  : 'bg-brand-500/10 text-brand-600 border-brand-500/20'
-                              }`}>
-                                {c.clientInfo.tier.replace('_', ' ')}
-                              </span>
-                            )}
-                          </div>
+                                {c.clientInfo?.isVip && (
+                                  <div className="flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
+                                    <Star size={10} className="fill-amber-500 text-amber-500" />
+                                    <span className="text-[9px] font-black text-amber-600 uppercase tracking-tighter">VIP</span>
+                                  </div>
+                                )}
+                                {c.clientInfo?.tier && c.clientInfo.tier !== 'REGULAR' && (
+                                  <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 text-[9px] font-black uppercase tracking-tighter border border-slate-200 dark:border-white/10">
+                                    {c.clientInfo.tier.replace('VIP_', '').replace('_', ' ')}
+                                  </span>
+                                )}
+                              </div>
                           <p className="text-xs text-slate-400 mt-1 md:hidden">{c.email}</p>
                         </div>
                       </div>
@@ -336,6 +340,20 @@ const ClientsPage = () => {
                     {tiers.map(t => <option key={t.value} value={t.value} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-bold">{t.label}</option>)}
                   </select>
                 </div>
+              </div>
+
+              <div className="p-6 bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-3xl flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-800 dark:text-white">حالة الـ VIP</h4>
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">تفعيل الشعار الذهبي لهذا العميل</p>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setForm({...form, isVip: !form.isVip})}
+                  className={`w-14 h-8 rounded-full p-1 transition-all duration-300 ${form.isVip ? 'bg-amber-400' : 'bg-slate-200 dark:bg-white/10'}`}
+                >
+                  <div className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${form.isVip ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
               </div>
 
               <div className="pt-6 flex gap-4 md:gap-5">

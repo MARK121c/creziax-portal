@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Users, FolderKanban, CheckSquare, Receipt, MessageSquare, UserCircle, TrendingUp, ArrowUpRight, Plus, Rocket, Wallet } from 'lucide-react';
+import { Users, FolderKanban, CheckSquare, Receipt, MessageSquare, UserCircle, TrendingUp, ArrowUpRight, Plus, Rocket, Wallet, Volume2 } from 'lucide-react';
 import { getUsersAPI, getProjectsAPI, getTasksAPI, getInvoicesAPI } from '../../store/api';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import useNotificationStore from '../../store/notificationStore';
 
 const StatCard = ({ icon: Icon, label, value, color, loading, subtitle }) => (
   <div className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-6 md:p-8 shadow-xl shadow-slate-200/40 dark:shadow-none group hover:-translate-y-1 transition-all duration-500">
@@ -44,6 +45,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
+  const testSound = useNotificationStore(state => state.testSound);
   const [stats, setStats] = useState({ users: 0, projects: 0, tasks: 0, invoices: 0, usersBreakdown: '' });
   const [loadingStats, setLoadingStats] = useState(true);
   const [activityData, setActivityData] = useState([]);
@@ -129,6 +131,13 @@ const AdminDashboard = () => {
         <p className="text-slate-500 dark:text-slate-400 font-medium text-base md:text-lg italic">
           {t('overview_subtitle')}
         </p>
+        <button 
+          onClick={testSound}
+          className="mt-4 flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-white/5 text-slate-400 hover:text-brand-500 rounded-xl transition-all w-fit text-[10px] font-black uppercase tracking-widest border border-transparent hover:border-brand-500/20"
+        >
+          <Volume2 size={14} />
+          {t('test_sound_desc') || 'Test Notification Sound'}
+        </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-8">
