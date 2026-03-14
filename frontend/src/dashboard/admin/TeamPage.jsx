@@ -65,8 +65,8 @@ const TeamPage = () => {
   const filteredMembers = members.filter(m => 
     `${m.firstName} ${m.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
     m.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.teamMemberInfo?.position?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.role.toLowerCase().includes(searchQuery.toLowerCase())
+    (m.teamMemberInfo?.position?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (m.role || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (

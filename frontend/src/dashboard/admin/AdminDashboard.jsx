@@ -53,7 +53,10 @@ const AdminDashboard = () => {
       setLoadingStats(true);
       try {
         const [usersRes, projectsRes, tasksRes, invoicesRes] = await Promise.all([
-          getUsersAPI(), getProjectsAPI(), getTasksAPI(), getInvoicesAPI(),
+          getUsersAPI().catch(() => ({ data: [] })), 
+          getProjectsAPI().catch(() => ({ data: [] })), 
+          getTasksAPI().catch(() => ({ data: [] })), 
+          getInvoicesAPI().catch(() => ({ data: [] })),
         ]);
         
         const users = usersRes.data || [];

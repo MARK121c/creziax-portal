@@ -81,8 +81,8 @@ const TasksPage = () => {
   };
 
   const filteredTasks = tasks.filter(task => 
-    task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    task.project?.name.toLowerCase().includes(searchQuery.toLowerCase())
+    (task.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (task.project?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (

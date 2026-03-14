@@ -72,7 +72,7 @@ const ClientsPage = () => {
   const filteredClients = clients.filter(c => 
     `${c.firstName} ${c.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.clientInfo?.company?.toLowerCase().includes(searchQuery.toLowerCase())
+    (c.clientInfo?.company?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
   return (
