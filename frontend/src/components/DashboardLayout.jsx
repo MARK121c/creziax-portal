@@ -74,7 +74,7 @@ const DashboardLayout = () => {
         </header>
 
         {/* Page Content Container - Spacious & Breathable */}
-        <div className="max-w-[1600px] mx-auto px-6 pb-20 md:px-10 lg:px-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="max-w-[1600px] mx-auto px-6 pt-10 pb-24 md:px-10 lg:px-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <Outlet />
         </div>
       </main>
