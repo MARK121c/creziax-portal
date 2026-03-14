@@ -1,13 +1,15 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useTranslation } from 'react-i18next';
-import { Globe, Sun, Moon } from 'lucide-react';
+import { Globe, Sun, Moon, Menu } from 'lucide-react';
 import useThemeStore from '../store/themeStore';
+import { useState } from 'react';
 
 const DashboardLayout = () => {
   const { i18n } = useTranslation();
   const { theme, toggleTheme } = useThemeStore();
   const isRTL = i18n.language === 'ar';
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const toggleLanguage = () => {
     const nextLang = i18n.language === 'en' ? 'ar' : 'en';
@@ -24,13 +26,28 @@ const DashboardLayout = () => {
         <div className={`bg-blob top-[60%] opacity-30 dark:opacity-10 ${isRTL ? '-left-48' : '-right-48'}`} style={{ background: 'radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, rgba(124, 58, 237, 0) 70%)' }}></div>
       </div>
       
-      <Sidebar />
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 dark:bg-[#0a0a0c]/80 backdrop-blur-sm z-30 lg:hidden animate-in fade-in"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      <Sidebar isOpen={isMobileMenuOpen} setIsOpen={setIsMobileMenuOpen} />
       
       {/* Main Content Wrapper */}
       <main className={`min-h-screen transition-all duration-300 ${isRTL ? 'lg:mr-64' : 'lg:ml-64'}`}>
         
         {/* Global Transparent Header */}
-        <header className="sticky top-0 z-30 flex items-center justify-end h-20 px-6 md:px-10 gap-4">
+        <header className="sticky top-0 z-30 flex items-center justify-between lg:justify-end h-20 px-6 md:px-10 gap-4">
+          {/* Mobile Menu Button */}
+          <button 
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="lg:hidden p-2 text-slate-500 dark:text-slate-400 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all"
+          >
+            <Menu size={24} />
+          </button>
           <div className="flex items-center gap-2 p-1.5 glass-panel rounded-2xl shadow-sm">
             {/* Theme Toggle */}
             <button

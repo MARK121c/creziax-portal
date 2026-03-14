@@ -40,7 +40,7 @@ const clientLinks = [
   { to: '/client/invoices', icon: Receipt, labelKey: 'invoices' },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -60,11 +60,15 @@ const Sidebar = () => {
     navigate('/login');
   };
 
+  const closeMobileMenu = () => {
+    if (setIsOpen) setIsOpen(false);
+  };
+
   return (
-    <aside className={`fixed top-0 z-40 h-screen w-64 bg-white dark:bg-[#0a0a0c] border-slate-200 dark:border-white/5 flex flex-col transition-all duration-300 ${
+    <aside className={`fixed top-0 z-40 h-screen w-64 bg-white dark:bg-[#0a0a0c] border-slate-200 dark:border-white/5 flex flex-col transition-transform duration-300 ease-in-out ${
       isRTL 
-        ? 'right-0 border-l lg:translate-x-0 translate-x-full' 
-        : 'left-0 border-r lg:translate-x-0 -translate-x-full'
+        ? `right-0 border-l ${isOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}` 
+        : `left-0 border-r ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`
     }`}>
       {/* Brand Section - Professional & Minimal */}
       <div className="flex items-center gap-3 px-8 h-20 border-b border-slate-100 dark:border-white/5">
@@ -88,6 +92,7 @@ const Sidebar = () => {
             key={to}
             to={to}
             end={to === '/admin' || to === '/team' || to === '/client'}
+            onClick={closeMobileMenu}
             className={({ isActive }) =>
               `flex items-center gap-3.5 px-4 py-3 rounded-2xl text-[13px] font-bold transition-all duration-300 group ${
                 isActive
