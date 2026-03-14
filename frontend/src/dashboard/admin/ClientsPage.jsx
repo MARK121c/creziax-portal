@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getUsersAPI, createUserAPI, deleteUserAPI } from '../../store/api';
-import { Trash2, Plus, X, Building2, Mail, Phone, Calendar, Loader2, Search, UserPlus } from 'lucide-react';
+import { getUsersAPI, createUserAPI, deleteUserAPI, updateClientAPI } from '../../store/api';
+import { Trash2, Plus, X, Building2, Mail, Phone, Calendar, Loader2, Search, UserPlus, Edit2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
@@ -11,13 +11,36 @@ const ClientsPage = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState(null);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const addNotification = useNotificationStore(state => state.addNotification);
   
   const [form, setForm] = useState({ 
-    firstName: '', lastName: '', email: '', password: '', company: '', phone: '' 
+    firstName: '', lastName: '', email: '', password: '', company: '', phone: '',
+    tier: 'REGULAR', budget: ''
   });
+
+  const tiers = [
+    { value: 'REGULAR', label: 'Regular', color: 'bg-slate-500' },
+    { value: 'VIP_1X', label: '1x VIP', color: 'bg-indigo-500' },
+    { value: 'VIP_2X', label: '2x VIP', color: 'bg-blue-500' },
+    { value: 'VIP_3X', label: '3x VIP', color: 'bg-purple-500' },
+    { value: 'VIP_4X', label: '4x VIP', color: 'bg-pink-500' },
+    { value: 'VIP_5X', label: '5x VIP', color: 'bg-amber-500' },
+  ];
+
+  const suggestTier = (amount) => {
+    const val = parseFloat(amount);
+    if (isNaN(val)) return 'REGULAR';
+    if (val >= 5000) return 'VIP_5X';
+    if (val >= 3000) return 'VIP_4X';
+    if (val >= 2000) return 'VIP_3X';
+    if (val >= 1000) return 'VIP_2X';
+    if (val >= 500) return 'VIP_1X';
+    return 'REGULAR';
+  };
 
   const fetchClients = async () => {
     setLoading(true);
@@ -33,26 +56,54 @@ const ClientsPage = () => {
 
   useEffect(() => { fetchClients(); }, []);
 
-  const handleCreate = async (e) => {
+  const handleCreateOrUpdate = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-    const loadingToast = toast.loading(t('onboarding_client'));
+    const loadingToast = toast.loading(isEditing ? t('syncing') : t('onboarding_client'));
     try {
-      await createUserAPI({ ...form, role: 'CLIENT' });
-      toast.success(`${form.firstName} ${t('client_added')}`, { id: loadingToast });
-      addNotification(`تم إضافة العميل الجديد: ${form.firstName} ${form.lastName}`, 'success');
+      if (isEditing) {
+        await updateClientAPI(editId, { 
+          company: form.company, 
+          phone: form.phone, 
+          tier: form.tier 
+        });
+        toast.success(t('loading'), { id: loadingToast });
+        addNotification(`تم تحديث بيانات العميل: ${form.firstName} ${form.lastName}`, 'success');
+      } else {
+        await createUserAPI({ ...form, role: 'CLIENT' });
+        toast.success(`${form.firstName} ${t('client_added')}`, { id: loadingToast });
+        addNotification(`تم إضافة العميل الجديد: ${form.firstName} ${form.lastName} (فئة ${form.tier})`, 'success');
+      }
       setShowModal(false);
-      setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '' });
+      setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '', tier: 'REGULAR', budget: '' });
+      setIsEditing(false);
+      setEditId(null);
       fetchClients();
     } catch (err) {
       const msg = err.response?.data?.message || t('loading');
       setError(msg);
       toast.error(msg, { id: loadingToast });
-      addNotification(`فشل إضافة العميل: ${msg}`, 'error');
+      addNotification(`فشل العملية: ${msg}`, 'error');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const openEditModal = (client) => {
+    setForm({
+      firstName: client.firstName,
+      lastName: client.lastName,
+      email: client.email,
+      password: '', // Don't show password for edit
+      company: client.clientInfo?.company || '',
+      phone: client.clientInfo?.phone || '',
+      tier: client.clientInfo?.tier || 'REGULAR',
+      budget: ''
+    });
+    setEditId(client.clientInfo?.id);
+    setIsEditing(true);
+    setShowModal(true);
   };
 
   const handleDelete = async (id, name) => {
@@ -139,9 +190,20 @@ const ClientsPage = () => {
                         </div>
                         <div>
                           <p className="text-sm md:text-base font-bold text-slate-800 dark:text-white leading-tight">{c.firstName} {c.lastName}</p>
-                          <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1.5 uppercase tracking-wide">
-                            <Building2 size={12} className="text-brand-500 flex-shrink-0" /> {c.clientInfo?.company || t('add_client')}
-                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                             <p className="text-xs font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1.5 uppercase tracking-wide">
+                              <Building2 size={12} className="text-brand-500 flex-shrink-0" /> {c.clientInfo?.company || t('add_client')}
+                            </p>
+                            {c.clientInfo?.tier && c.clientInfo.tier !== 'REGULAR' && (
+                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm border ${
+                                c.clientInfo.tier === 'VIP_5X' 
+                                  ? 'bg-amber-400/20 text-amber-600 border-amber-400/30' 
+                                  : 'bg-brand-500/10 text-brand-600 border-brand-500/20'
+                              }`}>
+                                {c.clientInfo.tier.replace('_', ' ')}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-slate-400 mt-1 md:hidden">{c.email}</p>
                         </div>
                       </div>
@@ -168,12 +230,20 @@ const ClientsPage = () => {
                       </div>
                     </td>
                     <td className="px-6 md:px-10 py-5 md:py-7 text-right">
-                      <button 
-                        onClick={() => handleDelete(c.id, `${c.firstName} ${c.lastName}`)} 
-                        className="p-2 md:p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all opacity-0 group-hover:opacity-100 border border-transparent hover:border-rose-500/20"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                        <button 
+                          onClick={() => openEditModal(c)} 
+                          className="p-2 md:p-3 text-slate-400 hover:text-brand-500 hover:bg-brand-500/10 rounded-2xl transition-all border border-transparent hover:border-brand-500/20"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(c.id, `${c.firstName} ${c.lastName}`)} 
+                          className="p-2 md:p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all border border-transparent hover:border-rose-500/20"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -190,15 +260,19 @@ const ClientsPage = () => {
           <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 max-h-[90vh] overflow-y-auto">
             <div className="px-6 md:px-10 py-6 md:py-8 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/30 dark:bg-white/[0.01] sticky top-0 z-10">
               <div>
-                <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white tracking-tight">{t('add_client')}</h2>
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">{t('add_client_desc')}</p>
+                <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white tracking-tight">
+                  {isEditing ? t('edit_client') : t('add_client')}
+                </h2>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
+                  {isEditing ? 'تحديث بيانات العميل الحالية' : t('add_client_desc')}
+                </p>
               </div>
-              <button onClick={() => setShowModal(false)} className="p-3 text-slate-400 hover:text-slate-800 dark:hover:text-white bg-slate-100 dark:bg-white/5 rounded-2xl transition-all">
+              <button onClick={() => { setShowModal(false); setIsEditing(false); }} className="p-3 text-slate-400 hover:text-slate-800 dark:hover:text-white bg-slate-100 dark:bg-white/5 rounded-2xl transition-all">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleCreate} className="p-6 md:p-10 space-y-5 md:space-y-7">
+            <form onSubmit={handleCreateOrUpdate} className="p-6 md:p-10 space-y-5 md:space-y-7">
               {error && (
                 <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-sm font-bold">{error}</div>
               )}
@@ -214,16 +288,18 @@ const ClientsPage = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6">
-                <div className="space-y-2.5">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('email_address')}</label>
-                  <input value={form.email} onChange={e => setForm({...form, email: e.target.value})} type="email" required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
+              {!isEditing && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6">
+                  <div className="space-y-2.5">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('email_address')}</label>
+                    <input value={form.email} onChange={e => setForm({...form, email: e.target.value})} type="email" required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
+                  </div>
+                  <div className="space-y-2.5">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('password')}</label>
+                    <input value={form.password} onChange={e => setForm({...form, password: e.target.value})} type="password" required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
+                  </div>
                 </div>
-                <div className="space-y-2.5">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('password')}</label>
-                  <input value={form.password} onChange={e => setForm({...form, password: e.target.value})} type="password" required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
-                </div>
-              </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6 pt-4 border-t border-slate-100 dark:border-white/5">
                 <div className="space-y-2.5">
@@ -236,12 +312,38 @@ const ClientsPage = () => {
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6">
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('budget')} ($)</label>
+                  <input 
+                    type="number" 
+                    placeholder="e.g. 5000"
+                    value={form.budget} 
+                    onChange={e => {
+                      const tier = suggestTier(e.target.value);
+                      setForm({...form, budget: e.target.value, tier});
+                    }} 
+                    className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold border-dashed" 
+                  />
+                </div>
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('tier')}</label>
+                  <select 
+                    value={form.tier} 
+                    onChange={e => setForm({...form, tier: e.target.value})} 
+                    className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold appearance-none cursor-pointer"
+                  >
+                    {tiers.map(t => <option key={t.value} value={t.value} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-bold">{t.label}</option>)}
+                  </select>
+                </div>
+              </div>
+
               <div className="pt-6 flex gap-4 md:gap-5">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 px-6 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all">
                   {t('cancel')}
                 </button>
                 <button type="submit" disabled={submitting} className="flex-1 py-4 px-6 bg-brand-600 hover:bg-brand-500 disabled:bg-slate-300 dark:disabled:bg-white/5 text-white font-bold rounded-2xl shadow-lg shadow-brand-600/20 transition-all active:scale-95">
-                  {submitting ? <Loader2 className="animate-spin mx-auto" size={24} /> : t('complete_onboarding')}
+                  {submitting ? <Loader2 className="animate-spin mx-auto" size={24} /> : (isEditing ? t('save_changes') : t('complete_onboarding'))}
                 </button>
               </div>
             </form>

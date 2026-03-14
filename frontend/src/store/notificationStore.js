@@ -13,13 +13,18 @@ if (typeof window !== 'undefined') {
 
   const unlockAudio = () => {
     if (!isAudioUnlocked && audioInstance) {
+      console.log("🔊 Attempting to unlock audio context...");
       // Play and immediately pause to unlock the audio context
       audioInstance.play().then(() => {
         audioInstance.pause();
         audioInstance.currentTime = 0;
         isAudioUnlocked = true;
-      }).catch(() => {});
-      // Remove listeners once unlocked
+        console.log("✅ Audio context unlocked successfully.");
+      }).catch((err) => {
+        console.warn("⚠️ Audio unlock failed (still need interaction):", err);
+      });
+      
+      // Keep listeners until success or remove after first try
       document.removeEventListener('click', unlockAudio);
       document.removeEventListener('touchstart', unlockAudio);
       document.removeEventListener('keydown', unlockAudio);
@@ -38,12 +43,14 @@ const playPopSound = () => {
       const playPromise = audioInstance.play();
       if (playPromise !== undefined) {
         playPromise.catch(error => {
-          console.warn("Audio playback prevented by browser policy", error);
+          console.warn("❌ Audio playback blocked:", error);
         });
       }
     } catch (error) {
-      console.warn("Error playing sound", error);
+      console.warn("❌ Error playing sound:", error);
     }
+  } else {
+    console.log("ℹ️ Sound skipped: Audio not unlocked yet. Click anywhere on the page first.");
   }
 };
 
