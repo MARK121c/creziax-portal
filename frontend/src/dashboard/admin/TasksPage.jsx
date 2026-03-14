@@ -3,6 +3,7 @@ import { getTasksAPI, createTaskAPI, updateTaskAPI, deleteTaskAPI, getProjectsAP
 import { Plus, X, Trash2, CheckCircle2, Clock, AlertCircle, Calendar, Search, Loader2, ListTodo, Briefcase } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
+import useNotificationStore from '../../store/notificationStore';
 
 const TasksPage = () => {
   const { t } = useTranslation();
@@ -13,6 +14,7 @@ const TasksPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [form, setForm] = useState({ title: '', description: '', projectId: '', deadline: '' });
+  const addNotification = useNotificationStore(state => state.addNotification);
 
   const taskStatusConfig = {
     PENDING: { color: 'text-slate-500', bg: 'bg-slate-50 dark:bg-white/5', border: 'border-slate-200 dark:border-white/10', icon: Clock, labelKey: 'status_pending' },
@@ -43,11 +45,13 @@ const TasksPage = () => {
     try {
       await createTaskAPI({ ...form, deadline: form.deadline ? new Date(form.deadline).toISOString() : null });
       toast.success(t('assign_task'), { id: loadingToast });
+      addNotification(`تم إنشاء مهمة جديدة: ${form.title}`, 'success');
       setShowModal(false);
       setForm({ title: '', description: '', projectId: '', deadline: '' });
       fetchData();
     } catch (err) {
       toast.error(t('loading'), { id: loadingToast });
+      addNotification(`خطأ في إنشاء المهمة`, 'error');
     } finally {
       setSubmitting(false);
     }

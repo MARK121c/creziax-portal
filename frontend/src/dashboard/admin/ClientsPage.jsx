@@ -3,6 +3,7 @@ import { getUsersAPI, createUserAPI, deleteUserAPI } from '../../store/api';
 import { Trash2, Plus, X, Building2, Mail, Phone, Calendar, Loader2, Search, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
+import useNotificationStore from '../../store/notificationStore';
 
 const ClientsPage = () => {
   const { t } = useTranslation();
@@ -12,6 +13,7 @@ const ClientsPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const addNotification = useNotificationStore(state => state.addNotification);
   
   const [form, setForm] = useState({ 
     firstName: '', lastName: '', email: '', password: '', company: '', phone: '' 
@@ -39,6 +41,7 @@ const ClientsPage = () => {
     try {
       await createUserAPI({ ...form, role: 'CLIENT' });
       toast.success(`${form.firstName} ${t('client_added')}`, { id: loadingToast });
+      addNotification(`تم إضافة العميل الجديد: ${form.firstName} ${form.lastName}`, 'success');
       setShowModal(false);
       setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '' });
       fetchClients();
@@ -46,6 +49,7 @@ const ClientsPage = () => {
       const msg = err.response?.data?.message || t('loading');
       setError(msg);
       toast.error(msg, { id: loadingToast });
+      addNotification(`فشل إضافة العميل: ${msg}`, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -56,10 +60,12 @@ const ClientsPage = () => {
     const loadingToast = toast.loading(t('syncing'));
     try { 
       await deleteUserAPI(id); 
-      toast.success(t('client_removed'), { id: loadingToast });
+      toast.success(t('loading'), { id: loadingToast });
+      addNotification(`تم حذف العميل: ${name}`, 'success');
       fetchClients(); 
     } catch (err) {
-      toast.error(t('failed_remove_client'), { id: loadingToast });
+      toast.error(t('loading'), { id: loadingToast });
+      addNotification(`فشل حذف العميل: ${name}`, 'error');
     }
   };
 

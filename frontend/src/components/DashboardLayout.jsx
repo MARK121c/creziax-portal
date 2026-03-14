@@ -126,6 +126,20 @@ const DashboardLayout = () => {
           </button>
           
           <div className="flex items-center gap-2 p-1.5 glass-panel rounded-2xl shadow-sm">
+            {/* Admin Broadcast Trigger */}
+            {user?.role === 'ADMIN' && (
+              <button
+                onClick={() => {
+                  setBroadcastInput(activeBroadcast?.message || '');
+                  setIsEditingBroadcast(true);
+                }}
+                className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all"
+                title="Edit Banner"
+              >
+                <Megaphone size={20} />
+              </button>
+            )}
+
             {/* Notification Bell */}
             <div className="relative">
               <button

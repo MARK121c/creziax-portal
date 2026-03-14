@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { getUsersAPI, createUserAPI, deleteUserAPI } from '../../store/api';
-import { Trash2, X, User, Mail, Calendar, Search, Loader2, UserPlus, MoreHorizontal } from 'lucide-react';
+import { Trash2, X, User, Mail, Calendar, Search, Loader2, UserPlus, MoreHorizontal, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
+import useNotificationStore from '../../store/notificationStore';
 
 const TeamPage = () => {
   const { t } = useTranslation();
@@ -11,13 +12,14 @@ const TeamPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', position: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', position: '', role: 'TEAM' });
+  const addNotification = useNotificationStore(state => state.addNotification);
 
   const fetchMembers = async () => {
     setLoading(true);
     try {
       const { data } = await getUsersAPI();
-      setMembers(data.filter(u => u.role === 'TEAM'));
+      setMembers(data.filter(u => u.role === 'TEAM' || u.role === 'ADMIN'));
     } catch (err) {
       toast.error(t('loading'));
     } finally {
@@ -32,34 +34,39 @@ const TeamPage = () => {
     setSubmitting(true);
     const loadingToast = toast.loading(t('syncing'));
     try {
-      await createUserAPI({ ...form, role: 'TEAM' });
+      await createUserAPI({ ...form });
       toast.success(t('onboard_specialist'), { id: loadingToast });
+      addNotification(`تم إضافة أصل جديد: ${form.firstName} ${form.lastName} بصلاحية ${form.role}`, 'success');
       setShowModal(false);
-      setForm({ firstName: '', lastName: '', email: '', password: '', position: '' });
+      setForm({ firstName: '', lastName: '', email: '', password: '', position: '', role: 'TEAM' });
       fetchMembers();
     } catch (err) {
       toast.error(t('loading'), { id: loadingToast });
+      addNotification(`فشل في إضافة العضو الجديد`, 'error');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (id, name) => {
+  const handleDelete = async (id, name, role) => {
     if (!confirm(`${t('delete_client_confirm')} ${name}?`)) return;
     const loadingToast = toast.loading(t('syncing'));
     try { 
       await deleteUserAPI(id); 
       toast.success(t('client_removed'), { id: loadingToast });
+      addNotification(`تم إزالة العضو: ${name}`, 'success');
       fetchMembers(); 
     } catch (err) {
       toast.error(t('failed_remove_client'), { id: loadingToast });
+      addNotification(`فشل في إزالة العضو: ${name}`, 'error');
     }
   };
 
   const filteredMembers = members.filter(m => 
     `${m.firstName} ${m.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
     m.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.teamMemberInfo?.position?.toLowerCase().includes(searchQuery.toLowerCase())
+    m.teamMemberInfo?.position?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    m.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -86,7 +93,7 @@ const TeamPage = () => {
             className="flex items-center justify-center gap-2 px-6 py-3.5 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-bold shadow-lg shadow-brand-600/20 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
           >
             <UserPlus size={18} />
-            <span className="sm:inline">{t('add_member')}</span>
+            <span className="sm:inline">{t('add_member') || 'Add Member/Admin'}</span>
           </button>
         </div>
       </div>
@@ -98,6 +105,7 @@ const TeamPage = () => {
               <tr className="border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01]">
                 <th className="text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-6 md:px-10 py-5 md:py-6">{t('member')}</th>
                 <th className="text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-6 md:px-10 py-5 md:py-6 hidden md:table-cell">{t('position')}</th>
+                <th className="text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-6 md:px-10 py-5 md:py-6 hidden md:table-cell">Role</th>
                 <th className="text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-6 md:px-10 py-5 md:py-6 hidden lg:table-cell">{t('joined')}</th>
                 <th className="text-right text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-6 md:px-10 py-5 md:py-6">{t('actions')}</th>
               </tr>
@@ -105,14 +113,14 @@ const TeamPage = () => {
             <tbody className="divide-y divide-slate-50 dark:divide-white/5">
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="py-24 text-center">
+                  <td colSpan={5} className="py-24 text-center">
                     <Loader2 size={32} className="animate-spin text-brand-500 mx-auto mb-4" />
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('syncing_talent')}</p>
                   </td>
                 </tr>
               ) : filteredMembers.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-32 text-center">
+                  <td colSpan={5} className="py-32 text-center">
                     <div className="w-20 h-20 bg-slate-50 dark:bg-white/5 rounded-[2rem] flex items-center justify-center mx-auto mb-6 border border-slate-100 dark:border-white/5">
                       <User size={32} className="text-slate-200 dark:text-slate-700" />
                     </div>
@@ -125,11 +133,14 @@ const TeamPage = () => {
                   <tr key={m.id} className="group hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-colors duration-300">
                     <td className="px-6 md:px-10 py-5 md:py-7">
                       <div className="flex items-center gap-3 md:gap-4">
-                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20 flex items-center justify-center text-brand-600 dark:text-brand-400 font-black text-base md:text-lg">
+                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center font-black text-base md:text-lg ${m.role === 'ADMIN' ? 'bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20 text-brand-600 dark:text-brand-400'}`}>
                           {m.firstName?.[0]}
                         </div>
                         <div>
-                          <div className="text-sm md:text-base font-black text-slate-800 dark:text-white uppercase tracking-tight">{m.firstName} {m.lastName}</div>
+                          <div className="text-sm md:text-base font-black text-slate-800 dark:text-white uppercase tracking-tight flex items-center gap-2">
+                            {m.firstName} {m.lastName}
+                            {m.role === 'ADMIN' && <ShieldAlert size={14} className="text-amber-500" />}
+                          </div>
                           <div className="text-xs font-bold text-slate-400 dark:text-slate-500 flex items-center gap-2 mt-1">
                             <Mail size={11} className="text-slate-300" />
                             {m.email}
@@ -145,6 +156,12 @@ const TeamPage = () => {
                         {m.teamMemberInfo?.position || t('label_position')}
                       </div>
                     </td>
+                    <td className="px-6 md:px-10 py-5 md:py-7 hidden md:table-cell">
+                      <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border w-fit flex items-center gap-1 ${m.role === 'ADMIN' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' : 'bg-brand-500/10 text-brand-600 dark:text-brand-400 border-brand-500/20'}`}>
+                        {m.role === 'ADMIN' ? <ShieldAlert size={12} /> : <ShieldCheck size={12} />}
+                        {m.role}
+                      </div>
+                    </td>
                     <td className="px-6 md:px-10 py-5 md:py-7 hidden lg:table-cell">
                       <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-tighter">
                         <Calendar size={14} className="text-slate-300 dark:text-slate-600" />
@@ -153,7 +170,7 @@ const TeamPage = () => {
                     </td>
                     <td className="px-6 md:px-10 py-5 md:py-7 text-right">
                       <button 
-                        onClick={() => handleDelete(m.id, `${m.firstName} ${m.lastName}`)} 
+                        onClick={() => handleDelete(m.id, `${m.firstName} ${m.lastName}`, m.role)} 
                         className="p-2 md:p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-all border border-transparent hover:border-rose-500/20"
                       >
                         <Trash2 size={16} />
@@ -204,9 +221,22 @@ const TeamPage = () => {
                 <input value={form.password} onChange={e => setForm({...form, password: e.target.value})} type="password" required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
               </div>
 
-              <div className="space-y-2.5">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('label_position')}</label>
-                <input value={form.position} onChange={e => setForm({...form, position: e.target.value})} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-7">
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Role</label>
+                  <select 
+                    value={form.role} 
+                    onChange={e => setForm({...form, role: e.target.value})} 
+                    className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold appearance-none"
+                  >
+                    <option value="TEAM">Team Member</option>
+                    <option value="ADMIN">Administrator</option>
+                  </select>
+                </div>
+                <div className="space-y-2.5">
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('label_position')}</label>
+                  <input value={form.position} onChange={e => setForm({...form, position: e.target.value})} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
+                </div>
               </div>
 
               <div className="pt-6 md:pt-8 flex gap-4 md:gap-5 border-t border-slate-100 dark:border-white/5">

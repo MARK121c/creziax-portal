@@ -29,11 +29,8 @@ body {
   transition-duration: 300ms;
 }
 
-:lang(ar) body,
-:lang(ar) input,
-:lang(ar) button,
-:lang(ar) textarea {
-  font-family: 'IBM Plex Sans Arabic', sans-serif;
+:lang(ar) * {
+  font-family: 'IBM Plex Sans Arabic', sans-serif !important;
 }
 
 /* Custom Scrollbar */
