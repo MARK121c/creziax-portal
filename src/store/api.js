@@ -2,6 +2,7 @@ import axios from 'axios';
 
 // Use environment variable or fallback to relative path (best for Coolify/Docker)
 const API_URL = import.meta.env.VITE_API_URL || '/api';
+// Version: 1.2.1 (Verified sync)
 
 const api = axios.create({
   baseURL: API_URL,
