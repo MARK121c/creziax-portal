@@ -19,6 +19,7 @@ const Login = () => {
     try {
       const user = await login(email, password);
       switch (user.role) {
+        case 'OWNER':
         case 'ADMIN': return navigate('/admin');
         case 'TEAM': return navigate('/team');
         case 'CLIENT': return navigate('/client');
