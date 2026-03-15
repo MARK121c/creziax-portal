@@ -77,4 +77,10 @@ export const deleteBroadcastAPI = (id) => api.delete(`/broadcasts/${id}`);
 // Uploads
 export const uploadImageAPI = (formData) => api.post('/upload/image', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
 
+// Tickets
+export const getTicketsAPI = () => api.get('/tickets');
+export const getTicketAPI = (id) => api.get(`/tickets/${id}`);
+export const createTicketAPI = (data) => api.post('/tickets', data);
+export const updateTicketAPI = (id, data) => api.put(`/tickets/${id}`, data);
+
 export default api;

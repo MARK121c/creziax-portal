@@ -80,7 +80,7 @@ const ClientsPage = () => {
         addNotification(`تم إضافة العميل الجديد: ${form.firstName} ${form.lastName}`, 'success');
       }
       setShowModal(false);
-      setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '', tier: 'REGULAR', budget: '', isVip: false, logoUrl: '' });
+      setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '', tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '' });
       setIsEditing(false);
       setEditId(null);
       fetchClients();
@@ -238,9 +238,9 @@ const ClientsPage = () => {
                           ) : (
                             <span>{c.firstName?.[0]}{c.lastName?.[0]}</span>
                           )}
-                          <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/logo:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                            <Camera size={14} className="text-white" />
-                            <input type="file" className="hidden" onChange={(e) => handleQuickLogoUpload(c.clientInfo?.id, e)} />
+                          <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/logo:opacity-100 transition-opacity flex items-center justify-center cursor-pointer z-10">
+                            <Camera size={14} className="text-white pointer-events-none" />
+                            <input type="file" className="hidden" onChange={(e) => handleQuickLogoUpload(c.clientInfo?.id, e)} onClick={(e) => e.stopPropagation()} />
                           </label>
                         </div>
                         <div>
