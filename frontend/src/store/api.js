@@ -61,6 +61,7 @@ export const getInvoiceAPI = (id) => api.get(`/invoices/${id}`);
 export const createInvoiceAPI = (data) => api.post('/invoices', data);
 export const updateInvoiceAPI = (id, data) => api.put(`/invoices/${id}`, data);
 export const deleteInvoiceAPI = (id) => api.delete(`/invoices/${id}`);
+export const downloadInvoicePDFAPI = (id) => api.get(`/invoices/${id}/download`, { responseType: 'blob' });
 
 // Payments
 export const getPaymentsAPI = (invoiceId) => api.get(`/payments?invoiceId=${invoiceId}`);

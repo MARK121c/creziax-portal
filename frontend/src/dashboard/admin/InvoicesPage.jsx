@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getInvoicesAPI, createInvoiceAPI, updateInvoiceAPI, deleteInvoiceAPI, getClientsAPI } from '../../store/api';
-import { Plus, X, Trash2, Receipt, Search, Loader2, DollarSign } from 'lucide-react';
+import { getInvoicesAPI, createInvoiceAPI, updateInvoiceAPI, deleteInvoiceAPI, getClientsAPI, downloadInvoicePDFAPI } from '../../store/api';
+import { Plus, X, Trash2, Receipt, Search, Loader2, DollarSign, FileText, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
@@ -82,6 +82,23 @@ const InvoicesPage = () => {
     } catch (err) {
       toast.error(t('failed_remove_client'), { id: loadingToast });
       addNotification(`${t('failed_remove_client')}: ${num}`, 'error');
+    }
+  };
+
+  const handleDownloadPDF = async (id, invoiceNumber) => {
+    const loadingToast = toast.loading(t('syncing'));
+    try {
+      const response = await downloadInvoicePDFAPI(id);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Invoice-${invoiceNumber}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      toast.success(t('confirm_issue'), { id: loadingToast });
+    } catch (err) {
+      toast.error(t('loading'), { id: loadingToast });
     }
   };
 
@@ -181,9 +198,18 @@ const InvoicesPage = () => {
                       </button>
                     </td>
                     <td className="px-6 md:px-10 py-5 md:py-7 text-right">
-                      <button onClick={() => handleDelete(inv.id, inv.invoiceNumber)} className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all opacity-0 group-hover:opacity-100 border border-transparent hover:border-rose-500/20">
-                        <Trash2 size={18} />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button 
+                          onClick={() => handleDownloadPDF(inv.id, inv.invoiceNumber)}
+                          className="p-3 text-slate-400 hover:text-brand-500 hover:bg-brand-500/10 rounded-2xl transition-all border border-transparent hover:border-brand-500/20"
+                          title="تحميل PDF"
+                        >
+                          <FileText size={18} />
+                        </button>
+                        <button onClick={() => handleDelete(inv.id, inv.invoiceNumber)} className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all opacity-0 group-hover:opacity-100 border border-transparent hover:border-rose-500/20">
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
