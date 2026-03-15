@@ -12,6 +12,7 @@ import {
   CreditCard,
   LogOut,
   UserCircle,
+  UserRound,
 } from 'lucide-react';
 
 const adminLinks = [
@@ -24,12 +25,14 @@ const adminLinks = [
   { to: '/admin/messages', icon: MessageSquare, labelKey: 'messages' },
   { to: '/admin/invoices', icon: Receipt, labelKey: 'invoices' },
   { to: '/admin/payments', icon: CreditCard, labelKey: 'payments' },
+  { to: '/admin/profile', icon: UserRound, labelKey: 'my_profile' },
 ];
 
 const teamLinks = [
   { to: '/team', icon: LayoutDashboard, labelKey: 'dashboard' },
   { to: '/team/tasks', icon: CheckSquare, labelKey: 'my_tasks' },
   { to: '/team/files', icon: FileText, labelKey: 'files' },
+  { to: '/team/profile', icon: UserRound, labelKey: 'my_profile' },
 ];
 
 const clientLinks = [
@@ -38,9 +41,10 @@ const clientLinks = [
   { to: '/client/tasks', icon: CheckSquare, labelKey: 'tasks' },
   { to: '/client/messages', icon: MessageSquare, labelKey: 'messages' },
   { to: '/client/invoices', icon: Receipt, labelKey: 'invoices' },
+  { to: '/client/profile', icon: UserRound, labelKey: 'my_profile' },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -48,7 +52,20 @@ const Sidebar = () => {
 
   const getLinks = () => {
     switch (user?.role) {
-      case 'ADMIN': return adminLinks;
+      case 'OWNER':
+        return adminLinks;
+      case 'ADMIN':
+        return adminLinks.filter(link => {
+          if (link.to === '/admin/profile' || link.to === '/admin') return true;
+          if (link.to === '/admin/clients' && user?.permissions?.includes('CLIENTS')) return true;
+          if (link.to === '/admin/team' && user?.permissions?.includes('TEAM')) return true;
+          if (link.to === '/admin/projects' && user?.permissions?.includes('PROJECTS')) return true;
+          if (link.to === '/admin/tasks' && user?.permissions?.includes('TASKS')) return true;
+          if (link.to === '/admin/files' && user?.permissions?.includes('FILES')) return true;
+          if (link.to === '/admin/messages' && user?.permissions?.includes('MESSAGES')) return true;
+          if ((link.to === '/admin/invoices' || link.to === '/admin/payments') && user?.permissions?.includes('FINANCES')) return true;
+          return false;
+        });
       case 'TEAM': return teamLinks;
       case 'CLIENT': return clientLinks;
       default: return [];
@@ -60,16 +77,20 @@ const Sidebar = () => {
     navigate('/login');
   };
 
+  const closeMobileMenu = () => {
+    if (setIsOpen) setIsOpen(false);
+  };
+
   return (
-    <aside className={`fixed top-0 z-40 h-screen w-64 bg-white dark:bg-[#0a0a0c] border-slate-200 dark:border-white/5 flex flex-col transition-all duration-300 ${
+    <aside className={`fixed top-0 z-40 h-screen w-64 bg-white dark:bg-[#0a0a0c] border-slate-200 dark:border-white/5 flex flex-col transition-transform duration-300 ease-in-out ${
       isRTL 
-        ? 'right-0 border-l lg:translate-x-0 translate-x-full' 
-        : 'left-0 border-r lg:translate-x-0 -translate-x-full'
+        ? `right-0 border-l ${isOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}` 
+        : `left-0 border-r ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`
     }`}>
       {/* Brand Section - Professional & Minimal */}
       <div className="flex items-center gap-3 px-8 h-20 border-b border-slate-100 dark:border-white/5">
         <div className="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/20">
-          <span className="text-sm font-black text-white tracking-tighter">CRX</span>
+          <span className="text-sm font-black text-white tracking-tighter">X</span>
         </div>
         <div className="flex flex-col">
           <span className="text-base font-bold tracking-tight text-slate-800 dark:text-white">
@@ -88,6 +109,7 @@ const Sidebar = () => {
             key={to}
             to={to}
             end={to === '/admin' || to === '/team' || to === '/client'}
+            onClick={closeMobileMenu}
             className={({ isActive }) =>
               `flex items-center gap-3.5 px-4 py-3 rounded-2xl text-[13px] font-bold transition-all duration-300 group ${
                 isActive
@@ -112,9 +134,15 @@ const Sidebar = () => {
             <p className="text-sm font-bold text-slate-800 dark:text-white truncate leading-tight">
               {user?.firstName} {user?.lastName}
             </p>
-            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-wider mt-0.5">
-              {t(user?.role?.toLowerCase() || '')}
-            </p>
+            {user?.role === 'OWNER' ? (
+              <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mt-0.5">
+                {isRTL ? 'المالك' : 'OWNER'}
+              </p>
+            ) : (
+              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-wider mt-0.5">
+                {t(user?.role?.toLowerCase() || '')}
+              </p>
+            )}
           </div>
         </div>
         

@@ -22,6 +22,9 @@ import FilesPage from './dashboard/admin/FilesPage';
 import MessagesPage from './dashboard/admin/MessagesPage';
 import PaymentsPage from './dashboard/admin/PaymentsPage';
 
+// Shared Pages
+import ProfilePage from './dashboard/shared/ProfilePage';
+
 // Team Dashboard Pages
 import TeamDashboard from './dashboard/team/TeamDashboard';
 
@@ -80,7 +83,7 @@ function App() {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN']}>
+            <ProtectedRoute allowedRoles={['ADMIN', 'OWNER']}>
               <DashboardLayout />
             </ProtectedRoute>
           }
@@ -94,6 +97,7 @@ function App() {
           <Route path="messages" element={<MessagesPage />} />
           <Route path="invoices" element={<InvoicesPage />} />
           <Route path="payments" element={<PaymentsPage />} />
+          <Route path="profile" element={<ProfilePage />} />
         </Route>
 
         {/* Team Routes */}
@@ -108,6 +112,7 @@ function App() {
           <Route index element={<TeamDashboard />} />
           <Route path="tasks" element={<TeamDashboard />} />
           <Route path="files" element={<FilesPage />} />
+          <Route path="profile" element={<ProfilePage />} />
         </Route>
 
         {/* Client Routes */}
@@ -124,6 +129,7 @@ function App() {
           <Route path="tasks" element={<ClientDashboard />} />
           <Route path="messages" element={<MessagesPage />} />
           <Route path="invoices" element={<ClientDashboard />} />
+          <Route path="profile" element={<ProfilePage />} />
         </Route>
 
         {/* Catch-all */}

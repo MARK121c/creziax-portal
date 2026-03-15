@@ -19,6 +19,7 @@ api.interceptors.request.use((config) => {
 // Auth
 export const loginAPI = (data) => api.post('/auth/login', data);
 export const getProfileAPI = () => api.get('/auth/profile');
+export const updateProfileAPI = (data) => api.put('/auth/profile', data);
 
 // Users
 export const getUsersAPI = () => api.get('/users');
@@ -36,6 +37,7 @@ export const getProjectAPI = (id) => api.get(`/projects/${id}`);
 export const createProjectAPI = (data) => api.post('/projects', data);
 export const updateProjectAPI = (id, data) => api.put(`/projects/${id}`, data);
 export const deleteProjectAPI = (id) => api.delete(`/projects/${id}`);
+export const downloadContractPDFAPI = (id) => api.get(`/projects/${id}/download`, { responseType: 'blob' });
 
 // Tasks
 export const getTasksAPI = () => api.get('/tasks');
@@ -60,9 +62,19 @@ export const getInvoiceAPI = (id) => api.get(`/invoices/${id}`);
 export const createInvoiceAPI = (data) => api.post('/invoices', data);
 export const updateInvoiceAPI = (id, data) => api.put(`/invoices/${id}`, data);
 export const deleteInvoiceAPI = (id) => api.delete(`/invoices/${id}`);
+export const downloadInvoicePDFAPI = (id) => api.get(`/invoices/${id}/download`, { responseType: 'blob' });
 
 // Payments
 export const getPaymentsAPI = (invoiceId) => api.get(`/payments?invoiceId=${invoiceId}`);
 export const createPaymentAPI = (data) => api.post('/payments', data);
+
+// Broadcasts
+export const getActiveBroadcastsAPI = () => api.get('/broadcasts');
+export const createBroadcastAPI = (data) => api.post('/broadcasts', data);
+export const updateBroadcastAPI = (id, data) => api.put(`/broadcasts/${id}`, data);
+export const deleteBroadcastAPI = (id) => api.delete(`/broadcasts/${id}`);
+
+// Uploads
+export const uploadImageAPI = (formData) => api.post('/upload/image', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
 
 export default api;
