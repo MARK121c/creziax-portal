@@ -53,8 +53,8 @@ const TeamPage = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("حجم الصورة يجب أن يكون أقل من 2 ميجا");
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("حجم الصورة يجب أن يكون أقل من 5 ميجا");
       return;
     }
 
@@ -197,10 +197,11 @@ const TeamPage = () => {
                         {new Date(m.createdAt).toLocaleDateString()}
                       </div>
                     </td>
-                    <td className="px-6 md:px-10 py-5 md:py-7 text-right">
+                    <td className="px-4 md:px-10 py-4 md:py-7 text-right">
                       <button 
                         onClick={() => handleDelete(m.id, `${m.firstName} ${m.lastName}`, m.role)} 
-                        className="p-2 md:p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-all border border-transparent hover:border-rose-500/20"
+                        className="p-2 md:p-2.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all border border-slate-200 dark:border-white/10 hover:border-rose-500/20"
+                        title="حذف"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -230,29 +231,35 @@ const TeamPage = () => {
 
             <form onSubmit={handleCreate} className="p-6 md:p-10 space-y-5 md:space-y-7">
               {/* Avatar Upload Section */}
-              <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-[2rem] bg-slate-50/50 dark:bg-white/[0.02] group transition-all hover:border-brand-500/50">
-                <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-[2rem] bg-white dark:bg-white/5 shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-white/10 overflow-hidden flex items-center justify-center">
+              <div className="flex flex-col sm:flex-row items-center gap-5 p-5 border border-slate-200 dark:border-white/10 rounded-3xl bg-slate-50/50 dark:bg-white/[0.02]">
+                {/* Preview */}
+                <div className="relative w-24 h-24 rounded-2xl bg-white dark:bg-white/5 shadow-lg border border-slate-200 dark:border-white/10 overflow-hidden flex items-center justify-center flex-shrink-0">
                   {form.avatarUrl ? (
-                    <img src={form.avatarUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <img src={form.avatarUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
                   ) : (
                     <div className="text-slate-300 dark:text-slate-600 flex flex-col items-center">
-                      <User size={32} />
-                      <span className="text-[10px] font-black uppercase tracking-tighter mt-1">Photo</span>
+                      <User size={28} />
+                      <span className="text-[9px] font-black uppercase tracking-tighter mt-1">Photo</span>
                     </div>
                   )}
                   {uploadingAvatar && (
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center">
                       <Loader2 className="animate-spin text-white" size={24} />
                     </div>
                   )}
-                  <label className="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-all">
-                    <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-                    <Camera size={24} className="text-white opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0" />
-                  </label>
                 </div>
-                <div className="mt-4 text-center">
-                  <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{form.avatarUrl ? 'تحديث الصورة' : 'رفع الصورة الشخصية'}</p>
-                  <p className="text-[10px] font-medium text-slate-400 mt-1">JPG, PNG or WebP • Max 2MB</p>
+                {/* Info + Button */}
+                <div className="flex-1 text-center sm:text-left">
+                  <p className="text-sm font-black text-slate-700 dark:text-white mb-1">الصورة الشخصية</p>
+                  <p className="text-xs text-slate-400 mb-4">JPG, PNG أو WebP • الحد الأقصى 5MB</p>
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-black rounded-xl shadow-sm shadow-brand-600/20 transition-all active:scale-95">
+                    <Camera size={14} />
+                    <span>{form.avatarUrl ? 'تغيير الصورة' : 'رفع الصورة'}</span>
+                    <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                  </label>
+                  {form.avatarUrl && (
+                    <button type="button" onClick={() => setForm({...form, avatarUrl: ''})} className="mr-2 text-xs text-rose-400 hover:text-rose-600 font-bold transition-colors">حذف</button>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-7">
