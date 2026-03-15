@@ -7,8 +7,9 @@ import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
 
 const TeamPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user: currentUser } = useAuthStore();
+  const isRTL = i18n.language === 'ar';
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -22,7 +23,10 @@ const TeamPage = () => {
     setLoading(true);
     try {
       const { data } = await getUsersAPI();
-      setMembers(data.filter(u => u.role === 'TEAM' || u.role === 'ADMIN' || u.role === 'OWNER'));
+      setMembers(data.filter(u => {
+        if (u.role === 'OWNER' && currentUser?.role !== 'OWNER') return false;
+        return u.role === 'TEAM' || u.role === 'ADMIN' || u.role === 'OWNER';
+      }));
     } catch (err) {
       toast.error(t('loading'));
     } finally {
