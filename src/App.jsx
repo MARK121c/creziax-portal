@@ -111,6 +111,7 @@ function App() {
         >
           <Route index element={<TeamDashboard />} />
           <Route path="tasks" element={<TeamDashboard />} />
+          <Route path="messages" element={<MessagesPage />} />
           <Route path="files" element={<FilesPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>

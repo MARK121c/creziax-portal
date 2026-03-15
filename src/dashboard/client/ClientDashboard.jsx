@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getProjectsAPI, getTasksAPI, getInvoicesAPI } from '../../store/api';
-import { FolderKanban, CheckSquare, Receipt, TrendingUp, Calendar, ArrowUpRight, Loader2, CreditCard, Briefcase, ListChecks } from 'lucide-react';
+import { FolderKanban, CheckSquare, Receipt, TrendingUp, Calendar, ArrowUpRight, Loader2, CreditCard, Briefcase, ListChecks, DollarSign, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
@@ -19,6 +19,15 @@ const ClientDashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [transactionId, setTransactionId] = useState('');
+  const [submittingPayment, setSubmittingPayment] = useState(false);
+
+  const fetchInvoices = async () => {
+    const { data } = await getInvoicesAPI();
+    setInvoices(data);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -131,9 +140,18 @@ const ClientDashboard = () => {
                             <span className="text-lg md:text-xl font-black text-slate-800 dark:text-white tracking-tighter">${inv.amount.toLocaleString()}</span>
                           </td>
                           <td className="px-6 md:px-10 py-5 md:py-7 text-right">
-                            <span className={`px-3 md:px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border ${inv.status === 'PAID' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20' : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-500/20'}`}>
-                              {inv.status === 'PAID' ? t('status_completed') : t('status_pending')}
-                            </span>
+                            {inv.status !== 'PAID' ? (
+                              <button 
+                                onClick={() => { setSelectedInvoice(inv); setShowPayModal(true); }}
+                                className="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-brand-600/10"
+                              >
+                                {t('pay')}
+                              </button>
+                            ) : (
+                              <span className={`px-3 md:px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20`}>
+                                {t('status_completed')}
+                              </span>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -149,6 +167,43 @@ const ClientDashboard = () => {
               </div>
             </section>
           </div>
+
+          {showPayModal && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-slate-900/60 dark:bg-[#0a0a0c]/80 backdrop-blur-md animate-in fade-in" onClick={() => setShowPayModal(false)}></div>
+              <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-lg shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95">
+                <div className="p-8 md:p-10">
+                  <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">إثبات الدفع</h2>
+                    <button onClick={() => setShowPayModal(false)} className="text-slate-400 hover:text-slate-600"><X size={24} /></button>
+                  </div>
+                  <form onSubmit={handlePaySubmit} className="space-y-6">
+                    <div className="p-6 bg-slate-50 dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/10">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">قيمة الفاتورة</p>
+                      <p className="text-3xl font-black text-brand-600 tracking-tighter">${selectedInvoice?.amount.toLocaleString()}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">كود المعاملة أو المرجع</label>
+                      <input 
+                        required
+                        value={transactionId}
+                        onChange={(e) => setTransactionId(e.target.value)}
+                        placeholder="أدخل كود التحويل هنا..."
+                        className="w-full px-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all font-mono"
+                      />
+                    </div>
+                    <button 
+                      type="submit" 
+                      disabled={submittingPayment}
+                      className="w-full py-5 bg-black dark:bg-brand-600 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50"
+                    >
+                      {submittingPayment ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'تأكيد الإرسال للتحقق'}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-8 md:space-y-10">
             <div className="bg-brand-600 rounded-[2.5rem] p-8 md:p-10 text-white shadow-2xl shadow-brand-600/40 relative overflow-hidden group hover:-translate-y-1 transition-transform duration-500">

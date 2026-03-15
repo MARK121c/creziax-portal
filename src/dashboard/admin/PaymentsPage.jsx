@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getPaymentsAPI } from '../../store/api';
-import { Search, Calendar, Loader2, Landmark, History } from 'lucide-react';
+import { Search, Calendar, Loader2, Landmark, History, CheckCircle2, XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 
@@ -10,20 +10,34 @@ const PaymentsPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const fetchPayments = async () => {
+    setLoading(true);
+    try { 
+      const { getPaymentsAPI } = await import('../../store/api');
+      const { data } = await getPaymentsAPI(''); 
+      setPayments(data); 
+    } catch (err) {
+      toast.error(t('loading'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchPayments = async () => {
-      setLoading(true);
-      try { 
-        const { data } = await getPaymentsAPI(''); 
-        setPayments(data); 
-      } catch (err) {
-        toast.error(t('loading'));
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchPayments();
   }, []);
+
+  const handleVerify = async (id, status) => {
+    const loadingToast = toast.loading(t('syncing'));
+    try {
+      const { verifyPaymentAPI } = await import('../../store/api');
+      await verifyPaymentAPI(id, status);
+      toast.success(status === 'VERIFIED' ? t('transaction_verified') : t('payment_rejected'), { id: loadingToast });
+      fetchPayments();
+    } catch {
+      toast.error('فشل تحديث الحالة', { id: loadingToast });
+    }
+  };
 
   const filteredPayments = payments.filter(p => 
     p.invoice?.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -119,9 +133,34 @@ const PaymentsPage = () => {
                       </div>
                     </td>
                     <td className="px-6 md:px-10 py-5 md:py-7 text-right">
-                      <span className="px-3 md:px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20 shadow-sm">
-                        {t('status_success')}
-                      </span>
+                      <div className="flex items-center justify-end gap-3">
+                        {p.status === 'PENDING' ? (
+                          <>
+                            <button 
+                              onClick={() => handleVerify(p.id, 'VERIFIED')}
+                              className="p-2 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white rounded-xl transition-all border border-emerald-500/20"
+                              title="تأكيد"
+                            >
+                              <CheckCircle2 size={16} />
+                            </button>
+                            <button 
+                              onClick={() => handleVerify(p.id, 'REJECTED')}
+                              className="p-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl transition-all border border-rose-500/20"
+                              title="رفض"
+                            >
+                              <XCircle size={16} />
+                            </button>
+                          </>
+                        ) : (
+                          <span className={`px-3 md:px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border shadow-sm ${
+                            p.status === 'VERIFIED' 
+                              ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/5 dark:text-emerald-400 dark:border-emerald-500/20' 
+                              : 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-500/5 dark:text-rose-400 dark:border-rose-500/20'
+                          }`}>
+                            {p.status === 'VERIFIED' ? t('payment_verified') : t('payment_rejected')}
+                          </span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

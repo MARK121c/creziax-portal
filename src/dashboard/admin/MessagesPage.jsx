@@ -22,6 +22,7 @@ const MessagesPage = () => {
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [showNewTicketModal, setShowNewTicketModal] = useState(false);
+  const [expandedTiers, setExpandedTiers] = useState(['VIP_5X', 'VIP_4X', 'VIP_3X', 'VIP_2X', 'VIP_1X', 'REGULAR']);
   
   const [newTicketForm, setNewTicketForm] = useState({ title: '', description: '', priority: 'MEDIUM' });
   const [submittingTicket, setSubmittingTicket] = useState(false);
@@ -138,14 +139,27 @@ const MessagesPage = () => {
     }
   };
 
+  const toggleTier = (tier) => {
+    setExpandedTiers(prev => prev.includes(tier) ? prev.filter(t => t !== tier) : [...prev, tier]);
+  };
+
+  const ticketsByTier = {
+    VIP_5X: tickets.filter(t => t.client?.tier === 'VIP_5X'),
+    VIP_4X: tickets.filter(t => t.client?.tier === 'VIP_4X'),
+    VIP_3X: tickets.filter(t => t.client?.tier === 'VIP_3X'),
+    VIP_2X: tickets.filter(t => t.client?.tier === 'VIP_2X'),
+    VIP_1X: tickets.filter(t => t.client?.tier === 'VIP_1X'),
+    REGULAR: tickets.filter(t => t.client?.tier === 'REGULAR'),
+  };
+
   return (
     <div className="h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-4 md:gap-8 animate-in fade-in duration-700">
       
-      {/* Sidebar: Tickets List */}
+      {/* Sidebar: Tiered Hubs */}
       <div className="w-full lg:w-96 bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] flex flex-col overflow-hidden shadow-xl shadow-slate-200/20 dark:shadow-none max-h-[45vh] lg:max-h-none">
         <div className="p-6 md:p-8 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01]">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">قناة التواصل</h2>
+            <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">Creziax Hubs</h2>
             {user.role === 'CLIENT' && (
               <button 
                 onClick={() => setShowNewTicketModal(true)}
@@ -159,57 +173,62 @@ const MessagesPage = () => {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={16} />
             <input 
               type="text" 
-              placeholder="البحث في التذاكر..." 
+              placeholder="البحث في القنوات..." 
               className="w-full pl-10 pr-4 py-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all font-bold"
             />
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-2 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 custom-scrollbar">
           {loadingTickets ? (
             <div className="py-20 text-center"><Loader2 size={32} className="animate-spin text-brand-500 mx-auto" /></div>
-          ) : tickets.length === 0 ? (
-            <div className="py-20 text-center px-6">
-               <div className="w-16 h-16 bg-slate-50 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100 dark:border-white/5">
-                 <AlertCircle size={24} className="text-slate-300" />
-               </div>
-               <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">لا يوجد تذاكر نشطة</p>
-            </div>
           ) : (
-            tickets.map(ticket => (
-              <button 
-                key={ticket.id} 
-                onClick={() => fetchTicketDetails(ticket.id)}
-                className={`w-full text-left p-4 rounded-[1.8rem] transition-all duration-300 flex flex-col gap-3 group relative border ${activeTicket?.id === ticket.id ? 'bg-brand-600 border-brand-500 shadow-xl shadow-brand-600/20' : 'bg-transparent border-transparent hover:bg-slate-50 dark:hover:bg-white/5'}`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${activeTicket?.id === ticket.id ? 'bg-white/20 text-white border-white/20' : 'bg-slate-100 dark:bg-white/5 text-slate-400 border-slate-200 dark:border-white/10'}`}>
-                    #{ticket.ticketNumber}
-                  </span>
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${activeTicket?.id === ticket.id ? 'bg-white/20 text-white border-white/20' : getPriorityColor(ticket.priority)}`}>
-                    {ticket.priority}
-                  </span>
-                </div>
-                <div className="min-w-0">
-                  <h3 className={`text-sm font-black truncate ${activeTicket?.id === ticket.id ? 'text-white' : 'text-slate-800 dark:text-white'}`}>
-                    {ticket.title}
-                  </h3>
-                  <p className={`text-[10px] font-bold mt-1.5 truncate ${activeTicket?.id === ticket.id ? 'text-white/60' : 'text-slate-400'}`}>
-                    {ticket.client?.user?.firstName} {ticket.client?.user?.lastName}
-                  </p>
-                </div>
-                <div className="flex items-center justify-between mt-1">
-                  <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-tighter ${activeTicket?.id === ticket.id ? 'text-white/80' : 'text-slate-400'}`}>
-                    {ticket.status === 'OPEN' ? <Clock size={10} /> : <CheckCircle2 size={10} />}
-                    {ticket.status}
-                  </div>
-                  {ticket._count.messages > 0 && (
-                    <div className={`px-2 py-0.5 rounded-full text-[9px] font-black ${activeTicket?.id === ticket.id ? 'bg-white text-brand-600' : 'bg-brand-500/10 text-brand-500'}`}>
-                      {ticket._count.messages}
+            Object.entries(ticketsByTier).map(([tier, tierTickets]) => (
+              (user.role !== 'CLIENT' || tierTickets.length > 0) && (
+                <div key={tier} className="space-y-1">
+                  <button 
+                    onClick={() => toggleTier(tier)}
+                    className={`w-full flex items-center justify-between p-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${expandedTiers.includes(tier) ? 'bg-slate-100 dark:bg-white/10 text-brand-600' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'}`}
+                  >
+                    <span>{tier.replace('_', ' ')} Hub</span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 bg-brand-500/10 rounded-full text-brand-600">{tierTickets.length}</span>
+                      <ChevronRight size={14} className={`transform transition-transform ${expandedTiers.includes(tier) ? 'rotate-90' : ''}`} />
+                    </div>
+                  </button>
+                  
+                  {expandedTiers.includes(tier) && (
+                    <div className="space-y-2 mt-2 ml-2 border-l-2 border-slate-100 dark:border-white/5 pl-2">
+                      {tierTickets.length === 0 ? (
+                        <p className="text-[9px] text-slate-400 px-4 py-2 font-bold uppercase tracking-widest opacity-50">لا يوجد قنوات نشطة</p>
+                      ) : (
+                        tierTickets.map(ticket => (
+                          <button 
+                            key={ticket.id} 
+                            onClick={() => fetchTicketDetails(ticket.id)}
+                            className={`w-full text-left p-4 rounded-[1.5rem] transition-all duration-300 flex flex-col gap-2 group relative border ${activeTicket?.id === ticket.id ? 'bg-brand-600 border-brand-500 shadow-lg shadow-brand-600/20' : 'bg-transparent border-transparent hover:bg-slate-50 dark:hover:bg-white/5'}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${activeTicket?.id === ticket.id ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-400'}`}>
+                                #{ticket.ticketNumber}
+                              </span>
+                              <span className={`text-[8px] font-black px-2 py-0.5 rounded-full ${activeTicket?.id === ticket.id ? 'bg-white/20 text-white' : getPriorityColor(ticket.priority)}`}>
+                                {ticket.priority}
+                              </span>
+                            </div>
+                            <h3 className={`text-xs font-black truncate ${activeTicket?.id === ticket.id ? 'text-white' : 'text-slate-800 dark:text-white'}`}>
+                              {ticket.title}
+                            </h3>
+                            <p className={`text-[9px] font-bold truncate ${activeTicket?.id === ticket.id ? 'text-white/60' : 'text-slate-400'}`}>
+                              {ticket.client?.user?.firstName} {ticket.client?.user?.lastName}
+                            </p>
+                          </button>
+                        ))
+                      )}
                     </div>
                   )}
                 </div>
-              </button>
+              )
             ))
           )}
         </div>

@@ -13,6 +13,7 @@ import {
   LogOut,
   UserCircle,
   UserRound,
+  ExternalLink
 } from 'lucide-react';
 
 const adminLinks = [
@@ -122,6 +123,17 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             {t(labelKey)}
           </NavLink>
         ))}
+        {user?.clientInfo?.notionLink && (
+           <a
+             href={user.clientInfo.notionLink}
+             target="_blank"
+             rel="noopener noreferrer"
+             className="flex items-center gap-3.5 px-4 py-3 rounded-2xl text-[13px] font-bold text-slate-500 dark:text-slate-500 hover:text-brand-600 dark:hover:text-slate-200 hover:bg-brand-50/50 dark:hover:bg-white/5 transition-all duration-300 group"
+           >
+             <img src="https://www.notion.so/images/favicon.ico" className="w-[18px] h-[18px] grayscale group-hover:grayscale-0 transition-all" alt="Notion" />
+             {t('notion_project')}
+           </a>
+        )}
       </nav>
 
       {/* User Area - Clean Border Box */}

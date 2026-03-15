@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Hardcoded API URL to bypass Vercel environment variable issues
-const API_URL = 'https://api.creziax.cloud/api';
+// Use environment variable or fallback to relative path (best for Coolify/Docker)
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -67,6 +67,7 @@ export const downloadInvoicePDFAPI = (id) => api.get(`/invoices/${id}/download`,
 // Payments
 export const getPaymentsAPI = (invoiceId) => api.get(`/payments?invoiceId=${invoiceId}`);
 export const createPaymentAPI = (data) => api.post('/payments', data);
+export const verifyPaymentAPI = (id, status) => api.put(`/payments/${id}/verify`, { status });
 
 // Broadcasts
 export const getActiveBroadcastsAPI = () => api.get('/broadcasts');

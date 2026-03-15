@@ -174,6 +174,11 @@ const ProjectsPage = () => {
                   <button onClick={() => handleDelete(p.id, p.name)} className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all opacity-0 group-hover:opacity-100 border border-transparent hover:border-rose-500/20">
                     <Trash2 size={18} />
                   </button>
+                  {p.client?.clientInfo?.notionLink && (
+                    <a href={p.client.clientInfo.notionLink} target="_blank" rel="noopener noreferrer" className="p-3 text-slate-300 hover:text-brand-500 hover:bg-brand-500/10 rounded-2xl transition-all border border-transparent hover:border-brand-500/20" title="Notion">
+                      <ExternalLink size={18} />
+                    </a>
+                  )}
                 </div>
               </div>
 

@@ -77,6 +77,34 @@ const ProfilePage = () => {
     }
   };
 
+  const [uploading, setUploading] = useState(false);
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("حجم الصورة يجب أن يكون أقل من 5 ميجا");
+      return;
+    }
+
+    setUploading(true);
+    const loadingToast = toast.loading(t('syncing'));
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const { uploadImageAPI, updateProfileAPI } = await import('../../store/api');
+      const { data } = await uploadImageAPI(formData);
+      await updateProfileAPI({ avatarUrl: data.url });
+      toast.success("تم تحديث الصورة الشخصية", { id: loadingToast });
+      window.location.reload(); // Refresh to update all UI parts
+    } catch (err) {
+      toast.error("فشل تحديث الصورة", { id: loadingToast });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -91,21 +119,31 @@ const ProfilePage = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Left Col - Avatar (Coming Soon) */}
+        {/* Left Col - Avatar */}
         <div className="lg:col-span-1 space-y-6">
           <div className="glass-panel p-6 rounded-3xl flex flex-col items-center text-center shadow-sm">
-            <div className="relative group mb-4 cursor-not-allowed">
+            <div className="relative group mb-4">
               <div className="w-32 h-32 rounded-full overflow-hidden bg-slate-100 dark:bg-white/5 border-4 border-white dark:border-[#121214] shadow-xl flex items-center justify-center">
-                <User size={48} className="text-slate-300 dark:text-slate-600" />
+                {user?.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <User size={48} className="text-slate-300 dark:text-slate-600" />
+                )}
               </div>
               
-              {/* Coming Soon Overlay */}
-              <div className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <Camera size={24} className="text-white mb-1" />
-                <span className="text-[10px] font-bold text-white uppercase tracking-wider">
-                  {t('coming_soon') || 'Coming Soon'}
-                </span>
-              </div>
+              <label className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer">
+                {uploading ? (
+                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <Camera size={24} className="text-white mb-1" />
+                    <span className="text-[10px] font-bold text-white uppercase tracking-wider">
+                      {t('update_photo') || 'Update Photo'}
+                    </span>
+                  </>
+                )}
+                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+              </label>
             </div>
             
             <h3 className="font-bold text-lg text-slate-800 dark:text-white mt-1">

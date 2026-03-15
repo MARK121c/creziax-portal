@@ -201,7 +201,13 @@ const resources = {
       "search_assignments": "Search assignments...",
       "find_channel": "Find channel...",
       "delete_file_confirm": "Permanently remove",
-      "ready_uplink": "Ready for uplink..."
+      "ready_uplink": "Ready for uplink...",
+      "notion_project": "Notion Project",
+      "payment_pending_verification": "Payment Pending Verification",
+      "payment_verified": "Payment Verified",
+      "payment_rejected": "Payment Rejected",
+      "transaction_verified": "Transaction Verified Successfully",
+      "pay": "Pay Now"
     }
   },
   ar: {
@@ -402,7 +408,13 @@ const resources = {
       "search_assignments": "ابحث عن المهام...",
       "find_channel": "ابحث عن قناة...",
       "delete_file_confirm": "حذف نهائي",
-      "ready_uplink": "جاهز للتواصل..."
+      "ready_uplink": "جاهز للتواصل...",
+      "notion_project": "مشروع Notion",
+      "payment_pending_verification": "الدفع قيد التحقق",
+      "payment_verified": "تم تأكيد الدفع",
+      "payment_rejected": "تم رفض الدفع",
+      "transaction_verified": "تم تأكيد المعاملة بنجاح",
+      "pay": "ادفع الآن"
     }
   }
 };
