@@ -52,6 +52,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
   const getLinks = () => {
     switch (user?.role) {
+      case 'OWNER':
       case 'ADMIN': return adminLinks;
       case 'TEAM': return teamLinks;
       case 'CLIENT': return clientLinks;
@@ -121,9 +122,15 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             <p className="text-sm font-bold text-slate-800 dark:text-white truncate leading-tight">
               {user?.firstName} {user?.lastName}
             </p>
-            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-wider mt-0.5">
-              {t(user?.role?.toLowerCase() || '')}
-            </p>
+            {user?.role === 'OWNER' ? (
+              <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mt-0.5">
+                {isRTL ? 'المالك' : 'OWNER'}
+              </p>
+            ) : (
+              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-wider mt-0.5">
+                {t(user?.role?.toLowerCase() || '')}
+              </p>
+            )}
           </div>
         </div>
         

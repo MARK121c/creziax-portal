@@ -107,12 +107,18 @@ const ProfilePage = () => {
               </div>
             </div>
             
-            <h3 className="font-bold text-lg text-slate-800 dark:text-white">
+            <h3 className="font-bold text-lg text-slate-800 dark:text-white mt-1">
               {user?.firstName} {user?.lastName}
             </h3>
-            <span className="inline-block px-3 py-1 bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400 rounded-full text-xs font-bold mt-2 uppercase tracking-wide">
-              {user?.role}
-            </span>
+            {user?.role === 'OWNER' ? (
+              <span className="inline-block px-4 py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg shadow-orange-500/20 rounded-full text-xs font-black mt-2 uppercase tracking-widest border border-amber-300 dark:border-white/10">
+                {isRTL ? 'المالك - THE OWNER' : 'THE OWNER'}
+              </span>
+            ) : (
+              <span className="inline-block px-3 py-1 bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400 rounded-full text-xs font-bold mt-2 uppercase tracking-wide">
+                {user?.role}
+              </span>
+            )}
           </div>
         </div>
 
@@ -152,20 +158,24 @@ const ProfilePage = () => {
                 <div className="space-y-1.5 sm:col-span-2">
                   <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
                     {t('email') || 'Email Address'} 
-                    <span className="ml-2 text-[10px] text-rose-500 font-medium bg-rose-50 dark:bg-rose-500/10 px-2 py-0.5 rounded-full">
-                      {t('contact_admin_to_change') || 'Contact Admin to change'}
-                    </span>
+                    {user?.role !== 'OWNER' && (
+                      <span className="ml-2 text-[10px] text-rose-500 font-medium bg-rose-50 dark:bg-rose-500/10 px-2 py-0.5 rounded-full">
+                        {t('contact_admin_to_change') || 'Contact Admin to change'}
+                      </span>
+                    )}
                   </label>
-                  <div className="relative opacity-60 cursor-not-allowed">
+                  <div className={`relative ${user?.role !== 'OWNER' ? 'opacity-60 cursor-not-allowed' : ''}`}>
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                     <input
                       type="email"
                       name="email"
                       value={formData.email}
-                      className="w-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm outline-none dark:text-white cursor-not-allowed"
-                      readOnly
+                      onChange={user?.role === 'OWNER' ? handleChange : undefined}
+                      className={`w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all dark:text-white ${user?.role !== 'OWNER' ? 'cursor-not-allowed bg-slate-100' : ''}`}
+                      readOnly={user?.role !== 'OWNER'}
+                      required
                       dir="ltr"
-                      title={t('contact_admin_to_change_email') || 'You cannot change your email directly. Please contact an administrator.'}
+                      title={user?.role !== 'OWNER' ? (t('contact_admin_to_change_email') || 'You cannot change your email directly. Please contact an administrator.') : undefined}
                     />
                   </div>
                 </div>

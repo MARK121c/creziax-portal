@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { getUsersAPI, createUserAPI, deleteUserAPI, uploadImageAPI } from '../../store/api';
 import { Trash2, X, User, Mail, Calendar, Search, Loader2, UserPlus, MoreHorizontal, ShieldAlert, ShieldCheck, Camera, UploadCloud } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import useAuthStore from '../../store/authStore';
 import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
 
 const TeamPage = () => {
   const { t } = useTranslation();
+  const { user: currentUser } = useAuthStore();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -198,13 +200,15 @@ const TeamPage = () => {
                       </div>
                     </td>
                     <td className="px-4 md:px-10 py-4 md:py-7 text-right">
-                      <button 
-                        onClick={() => handleDelete(m.id, `${m.firstName} ${m.lastName}`, m.role)} 
-                        className="p-2 md:p-2.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all border border-slate-200 dark:border-white/10 hover:border-rose-500/20"
-                        title="حذف"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {(currentUser?.role === 'OWNER' || m.role !== 'ADMIN') && (
+                        <button 
+                          onClick={() => handleDelete(m.id, `${m.firstName} ${m.lastName}`, m.role)} 
+                          className="p-2 md:p-2.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all border border-slate-200 dark:border-white/10 hover:border-rose-500/20"
+                          title="حذف"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -292,7 +296,9 @@ const TeamPage = () => {
                     className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold appearance-none"
                   >
                     <option value="TEAM">Team Member</option>
-                    <option value="ADMIN">Administrator</option>
+                    {currentUser?.role === 'OWNER' && (
+                      <option value="ADMIN">Administrator</option>
+                    )}
                   </select>
                 </div>
                 <div className="space-y-2.5">
