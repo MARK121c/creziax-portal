@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { loginAPI, getProfileAPI } from './api';
+import { loginAPI, getProfileAPI, updateProfileAPI } from './api';
 
 const useAuthStore = create((set) => ({
   user: null,
@@ -30,6 +30,19 @@ const useAuthStore = create((set) => ({
         set({ user: null, token: null });
         localStorage.removeItem('token');
       }
+    }
+  },
+
+  updateProfile: async (data) => {
+    try {
+      set({ loading: true, error: null });
+      const res = await updateProfileAPI(data);
+      set({ user: res.data, loading: false });
+      return res.data;
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Update failed';
+      set({ loading: false, error: msg });
+      throw new Error(msg);
     }
   },
 

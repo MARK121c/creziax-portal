@@ -12,6 +12,7 @@ import {
   CreditCard,
   LogOut,
   UserCircle,
+  UserRound,
 } from 'lucide-react';
 
 const adminLinks = [
@@ -24,12 +25,14 @@ const adminLinks = [
   { to: '/admin/messages', icon: MessageSquare, labelKey: 'messages' },
   { to: '/admin/invoices', icon: Receipt, labelKey: 'invoices' },
   { to: '/admin/payments', icon: CreditCard, labelKey: 'payments' },
+  { to: '/admin/profile', icon: UserRound, labelKey: 'my_profile' },
 ];
 
 const teamLinks = [
   { to: '/team', icon: LayoutDashboard, labelKey: 'dashboard' },
   { to: '/team/tasks', icon: CheckSquare, labelKey: 'my_tasks' },
   { to: '/team/files', icon: FileText, labelKey: 'files' },
+  { to: '/team/profile', icon: UserRound, labelKey: 'my_profile' },
 ];
 
 const clientLinks = [
@@ -38,6 +41,7 @@ const clientLinks = [
   { to: '/client/tasks', icon: CheckSquare, labelKey: 'tasks' },
   { to: '/client/messages', icon: MessageSquare, labelKey: 'messages' },
   { to: '/client/invoices', icon: Receipt, labelKey: 'invoices' },
+  { to: '/client/profile', icon: UserRound, labelKey: 'my_profile' },
 ];
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
