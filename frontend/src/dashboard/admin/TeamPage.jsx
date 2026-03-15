@@ -15,9 +15,29 @@ const TeamPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', position: '', role: 'TEAM', avatarUrl: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', position: '', role: 'TEAM', avatarUrl: '', permissions: [] });
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const addNotification = useNotificationStore(state => state.addNotification);
+  
+  const availablePermissions = [
+    { id: 'CLIENTS', label: 'إدارة العملاء', icon: ShieldCheck },
+    { id: 'TEAM', label: 'إدارة الفريق', icon: ShieldAlert },
+    { id: 'PROJECTS', label: 'إدارة المشاريع', icon: ShieldCheck },
+    { id: 'FINANCES', label: 'المالية والفواتير', icon: ShieldAlert },
+    { id: 'MESSAGES', label: 'الرسائل والتواصل', icon: Mail },
+    { id: 'FILES', label: 'إدارة الملفات', icon: ShieldCheck },
+  ];
+
+  const handlePermissionToggle = (permId) => {
+    setForm(prev => {
+      const perms = [...prev.permissions];
+      if (perms.includes(permId)) {
+        return { ...prev, permissions: perms.filter(p => p !== permId) };
+      } else {
+        return { ...prev, permissions: [...perms, permId] };
+      }
+    });
+  };
 
   const fetchMembers = async () => {
     setLoading(true);
@@ -45,7 +65,7 @@ const TeamPage = () => {
       toast.success(t('onboard_specialist'), { id: loadingToast });
       addNotification(`تم إضافة أصل جديد: ${form.firstName} ${form.lastName} بصلاحية ${form.role}`, 'success');
       setShowModal(false);
-      setForm({ firstName: '', lastName: '', email: '', password: '', position: '', role: 'TEAM', avatarUrl: '' });
+      setForm({ firstName: '', lastName: '', email: '', password: '', position: '', role: 'TEAM', avatarUrl: '', permissions: [] });
       fetchMembers();
     } catch (err) {
       toast.error(t('loading'), { id: loadingToast });
@@ -324,6 +344,39 @@ const TeamPage = () => {
                   <input value={form.position} onChange={e => setForm({...form, position: e.target.value})} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
                 </div>
               </div>
+
+              {form.role === 'ADMIN' && (
+                <div className="space-y-4 p-6 bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-[2rem]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ShieldAlert size={18} className="text-amber-500" />
+                    <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tighter">صلاحيات المدير (Admin Permissions)</h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {availablePermissions.map(perm => (
+                      <button
+                        key={perm.id}
+                        type="button"
+                        onClick={() => handlePermissionToggle(perm.id)}
+                        className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${
+                          form.permissions.includes(perm.id) 
+                            ? 'bg-brand-500/10 border-brand-500/30 text-brand-600 dark:text-brand-400 shadow-sm' 
+                            : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/5 text-slate-400'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <perm.icon size={14} className={form.permissions.includes(perm.id) ? 'text-brand-500' : 'text-slate-300'} />
+                          <span className="text-xs font-bold">{perm.label}</span>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                          form.permissions.includes(perm.id) ? 'border-brand-500 bg-brand-500' : 'border-slate-200 dark:border-white/10'
+                        }`}>
+                          {form.permissions.includes(perm.id) && <X size={10} className="text-white rotate-45" />}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="pt-6 md:pt-8 flex gap-4 md:gap-5 border-t border-slate-100 dark:border-white/5">
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 px-6 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all duration-300">

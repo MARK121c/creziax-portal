@@ -53,7 +53,19 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const getLinks = () => {
     switch (user?.role) {
       case 'OWNER':
-      case 'ADMIN': return adminLinks;
+        return adminLinks;
+      case 'ADMIN':
+        return adminLinks.filter(link => {
+          if (link.to === '/admin/profile' || link.to === '/admin') return true;
+          if (link.to === '/admin/clients' && user.permissions?.includes('CLIENTS')) return true;
+          if (link.to === '/admin/team' && user.permissions?.includes('TEAM')) return true;
+          if (link.to === '/admin/projects' && user.permissions?.includes('PROJECTS')) return true;
+          if (link.to === '/admin/tasks' && user.permissions?.includes('TASKS')) return true;
+          if (link.to === '/admin/files' && user.permissions?.includes('FILES')) return true;
+          if (link.to === '/admin/messages' && user.permissions?.includes('MESSAGES')) return true;
+          if ((link.to === '/admin/invoices' || link.to === '/admin/payments') && user.permissions?.includes('FINANCES')) return true;
+          return false;
+        });
       case 'TEAM': return teamLinks;
       case 'CLIENT': return clientLinks;
       default: return [];

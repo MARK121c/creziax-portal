@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getUsersAPI, createUserAPI, deleteUserAPI, updateClientAPI, uploadImageAPI } from '../../store/api';
-import { Trash2, Plus, X, Building2, Mail, Phone, Calendar, Loader2, Search, UserPlus, Edit2, Star, Camera, UploadCloud } from 'lucide-react';
+import { Trash2, Plus, X, Building2, Mail, Phone, Calendar, Loader2, Search, UserPlus, Edit2, Star, Camera, UploadCloud, ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
@@ -19,7 +19,7 @@ const ClientsPage = () => {
   
   const [form, setForm] = useState({ 
     firstName: '', lastName: '', email: '', password: '', company: '', phone: '',
-    tier: 'REGULAR', budget: '', isVip: false, logoUrl: ''
+    tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: ''
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
@@ -69,7 +69,8 @@ const ClientsPage = () => {
           phone: form.phone, 
           tier: form.tier,
           isVip: form.isVip,
-          logoUrl: form.logoUrl
+          logoUrl: form.logoUrl,
+          notionLink: form.notionLink
         });
         toast.success(t('loading'), { id: loadingToast });
         addNotification(`تم تحديث بيانات العميل: ${form.firstName} ${form.lastName}`, 'success');
@@ -104,7 +105,8 @@ const ClientsPage = () => {
       tier: client.clientInfo?.tier || 'REGULAR',
       budget: '',
       isVip: client.clientInfo?.isVip || false,
-      logoUrl: client.clientInfo?.logoUrl || ''
+      logoUrl: client.clientInfo?.logoUrl || '',
+      notionLink: client.clientInfo?.notionLink || ''
     });
     setEditId(client.clientInfo?.id);
     setIsEditing(true);
@@ -146,6 +148,22 @@ const ClientsPage = () => {
       toast.error("فشل رفع اللوجو");
     } finally {
       setUploadingLogo(false);
+    }
+  };
+  
+  const handleQuickLogoUpload = async (clientId, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const loadingToast = toast.loading(t('syncing'));
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+      const { data } = await uploadImageAPI(formData);
+      await updateClientAPI(clientId, { logoUrl: data.url });
+      toast.success("تم تحديث اللوجو", { id: loadingToast });
+      fetchClients();
+    } catch (err) {
+      toast.error("فشل التحديث", { id: loadingToast });
     }
   };
 
@@ -214,12 +232,16 @@ const ClientsPage = () => {
                   <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-all group">
                     <td className="px-6 md:px-10 py-5 md:py-7">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400 text-sm font-black shadow-sm border border-brand-100 dark:border-brand-500/20 flex-shrink-0 overflow-hidden">
+                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400 text-sm font-black shadow-sm border border-brand-100 dark:border-brand-500/20 flex-shrink-0 overflow-hidden relative group/logo">
                           {c.clientInfo?.logoUrl ? (
                             <img src={c.clientInfo.logoUrl} alt={c.clientInfo.company} className="w-full h-full object-cover" />
                           ) : (
                             <span>{c.firstName?.[0]}{c.lastName?.[0]}</span>
                           )}
+                          <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/logo:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                            <Camera size={14} className="text-white" />
+                            <input type="file" className="hidden" onChange={(e) => handleQuickLogoUpload(c.clientInfo?.id, e)} />
+                          </label>
                         </div>
                         <div>
                           <p className="text-sm md:text-base font-bold text-slate-800 dark:text-white leading-tight">{c.firstName} {c.lastName}</p>
@@ -237,6 +259,12 @@ const ClientsPage = () => {
                                   <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 text-[9px] font-black uppercase tracking-tighter border border-slate-200 dark:border-white/10">
                                     {c.clientInfo.tier.replace('VIP_', '').replace('_', ' ')}
                                   </span>
+                                )}
+                                {c.clientInfo?.notionLink && (
+                                  <a href={c.clientInfo.notionLink} target="_blank" rel="noopener noreferrer" className="p-1 px-2 bg-slate-100 dark:bg-white/5 text-slate-500 hover:text-brand-500 rounded-lg border border-slate-200 dark:border-white/10 flex items-center gap-1.5 transition-colors group/notion">
+                                    <img src="https://www.notion.so/images/favicon.ico" className="w-3 h-3 grayscale group-hover/notion:grayscale-0 transition-all" alt="Notion" />
+                                    <span className="text-[9px] font-black uppercase tracking-tighter">Notion</span>
+                                  </a>
                                 )}
                               </div>
                           <p className="text-xs text-slate-400 mt-1 md:hidden">{c.email}</p>
@@ -380,6 +408,19 @@ const ClientsPage = () => {
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('phone_number')}</label>
                   <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
                 </div>
+              </div>
+
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">رابط Notion (مشروع العميل)</label>
+                  <img src="https://www.notion.so/images/favicon.ico" className="w-4 h-4 opacity-40" alt="Notion" />
+                </div>
+                <input 
+                  placeholder="https://notion.so/your-page-id"
+                  value={form.notionLink} 
+                  onChange={e => setForm({...form, notionLink: e.target.value})} 
+                  className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" 
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6">
