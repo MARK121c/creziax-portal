@@ -31,7 +31,7 @@ const MessagesPage = () => {
         setLoadingThreads(false);
       }
     };
-    if (user?.role === 'ADMIN') fetchThreads();
+    if (user?.role === 'ADMIN' || user?.role === 'OWNER') fetchThreads();
     else setActiveThread(user?.id);
   }, [user]);
 
@@ -79,7 +79,7 @@ const MessagesPage = () => {
 
   return (
     <div className="h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-4 md:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {user?.role === 'ADMIN' && (
+      {(user?.role === 'ADMIN' || user?.role === 'OWNER') && (
         <div className="w-full lg:w-80 bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] flex flex-col overflow-hidden shadow-xl shadow-slate-200/20 dark:shadow-none max-h-[40vh] lg:max-h-none">
           <div className="p-5 md:p-8 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01]">
             <h2 className="text-lg md:text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight mb-4 md:mb-6">{t('message_center')}</h2>

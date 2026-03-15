@@ -22,7 +22,7 @@ const TeamPage = () => {
     setLoading(true);
     try {
       const { data } = await getUsersAPI();
-      setMembers(data.filter(u => u.role === 'TEAM' || u.role === 'ADMIN'));
+      setMembers(data.filter(u => u.role === 'TEAM' || u.role === 'ADMIN' || u.role === 'OWNER'));
     } catch (err) {
       toast.error(t('loading'));
     } finally {
@@ -160,7 +160,11 @@ const TeamPage = () => {
                   <tr key={m.id} className="group hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-colors duration-300">
                     <td className="px-6 md:px-10 py-5 md:py-7">
                       <div className="flex items-center gap-3 md:gap-4">
-                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center font-black text-base md:text-lg overflow-hidden ${m.role === 'ADMIN' ? 'bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20 text-brand-600 dark:text-brand-400'}`}>
+                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center font-black text-base md:text-lg overflow-hidden ${
+                          m.role === 'OWNER' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30' : 
+                          m.role === 'ADMIN' ? 'bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 text-amber-600 dark:text-amber-400' : 
+                          'bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20 text-brand-600 dark:text-brand-400'
+                        }`}>
                           {m.avatarUrl ? (
                             <img src={m.avatarUrl} alt={m.firstName} className="w-full h-full object-cover" />
                           ) : (
@@ -170,6 +174,7 @@ const TeamPage = () => {
                         <div>
                           <div className="text-sm md:text-base font-black text-slate-800 dark:text-white uppercase tracking-tight flex items-center gap-2">
                             {m.firstName} {m.lastName}
+                            {m.role === 'OWNER' && <ShieldAlert size={14} className="text-amber-600" />}
                             {m.role === 'ADMIN' && <ShieldAlert size={14} className="text-amber-500" />}
                           </div>
                           <div className="text-xs font-bold text-slate-400 dark:text-slate-500 flex items-center gap-2 mt-1">
@@ -188,10 +193,19 @@ const TeamPage = () => {
                       </div>
                     </td>
                     <td className="px-6 md:px-10 py-5 md:py-7 hidden md:table-cell">
-                      <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border w-fit flex items-center gap-1 ${m.role === 'ADMIN' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' : 'bg-brand-500/10 text-brand-600 dark:text-brand-400 border-brand-500/20'}`}>
-                        {m.role === 'ADMIN' ? <ShieldAlert size={12} /> : <ShieldCheck size={12} />}
-                        {m.role}
-                      </div>
+                      {m.role === 'OWNER' ? (
+                        <div className="px-3 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg shadow-orange-500/20 rounded-full text-[10px] font-black uppercase tracking-widest border border-amber-300 w-fit">
+                          {isRTL ? 'المالك - THE OWNER' : 'THE OWNER'}
+                        </div>
+                      ) : (
+                        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border w-fit flex items-center gap-1 ${
+                          m.role === 'ADMIN' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' : 
+                          'bg-brand-500/10 text-brand-600 dark:text-brand-400 border-brand-500/20'
+                        }`}>
+                          {m.role === 'ADMIN' ? <ShieldAlert size={12} /> : <ShieldCheck size={12} />}
+                          {m.role}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 md:px-10 py-5 md:py-7 hidden lg:table-cell">
                       <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-tighter">
@@ -200,7 +214,7 @@ const TeamPage = () => {
                       </div>
                     </td>
                     <td className="px-4 md:px-10 py-4 md:py-7 text-right">
-                      {(currentUser?.role === 'OWNER' || m.role !== 'ADMIN') && (
+                      {m.role !== 'OWNER' && (currentUser?.role === 'OWNER' || m.role !== 'ADMIN') && (
                         <button 
                           onClick={() => handleDelete(m.id, `${m.firstName} ${m.lastName}`, m.role)} 
                           className="p-2 md:p-2.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all border border-slate-200 dark:border-white/10 hover:border-rose-500/20"

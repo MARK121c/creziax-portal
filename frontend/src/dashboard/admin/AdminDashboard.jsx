@@ -64,7 +64,7 @@ const AdminDashboard = () => {
         const users = usersRes.data || [];
         const clientsCount = users.filter(u => u.role === 'CLIENT').length;
         const teamCount = users.filter(u => u.role === 'TEAM').length;
-        const adminsCount = users.filter(u => u.role === 'ADMIN').length;
+        const adminsCount = users.filter(u => u.role === 'ADMIN' || u.role === 'OWNER').length;
         const usersBreakdown = `${clientsCount} ${t('clients')} | ${teamCount} ${t('team')} | ${adminsCount} ${t('admins')}`;
 
         const projects = projectsRes.data || [];

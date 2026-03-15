@@ -5,8 +5,9 @@ import toast from 'react-hot-toast';
 import { User, Mail, Lock, Camera, CheckCircle2 } from 'lucide-react';
 
 const ProfilePage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, updateProfile } = useAuthStore();
+  const isRTL = i18n.language === 'ar';
   
   const [formData, setFormData] = useState({
     firstName: '',

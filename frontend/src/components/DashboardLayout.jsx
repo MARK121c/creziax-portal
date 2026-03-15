@@ -103,7 +103,7 @@ const DashboardLayout = () => {
               </div>
             )}
             
-            {user?.role === 'ADMIN' && !isEditingBroadcast && (
+            {(user?.role === 'ADMIN' || user?.role === 'OWNER') && !isEditingBroadcast && (
               <button 
                 onClick={() => { setBroadcastInput(activeBroadcast?.message || ''); setIsEditingBroadcast(true); }}
                 className="absolute right-4 p-1.5 hover:bg-white/20 rounded-lg transition-colors"
@@ -127,7 +127,7 @@ const DashboardLayout = () => {
           
           <div className="flex items-center gap-2 p-1.5 glass-panel rounded-2xl shadow-sm">
             {/* Admin Broadcast Trigger */}
-            {user?.role === 'ADMIN' && (
+            {(user?.role === 'ADMIN' || user?.role === 'OWNER') && (
               <button
                 onClick={() => {
                   setBroadcastInput(activeBroadcast?.message || '');
