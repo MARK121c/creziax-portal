@@ -150,6 +150,25 @@ const Login = () => {
           </form>
         </div>
 
+        {/* ===== TEST TAG: REMOVE AFTER VERIFICATION ===== */}
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: '#7c3aed',
+          color: '#fff',
+          textAlign: 'center',
+          fontWeight: 900,
+          fontSize: '14px',
+          letterSpacing: '0.15em',
+          padding: '10px',
+          zIndex: 9999,
+          textTransform: 'uppercase'
+        }}>
+          ✅ VERSION 1.2.1 — FINAL TEST — CREZIAX HUBS ACTIVE
+        </div>
+
         <p className={`text-center text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] mt-8 ${theme === 'dark' ? 'text-slate-600' : 'text-slate-400'}`}>
           {t('copyright')}
         </p>
@@ -159,3 +178,4 @@ const Login = () => {
 };
 
 export default Login;
+
