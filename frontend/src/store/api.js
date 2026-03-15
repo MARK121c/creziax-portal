@@ -37,6 +37,7 @@ export const getProjectAPI = (id) => api.get(`/projects/${id}`);
 export const createProjectAPI = (data) => api.post('/projects', data);
 export const updateProjectAPI = (id, data) => api.put(`/projects/${id}`, data);
 export const deleteProjectAPI = (id) => api.delete(`/projects/${id}`);
+export const downloadContractPDFAPI = (id) => api.get(`/projects/${id}/download`, { responseType: 'blob' });
 
 // Tasks
 export const getTasksAPI = () => api.get('/tasks');

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getProjectsAPI, createProjectAPI, updateProjectAPI, deleteProjectAPI, getClientsAPI } from '../../store/api';
-import { Plus, X, Trash2, Layout, Search, Briefcase, Calendar, Loader2, CheckCircle2, Clock, PlayCircle } from 'lucide-react';
+import { getProjectsAPI, createProjectAPI, updateProjectAPI, deleteProjectAPI, getClientsAPI, downloadContractPDFAPI } from '../../store/api';
+import { Plus, X, Trash2, Layout, Search, Briefcase, Calendar, Loader2, CheckCircle2, Clock, PlayCircle, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
@@ -90,6 +90,23 @@ const ProjectsPage = () => {
     }
   };
 
+  const handleDownloadContract = async (id, name) => {
+    const loadingToast = toast.loading(t('syncing'));
+    try {
+      const response = await downloadContractPDFAPI(id);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Contract-${name.replace(/\s+/g, '_')}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      toast.success(t('status'), { id: loadingToast });
+    } catch (err) {
+      toast.error(t('loading'), { id: loadingToast });
+    }
+  };
+
   const filteredProjects = projects.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.client?.user?.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -146,9 +163,18 @@ const ProjectsPage = () => {
                 <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20 flex items-center justify-center text-brand-600 dark:text-brand-400">
                   <Briefcase size={22} />
                 </div>
-                <button onClick={() => handleDelete(p.id, p.name)} className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all opacity-0 group-hover:opacity-100 border border-transparent hover:border-rose-500/20">
-                  <Trash2 size={18} />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => handleDownloadContract(p.id, p.name)}
+                    className="p-3 text-slate-300 hover:text-brand-500 hover:bg-brand-500/10 rounded-2xl transition-all border border-transparent hover:border-brand-500/20"
+                    title="تحميل العقد PDF"
+                  >
+                    <FileText size={18} />
+                  </button>
+                  <button onClick={() => handleDelete(p.id, p.name)} className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all opacity-0 group-hover:opacity-100 border border-transparent hover:border-rose-500/20">
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               </div>
 
               <div className="mb-6">
