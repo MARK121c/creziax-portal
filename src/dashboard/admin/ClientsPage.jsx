@@ -30,6 +30,7 @@ const ClientsPage = () => {
     contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: ''
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [fileError, setFileError] = useState('');
   const [activeFilter, setActiveFilter] = useState({ tier: 'ALL', health: 'ALL' });
 
   const handleChange = (e) => {
@@ -203,6 +204,13 @@ const ClientsPage = () => {
       return;
     }
 
+    if (file.size > 5 * 1024 * 1024) {
+      setFileError(t('file_size_limit'));
+      toast.error(t('file_size_error'));
+      return;
+    }
+    
+    setFileError('');
     setUploadingLogo(true);
     const formData = new FormData();
     formData.append('image', file);
@@ -608,12 +616,23 @@ const ClientsPage = () => {
                       </button>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('company_logo')}</label>
-                      <label className={`w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl border cursor-pointer transition-all font-black text-sm ${uploadingLogo ? 'bg-slate-100 animate-pulse' : 'bg-brand-500/10 border-brand-500/20 text-brand-600 hover:bg-brand-500 hover:text-white group'}`}>
-                        <UploadCloud size={16} />
-                        {uploadingLogo ? t('uploading') : (form.logoUrl ? t('change_logo') : t('upload_logo'))}
-                        <input type="file" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
-                      </label>
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('client_logo')}</label>
+                       <div className="relative group/logo w-20 h-20 rounded-2xl bg-slate-100 dark:bg-white/5 border-2 border-dashed border-slate-200 dark:border-white/10 flex items-center justify-center overflow-hidden transition-all hover:border-brand-500/50">
+                          {uploadingLogo ? (
+                            <Loader2 size={24} className="animate-spin text-brand-500" />
+                          ) : form.logoUrl ? (
+                            <img src={form.logoUrl} className="w-full h-full object-cover" alt="Logo" />
+                          ) : (
+                            <Plus size={20} className="text-slate-400" />
+                          )}
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={handleLogoUpload}
+                            className="absolute inset-0 opacity-0 cursor-pointer z-20"
+                          />
+                       </div>
+                       {fileError && <p className="text-[9px] font-bold text-rose-500 mt-1">{fileError}</p>}
                     </div>
                   </div>
                 </div>

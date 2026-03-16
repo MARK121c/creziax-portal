@@ -38,6 +38,16 @@ const FilesPage = () => {
       return;
     }
     
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      toast.error(t('file_size_error'));
+      return;
+    }
+
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      toast.error(t('file_size_limit') || 'حجم الملف كبير جداً، الحد الأقصى هو 5 ميجا بايت');
+      return;
+    }
+
     setUploading(true);
     const loadingToast = toast.loading(t('syncing'));
     const formData = new FormData();
@@ -53,8 +63,9 @@ const FilesPage = () => {
       e.target.reset();
       fetchData();
     } catch (err) {
-      toast.error(t('loading'), { id: loadingToast });
-      addNotification(`${t('loading')}: ${selectedFile.name}`, 'error');
+      const errorMsg = err.response?.data?.error || t('loading');
+      toast.error(errorMsg, { id: loadingToast });
+      addNotification(`${errorMsg}: ${selectedFile.name}`, 'error');
     } finally {
       setUploading(false);
     }
@@ -74,9 +85,9 @@ const FilesPage = () => {
     }
   };
 
-  const filteredFiles = files.filter(f => 
-    f.originalName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    f.project?.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredFiles = (files || []).filter(f => 
+    (f.originalName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (f.project?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (

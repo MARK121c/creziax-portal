@@ -19,6 +19,7 @@ const ClientProfilePage = () => {
   const [projects, setProjects] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [showContactDropdown, setShowContactDropdown] = useState(false);
   const contactDropdownRef = useRef(null);
 
@@ -132,10 +133,20 @@ const ClientProfilePage = () => {
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 md:w-20 md:h-20 rounded-[2rem] bg-brand-500/10 border-2 border-brand-500/20 flex items-center justify-center overflow-hidden">
-               {client.clientInfo?.logoUrl ? (
-                 <img src={client.clientInfo.logoUrl} className="w-full h-full object-cover" alt="" />
-               ) : <Building size={32} className="text-brand-500 opacity-40" />}
+            <div className="relative group">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2rem] bg-white dark:bg-white/10 flex items-center justify-center text-3xl font-black text-slate-400 border-4 border-white dark:border-[#0a0a0c] shadow-2xl overflow-hidden">
+                {uploadingLogo ? (
+                  <Loader2 size={32} className="animate-spin text-brand-500" />
+                ) : client.clientInfo?.logoUrl ? (
+                  <img src={client.clientInfo.logoUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  client.clientInfo?.company?.charAt(0) || <Building size={32} />
+                )}
+              </div>
+              <label className="absolute -bottom-2 -right-2 p-3 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl shadow-lg cursor-pointer transition-all hover:scale-110 active:scale-95 border-4 border-white dark:border-[#0a0a0c]">
+                <Plus size={18} />
+                <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+              </label>
             </div>
             <div>
               <div className="flex items-center gap-3">
