@@ -6,7 +6,7 @@ import useThemeStore from '../store/themeStore';
 import useAuthStore from '../store/authStore';
 import useBroadcastStore from '../store/broadcastStore';
 import useNotificationStore from '../store/notificationStore';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 
 const DashboardLayout = () => {
@@ -21,10 +21,22 @@ const DashboardLayout = () => {
   const [isEditingBroadcast, setIsEditingBroadcast] = useState(false);
   const [broadcastInput, setBroadcastInput] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
+  const notificationsRef = useRef(null);
 
   useEffect(() => {
     fetchActiveBroadcasts();
   }, [fetchActiveBroadcasts]);
+
+  // Click-outside closes notifications panel
+  useEffect(() => {
+    const handler = (e) => {
+      if (notificationsRef.current && !notificationsRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const activeBroadcast = broadcasts[0];
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -102,7 +114,7 @@ const DashboardLayout = () => {
             )}
 
             {/* Notification Bell */}
-            <div className="relative">
+            <div className="relative" ref={notificationsRef}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all"
