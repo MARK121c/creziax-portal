@@ -21,6 +21,7 @@ import InvoicesPage from './dashboard/admin/InvoicesPage';
 import FilesPage from './dashboard/admin/FilesPage';
 import MessagesPage from './dashboard/admin/MessagesPage';
 import PaymentsPage from './dashboard/admin/PaymentsPage';
+import ExpensesPage from './dashboard/admin/ExpensesPage';
 
 // Shared Pages
 import ProfilePage from './dashboard/shared/ProfilePage';
@@ -98,6 +99,7 @@ function App() {
           <Route path="invoices" element={<InvoicesPage />} />
           <Route path="payments" element={<PaymentsPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="expenses" element={<ExpensesPage />} />
         </Route>
 
         {/* Team Routes */}

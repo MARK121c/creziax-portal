@@ -178,14 +178,16 @@ const AdminDashboard = () => {
              
              <div className="bg-white dark:bg-[#0a0a0c]/60 border border-slate-200 dark:border-white/5 rounded-3xl p-6 relative overflow-hidden group">
                 <div className="absolute -right-6 -top-6 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl group-hover:bg-rose-500/10 transition-all pointer-events-none"></div>
-                <div className="flex items-center justify-between mb-2">
-                   <p className="text-[11px] font-black text-rose-500 uppercase tracking-[0.2em]">{t('add_manual_expense')} + {t('stat_team')}</p>
-                   <div className="text-xs font-bold text-slate-400">-</div>
-                </div>
+                <p className="text-[11px] font-black text-rose-500 uppercase tracking-[0.2em] mb-2">إجمالي النفقات (رواتب + مصاريف + مكافآت)</p>
                 <div className="flex flex-col gap-1">
                    <p className="text-3xl font-black text-slate-800 dark:text-white">
                      ${((stats?.financials?.monthlySalaries ?? 0) + (stats?.financials?.bonuses ?? 0) + (stats?.financials?.expenses ?? 0)).toLocaleString()}
                    </p>
+                   <div className="flex gap-3 mt-2">
+                     <span className="text-[10px] text-slate-400 font-bold">رواتب: ${(stats?.financials?.monthlySalaries ?? 0).toLocaleString()}</span>
+                     <span className="text-[10px] text-slate-400 font-bold">مصاريف: ${(stats?.financials?.expenses ?? 0).toLocaleString()}</span>
+                     <span className="text-[10px] text-slate-400 font-bold">مكافآت: ${(stats?.financials?.bonuses ?? 0).toLocaleString()}</span>
+                   </div>
                 </div>
              </div>
 
