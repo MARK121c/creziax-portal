@@ -324,8 +324,9 @@ const resources = {
       "missing_email": "Email address not added yet.",
       "creziax_partner": "Creziax Elite Partner",
       "no_internal_notes": "No internal strategic notes provided for this partner.",
+      "no_internal_notes": "No internal strategic notes provided for this partner.",
       "file_size_error": "File size too large",
-      "file_size_limit": "Maximum size is 5MB"
+      "file_size_limit": "File size is too large, Maximum size is 5MB"
     }
   },
   ar: {
@@ -649,8 +650,9 @@ const resources = {
       "missing_email": "لم يتم إضافة بريد إلكتروني للعميل بعد.",
       "creziax_partner": "شريك كاريزياكس المميز",
       "no_internal_notes": "لا توجد ملاحظات إستراتيجية داخلية لهذا الشريك.",
+      "no_internal_notes": "لا توجد ملاحظات إستراتيجية داخلية لهذا الشريك.",
       "file_size_error": "حجم الملف كبير جداً",
-      "file_size_limit": "الحد الأقصى هو 5 ميجا بايت"
+      "file_size_limit": "حجم الصورة كبير جداً، الحد الأقصى هو 5 ميجا بايت"
     }
   }
 };
