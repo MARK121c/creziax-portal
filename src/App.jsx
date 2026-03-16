@@ -69,6 +69,7 @@ function App() {
   const { token, fetchProfile } = useAuthStore();
 
   useEffect(() => {
+    console.log("%c Creziax Portal v1.2.1-final %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
     if (token) {
       fetchProfile();
     }
