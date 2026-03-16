@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { 
   Users, FolderKanban, Briefcase, Monitor, Receipt, Shield, 
   TrendingUp, TrendingDown, Activity, Plus, Rocket, Wallet, Download, 
-  ArrowUpRight, ChevronDown, DollarSign, MinusCircle, Gift
+  ArrowUpRight, ChevronDown, DollarSign, MinusCircle, Gift, Bell, Building2
 } from 'lucide-react';
 import { getDashboardStatsAPI, getRecentActivityAPI, getClientsAPI } from '../../store/api';
 import { useTranslation } from 'react-i18next';
