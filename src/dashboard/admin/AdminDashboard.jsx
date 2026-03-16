@@ -54,7 +54,7 @@ const AdminDashboard = () => {
   // Check user permissions natively from Zustand store
   const { user } = useAuthStore();
   const isOwner = user?.role === 'OWNER';
-  const hasFinancialAccess = isOwner || (user?.permissions && user?.permissions.includes('FINANCIAL_ACCESS'));
+  const hasFinancialAccess = isOwner || user?.role === 'ADMIN' || (user?.permissions && user?.permissions.includes('FINANCIAL_ACCESS'));
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -123,13 +123,21 @@ const AdminDashboard = () => {
             {t('overview_subtitle')}
           </p>
         </div>
-        <button 
-          onClick={handleExportExcel}
-          className="flex items-center justify-center gap-2 px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-brand-500/20 w-full md:w-auto"
-        >
-          <Download size={18} />
-          {t('export_excel')}
-        </button>
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
+          <input 
+            type="month" 
+            className="px-4 py-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:border-brand-500 transition-colors w-full sm:w-auto"
+            defaultValue={`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`}
+            title="اختر شهر التقرير"
+          />
+          <button 
+            onClick={handleExportExcel}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-brand-500/20 w-full md:w-auto"
+          >
+            <Download size={18} />
+            {t('export_excel')}
+          </button>
+        </div>
       </div>
 
       {/* Main Stats Row */}

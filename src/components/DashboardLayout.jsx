@@ -65,7 +65,7 @@ const DashboardLayout = () => {
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-slate-900/50 dark:bg-[#0a0a0c]/80 backdrop-blur-sm z-30 lg:hidden animate-in fade-in"
+          className="fixed inset-0 bg-slate-900/50 dark:bg-[#0a0a0c]/80 backdrop-blur-sm z-[90] lg:hidden animate-in fade-in"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -76,11 +76,12 @@ const DashboardLayout = () => {
       <main className={`min-h-screen flex flex-col w-full lg:w-[calc(100%-16rem)] transition-all duration-300 ${isRTL ? 'lg:mr-64' : 'lg:ml-64'}`}>
         
         {/* Global Transparent Header */}
-        <header className="sticky top-0 z-30 w-full flex items-center justify-between lg:justify-end h-20 px-6 md:px-10 gap-4">
+        <header className="sticky top-0 z-[80] w-full flex items-center justify-between lg:justify-end h-20 px-6 md:px-10 gap-4 bg-slate-50/80 dark:bg-[#0a0a0c]/80 backdrop-blur-md">
           {/* Mobile Menu Button */}
           <button 
             onClick={() => setIsMobileMenuOpen(true)}
-            className="lg:hidden p-2 text-slate-500 dark:text-slate-400 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-all"
+            className="lg:hidden p-2 text-slate-800 dark:text-white hover:text-brand-600 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl transition-all shadow-sm border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5"
+            style={{ zIndex: 100 }}
           >
             <Menu size={24} />
           </button>
