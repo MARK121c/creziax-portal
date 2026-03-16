@@ -66,6 +66,7 @@ const AdminDashboard = () => {
         ]);
 
         if (statsRes.data) {
+          console.log("DASHBOARD STATS PAYLOAD:", statsRes.data);
           setStats(statsRes.data);
         }
         if (logsRes.data) {
@@ -133,11 +134,11 @@ const AdminDashboard = () => {
 
       {/* Main Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6">
-        <StatCard icon={Users} label={t('stat_clients')} value={stats?.users?.clients || 0} loading={loading} color="from-sky-500 to-blue-600" />
-        <StatCard icon={Briefcase} label={t('stat_team')} value={stats?.users?.team || 0} loading={loading} color="from-violet-500 to-purple-600" />
-        <StatCard icon={Shield} label={t('stat_admins')} value={stats?.users?.admins || 0} loading={loading} color="from-rose-500 to-red-600" />
-        <StatCard icon={FolderKanban} label={t('stat_active_projects')} value={stats?.projects?.active || 0} loading={loading} color="from-emerald-500 to-teal-600" />
-        <StatCard icon={Monitor} label={t('stat_managed_channels')} value={stats?.channels?.total || 0} loading={loading} color="from-amber-500 to-orange-600" />
+        <StatCard icon={Users} label={t('stat_clients')} value={stats?.users?.clients ?? 0} loading={loading} color="from-sky-500 to-blue-600" />
+        <StatCard icon={Briefcase} label={t('stat_team')} value={stats?.users?.team ?? 0} loading={loading} color="from-violet-500 to-purple-600" />
+        <StatCard icon={Shield} label={t('stat_admins')} value={stats?.users?.admins ?? 0} loading={loading} color="from-rose-500 to-red-600" />
+        <StatCard icon={FolderKanban} label={t('stat_active_projects')} value={stats?.projects?.active ?? 0} loading={loading} color="from-emerald-500 to-teal-600" />
+        <StatCard icon={Monitor} label={t('stat_managed_channels')} value={stats?.channels?.total ?? 0} loading={loading} color="from-amber-500 to-orange-600" />
       </div>
 
       {/* Financial Section (Owner Only) */}
@@ -164,7 +165,7 @@ const AdminDashboard = () => {
              <div className="bg-white dark:bg-[#0a0a0c]/60 border border-emerald-500/20 rounded-3xl p-6 relative overflow-hidden group">
                 <div className="absolute -right-6 -top-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all pointer-events-none"></div>
                 <p className="text-[11px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-[0.2em] mb-2">{t('stat_gross_revenue')}</p>
-                <p className="text-4xl font-black text-slate-800 dark:text-white">${stats?.financials?.grossRevenue?.toLocaleString() || 0}</p>
+                <p className="text-4xl font-black text-slate-800 dark:text-white">${(stats?.financials?.grossRevenue ?? 0).toLocaleString()}</p>
              </div>
              
              <div className="bg-white dark:bg-[#0a0a0c]/60 border border-slate-200 dark:border-white/5 rounded-3xl p-6 relative overflow-hidden group">
@@ -175,7 +176,7 @@ const AdminDashboard = () => {
                 </div>
                 <div className="flex flex-col gap-1">
                    <p className="text-3xl font-black text-slate-800 dark:text-white">
-                     ${((stats?.financials?.monthlySalaries || 0) + (stats?.financials?.bonuses || 0) + (stats?.financials?.expenses || 0)).toLocaleString()}
+                     ${((stats?.financials?.monthlySalaries ?? 0) + (stats?.financials?.bonuses ?? 0) + (stats?.financials?.expenses ?? 0)).toLocaleString()}
                    </p>
                 </div>
              </div>
@@ -186,7 +187,7 @@ const AdminDashboard = () => {
                    <p className="text-[11px] font-black text-white/80 uppercase tracking-[0.2em]">{t('stat_net_profit')}</p>
                    <div className="text-xs font-bold text-white/50">=</div>
                 </div>
-                <p className="text-5xl font-black">${stats?.financials?.netProfit?.toLocaleString() || 0}</p>
+                <p className="text-5xl font-black">${(stats?.financials?.netProfit ?? 0).toLocaleString()}</p>
              </div>
           </div>
         </div>
