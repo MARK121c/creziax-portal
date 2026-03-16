@@ -75,46 +75,6 @@ const DashboardLayout = () => {
       {/* Main Content Wrapper */}
       <main className={`min-h-screen flex flex-col transition-all duration-300 ${isRTL ? 'lg:mr-64' : 'lg:ml-64'}`}>
         
-        {/* Broadcast Banner */}
-        {(activeBroadcast || isEditingBroadcast) && (
-          <div className="bg-gradient-to-r from-brand-600 via-brand-500 to-indigo-600 dark:from-brand-900/80 dark:via-brand-800/80 dark:to-indigo-900/80 text-white px-4 py-2.5 flex items-center justify-center gap-3 relative shadow-md z-40">
-            <Megaphone size={16} className="animate-pulse flex-shrink-0 opacity-80" />
-            
-            {isEditingBroadcast ? (
-              <div className="flex items-center gap-2 w-full max-w-lg">
-                <input 
-                  type="text" 
-                  value={broadcastInput}
-                  onChange={(e) => setBroadcastInput(e.target.value)}
-                  placeholder="Enter broadcast message (leave empty to remove)..."
-                  className="flex-1 bg-white/20 dark:bg-black/20 text-white placeholder-white/50 px-3 py-1 rounded outline-none text-sm font-medium focus:ring-2 focus:ring-white/50"
-                  autoFocus
-                />
-                <button onClick={handleSaveBroadcast} className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded text-xs font-bold transition-colors">
-                  Save
-                </button>
-                <button onClick={() => setIsEditingBroadcast(false)} className="p-1 hover:bg-white/20 rounded transition-colors">
-                  <X size={16} />
-                </button>
-              </div>
-            ) : (
-              <div className="text-sm font-bold tracking-wide">
-                {activeBroadcast?.message}
-              </div>
-            )}
-            
-            {(user?.role === 'ADMIN' || user?.role === 'OWNER') && !isEditingBroadcast && (
-              <button 
-                onClick={() => { setBroadcastInput(activeBroadcast?.message || ''); setIsEditingBroadcast(true); }}
-                className="absolute right-4 p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-                title="Edit Banner"
-              >
-                <Edit2 size={14} opacity={0.8} />
-              </button>
-            )}
-          </div>
-        )}
-
         {/* Global Transparent Header */}
         <header className="sticky top-0 z-30 w-full flex items-center justify-between lg:justify-end h-20 px-6 md:px-10 gap-4">
           {/* Mobile Menu Button */}

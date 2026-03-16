@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react';
 import { 
   Users, FolderKanban, Briefcase, Monitor, Receipt, Shield, 
-  TrendingUp, Activity, Plus, Rocket, Wallet, Download 
+  TrendingUp, Activity, Plus, Rocket, Wallet, Download, ArrowUpRight, CheckSquare 
 } from 'lucide-react';
 import { getDashboardStatsAPI, getRecentActivityAPI } from '../../store/api';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import useAuthStore from '../../store/authStore';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
 
 const StatCard = ({ icon: Icon, label, value, color, loading, subtitle }) => (
-  <div className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-6 shadow-xl shadow-slate-200/40 dark:shadow-none transition-all duration-500">
+  <div className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-6 shadow-xl shadow-slate-200/40 dark:shadow-none transition-all duration-500 flex flex-col justify-between">
     <div className="flex items-start justify-between mb-4">
-      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shadow-${color}-500/20 bg-gradient-to-tr ${color}`}>
-        <Icon size={22} className="text-white" />
+      <div className={`w-12 h-12 flex-shrink-0 rounded-2xl flex items-center justify-center shadow-lg shadow-${color}-500/20 bg-gradient-to-tr ${color}`}>
+        <Icon size={22} className="text-white flex-shrink-0" />
       </div>
     </div>
     <div>
@@ -50,10 +51,10 @@ const AdminDashboard = () => {
   const [activityLogs, setActivityLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Check user permissions
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const isOwner = currentUser.role === 'OWNER';
-  const hasFinancialAccess = isOwner || (currentUser.permissions && currentUser.permissions.includes('FINANCIAL_ACCESS'));
+  // Check user permissions natively from Zustand store
+  const { user } = useAuthStore();
+  const isOwner = user?.role === 'OWNER';
+  const hasFinancialAccess = isOwner || (user?.permissions && user?.permissions.includes('FINANCIAL_ACCESS'));
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -103,6 +104,12 @@ const AdminDashboard = () => {
     { name: 'Thu', tasks: 22 }, { name: 'Fri', tasks: 30 }, { name: 'Sat', tasks: 10 }, { name: 'Sun', tasks: 8 }
   ];
 
+  const quickActions = [
+    { label: t('add_client'), icon: Plus, path: '/admin/clients', color: 'from-sky-500 to-blue-600' },
+    { label: t('new_project'), icon: Rocket, path: '/admin/projects', color: 'from-violet-500 to-purple-600' },
+    { label: t('create_invoice'), icon: Wallet, path: '/admin/invoices', color: 'from-emerald-500 to-teal-600' },
+  ];
+
   return (
     <div className="space-y-8 md:space-y-12 pb-12">
       {/* Header */}
@@ -135,23 +142,52 @@ const AdminDashboard = () => {
 
       {/* Financial Section (Owner Only) */}
       {hasFinancialAccess && (
-        <div className="bg-slate-50 dark:bg-[#0a0a0c]/20 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-6 md:p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <Wallet className="text-brand-500" size={24} />
-            <h2 className="text-2xl font-black text-slate-800 dark:text-white">{t('financial_overview')}</h2>
+        <div className="bg-slate-50 dark:bg-[#0a0a0c]/20 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-6 md:p-8 relative overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 flex-shrink-0 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                <Wallet size={24} className="flex-shrink-0" />
+              </div>
+              <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">{t('financial_overview')}</h2>
+            </div>
+            <div className="flex gap-3">
+               <Link to="/admin/expenses" className="px-4 py-2 flex-1 md:flex-none text-center bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-200 dark:hover:border-rose-500/20 transition-all text-xs uppercase tracking-wider">
+                  + {t('add_manual_expense')}
+               </Link>
+               <Link to="/admin/team" className="px-4 py-2 flex-1 md:flex-none text-center bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-600 dark:hover:text-brand-400 hover:border-brand-200 dark:hover:border-brand-500/20 transition-all text-xs uppercase tracking-wider">
+                  + {t('add_team_bonus')}
+               </Link>
+            </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FinanceCard icon={TrendingUp} label={t('stat_gross_revenue')} amount={stats?.financials?.grossRevenue || 0} color="from-emerald-400 to-emerald-600" />
-            <FinanceCard icon={Receipt} label={t('stat_net_profit')} amount={stats?.financials?.netProfit || 0} color="from-brand-500 to-brand-700" />
-          </div>
-          {/* Action buttons for manual expenses could go here */}
-          <div className="mt-6 flex flex-wrap gap-4">
-             <Link to="/admin/expenses" className="px-5 py-2.5 bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold rounded-xl hover:bg-rose-500/20 transition-colors text-sm">
-                + {t('add_manual_expense')}
-             </Link>
-             <Link to="/admin/team" className="px-5 py-2.5 bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold rounded-xl hover:bg-brand-500/20 transition-colors text-sm">
-                + {t('add_team_bonus')}
-             </Link>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+             <div className="bg-white dark:bg-[#0a0a0c]/60 border border-emerald-500/20 rounded-3xl p-6 relative overflow-hidden group">
+                <div className="absolute -right-6 -top-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all pointer-events-none"></div>
+                <p className="text-[11px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-[0.2em] mb-2">{t('stat_gross_revenue')}</p>
+                <p className="text-4xl font-black text-slate-800 dark:text-white">${stats?.financials?.grossRevenue?.toLocaleString() || 0}</p>
+             </div>
+             
+             <div className="bg-white dark:bg-[#0a0a0c]/60 border border-slate-200 dark:border-white/5 rounded-3xl p-6 relative overflow-hidden group">
+                <div className="absolute -right-6 -top-6 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl group-hover:bg-rose-500/10 transition-all pointer-events-none"></div>
+                <div className="flex items-center justify-between mb-2">
+                   <p className="text-[11px] font-black text-rose-500 uppercase tracking-[0.2em]">{t('add_manual_expense')} + {t('stat_team')}</p>
+                   <div className="text-xs font-bold text-slate-400">-</div>
+                </div>
+                <div className="flex flex-col gap-1">
+                   <p className="text-3xl font-black text-slate-800 dark:text-white">
+                     ${((stats?.financials?.monthlySalaries || 0) + (stats?.financials?.bonuses || 0) + (stats?.financials?.expenses || 0)).toLocaleString()}
+                   </p>
+                </div>
+             </div>
+
+             <div className="bg-brand-500 text-white rounded-3xl p-6 relative overflow-hidden group shadow-lg shadow-brand-500/20">
+                <div className="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all pointer-events-none"></div>
+                <div className="flex items-center justify-between mb-2">
+                   <p className="text-[11px] font-black text-white/80 uppercase tracking-[0.2em]">{t('stat_net_profit')}</p>
+                   <div className="text-xs font-bold text-white/50">=</div>
+                </div>
+                <p className="text-5xl font-black">${stats?.financials?.netProfit?.toLocaleString() || 0}</p>
+             </div>
           </div>
         </div>
       )}
@@ -211,6 +247,24 @@ const AdminDashboard = () => {
                 </div>
               ))
             )}
+          </div>
+        </div>
+
+        {/* Quick Actions Row */}
+        <div className="col-span-1 lg:col-span-3 min-h-[300px] bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-6 md:p-8 flex flex-col">
+          <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider mb-6 md:mb-8">{t('quick_actions')}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
+            {quickActions.map((action, idx) => (
+              <Link key={idx} to={action.path} className="flex items-center justify-between p-6 bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5 rounded-[2rem] hover:border-brand-500/30 group transition-all duration-300 shadow-sm shadow-slate-200/20 dark:shadow-none">
+                <div className="flex items-center gap-4">
+                  <div className={`w-14 h-14 flex-shrink-0 rounded-2xl bg-gradient-to-tr ${action.color} flex items-center justify-center text-white shadow-lg shadow-brand-500/10`}>
+                    <action.icon size={24} className="flex-shrink-0" />
+                  </div>
+                  <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-brand-500 transition-colors uppercase tracking-wider text-sm">{action.label}</span>
+                </div>
+                <ArrowUpRight size={20} className="text-slate-300 group-hover:text-brand-500 transition-all group-hover:translate-x-1 group-hover:-translate-y-1" />
+              </Link>
+            ))}
           </div>
         </div>
       </div>
