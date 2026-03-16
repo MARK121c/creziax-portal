@@ -324,7 +324,7 @@ const ClientsPage = () => {
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 dark:bg-[#0a0a0c]/80 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowModal(false)}></div>
           
-          <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-[#0d0d12] border border-slate-200 dark:border-white/5 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 max-h-[90vh] overflow-y-auto">
             <div className="px-6 md:px-10 py-6 md:py-8 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/30 dark:bg-white/[0.01] sticky top-0 z-10">
               <div>
                 <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white tracking-tight">
@@ -380,7 +380,7 @@ const ClientsPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6">
                 <div className="space-y-2.5">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('label_first_name')}</label>
-                  <input value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
+                  <input value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
                 </div>
                 <div className="space-y-2.5">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('label_last_name')}</label>
@@ -444,9 +444,9 @@ const ClientsPage = () => {
                   <select 
                     value={form.tier} 
                     onChange={e => setForm({...form, tier: e.target.value})} 
-                    className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold appearance-none cursor-pointer"
+                    className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold appearance-none cursor-pointer"
                   >
-                    {tiers.map(t => <option key={t.value} value={t.value} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-bold">{t.label}</option>)}
+                    {tiers.map(t => <option key={t.value} value={t.value} className="bg-white dark:bg-[#0f172a] text-slate-800 dark:text-white font-bold">{t.label}</option>)}
                   </select>
                 </div>
               </div>

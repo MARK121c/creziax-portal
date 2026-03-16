@@ -269,8 +269,8 @@ const ExpensesPage = () => {
       {/* Add Expense Modal */}
       {showExpenseModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowExpenseModal(false)} />
-          <div className="relative z-10 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-lg shadow-2xl p-8">
+          <div className="absolute inset-0 bg-slate-900/60 dark:bg-[#0a0a0c]/80 backdrop-blur-md" onClick={() => setShowExpenseModal(false)} />
+          <div className="relative z-10 bg-white dark:bg-[#0d0d12] border border-slate-200 dark:border-white/5 rounded-[2.5rem] w-full max-w-lg shadow-2xl p-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-black text-slate-800 dark:text-white">{t('add_manual_expense')}</h2>
               <button onClick={() => setShowExpenseModal(false)} className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-all">
@@ -280,20 +280,20 @@ const ExpensesPage = () => {
             <form onSubmit={handleCreateExpense} className="space-y-5">
               <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('expense_category')}</label>
-                <select value={expenseForm.category} onChange={e => setExpenseForm({...expenseForm, category: e.target.value})} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold">
-                  {EXPENSE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                <select value={expenseForm.category} onChange={e => setExpenseForm({...expenseForm, category: e.target.value})} className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold transition-all">
+                  {EXPENSE_CATEGORIES.map(c => <option key={c} value={c} className="bg-white dark:bg-[#0f172a]">{c}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('label_amount')}</label>
                 <div className="relative">
                   <DollarSign size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-500" />
-                  <input type="number" step="0.01" min="0" value={expenseForm.amount} onChange={e => setExpenseForm({...expenseForm, amount: e.target.value})} required className="w-full pl-11 pr-5 py-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-black" placeholder="0.00" />
+                  <input type="number" step="0.01" min="0" value={expenseForm.amount} onChange={e => setExpenseForm({...expenseForm, amount: e.target.value})} required className="w-full pl-11 pr-5 py-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-black transition-all" placeholder="0.00" />
                 </div>
               </div>
               <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('expense_description')}</label>
-                <textarea value={expenseForm.description} onChange={e => setExpenseForm({...expenseForm, description: e.target.value})} rows={2} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold resize-none" />
+                <textarea value={expenseForm.description} onChange={e => setExpenseForm({...expenseForm, description: e.target.value})} rows={2} className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold resize-none transition-all" />
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowExpenseModal(false)} className="flex-1 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all">{t('cancel')}</button>
@@ -309,8 +309,8 @@ const ExpensesPage = () => {
       {/* Add Bonus Modal */}
       {showBonusModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowBonusModal(false)} />
-          <div className="relative z-10 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-lg shadow-2xl p-8">
+          <div className="absolute inset-0 bg-slate-900/60 dark:bg-[#0a0a0c]/80 backdrop-blur-md" onClick={() => setShowBonusModal(false)} />
+          <div className="relative z-10 bg-white dark:bg-[#0d0d12] border border-slate-200 dark:border-white/5 rounded-[2.5rem] w-full max-w-lg shadow-2xl p-8">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-black text-slate-800 dark:text-white">{t('add_team_bonus')}</h2>
               <button onClick={() => setShowBonusModal(false)} className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-all">
@@ -320,21 +320,21 @@ const ExpensesPage = () => {
             <form onSubmit={handleCreateBonus} className="space-y-5">
               <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('select_team_member')}</label>
-                <select value={bonusForm.userId} onChange={e => setBonusForm({...bonusForm, userId: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold">
-                  <option value="">اختر عضو...</option>
-                  {teamMembers.map(m => <option key={m.id} value={m.id}>{m.firstName} {m.lastName}</option>)}
+                <select value={bonusForm.userId} onChange={e => setBonusForm({...bonusForm, userId: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold transition-all">
+                  <option value="" className="bg-white dark:bg-[#0f172a]">اختر عضو...</option>
+                  {teamMembers.map(m => <option key={m.id} value={m.id} className="bg-white dark:bg-[#0f172a]">{m.firstName} {m.lastName}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('label_amount')}</label>
                 <div className="relative">
                   <DollarSign size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
-                  <input type="number" step="0.01" min="0" value={bonusForm.amount} onChange={e => setBonusForm({...bonusForm, amount: e.target.value})} required className="w-full pl-11 pr-5 py-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 font-black" placeholder="0.00" />
+                  <input type="number" step="0.01" min="0" value={bonusForm.amount} onChange={e => setBonusForm({...bonusForm, amount: e.target.value})} required className="w-full pl-11 pr-5 py-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/20 font-black transition-all" placeholder="0.00" />
                 </div>
               </div>
               <div>
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('bonus_reason')}</label>
-                <textarea value={bonusForm.reason} onChange={e => setBonusForm({...bonusForm, reason: e.target.value})} rows={2} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 font-bold resize-none" />
+                <textarea value={bonusForm.reason} onChange={e => setBonusForm({...bonusForm, reason: e.target.value})} rows={2} className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500/20 font-bold resize-none transition-all" />
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowBonusModal(false)} className="flex-1 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 font-bold rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all">{t('cancel')}</button>

@@ -5,6 +5,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
+.dark {
+  color-scheme: dark;
+}
+
+.dark select, 
+.dark option {
+  background-color: #0f172a; /* slate-950/900 range */
+  color: #f8fafc; /* slate-50 */
+}
+
 @theme {
   --color-brand-50: #f5f3ff;
   --color-brand-100: #ede9fe;

@@ -240,7 +240,7 @@ const AdminDashboard = () => {
               
               {/* Dropdown Menu */}
               {showActionMenu && (
-                <div className="absolute top-full mt-2 left-0 w-52 bg-white dark:bg-[#14141a] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute top-full mt-2 left-0 w-52 bg-white dark:bg-[#111118] border border-slate-200 dark:border-white/5 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                   <Link
                     to="/admin/expenses"
                     onClick={() => setShowActionMenu(false)}
@@ -253,7 +253,7 @@ const AdminDashboard = () => {
                   </Link>
                   <div className="h-px bg-slate-100 dark:bg-white/5 mx-3" />
                   <Link
-                    to="/admin/expenses"
+                    to="/admin/expenses?tab=bonuses"
                     onClick={() => setShowActionMenu(false)}
                     className="flex items-center gap-3 px-4 py-3.5 hover:bg-amber-50 dark:hover:bg-amber-500/10 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
                   >

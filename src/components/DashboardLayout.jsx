@@ -201,7 +201,7 @@ const DashboardLayout = () => {
             className="absolute inset-0 bg-slate-900/60 dark:bg-[#0a0a0c]/80 backdrop-blur-md"
             onClick={() => setIsEditingBroadcast(false)}
           />
-          <div className="relative z-10 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2rem] w-full max-w-lg shadow-2xl p-8">
+          <div className="relative z-10 bg-white dark:bg-[#0d0d12] border border-slate-200 dark:border-white/5 rounded-[2rem] w-full max-w-lg shadow-2xl p-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
                 <Megaphone size={20} className="text-amber-500" />
