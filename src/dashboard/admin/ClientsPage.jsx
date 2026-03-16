@@ -19,7 +19,7 @@ const ClientsPage = () => {
   
   const [form, setForm] = useState({ 
     firstName: '', lastName: '', email: '', password: '', company: '', phone: '',
-    tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: ''
+    tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', managedChannels: ''
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
@@ -70,7 +70,8 @@ const ClientsPage = () => {
           tier: form.tier,
           isVip: form.isVip,
           logoUrl: form.logoUrl,
-          notionLink: form.notionLink
+          notionLink: form.notionLink,
+          managedChannels: form.managedChannels || 0
         });
         toast.success(t('loading'), { id: loadingToast });
         addNotification(`تم تحديث بيانات العميل: ${form.firstName} ${form.lastName}`, 'success');
@@ -106,7 +107,8 @@ const ClientsPage = () => {
       budget: '',
       isVip: client.clientInfo?.isVip || false,
       logoUrl: client.clientInfo?.logoUrl || '',
-      notionLink: client.clientInfo?.notionLink || ''
+      notionLink: client.clientInfo?.notionLink || '',
+      managedChannels: client.clientInfo?.managedChannels || ''
     });
     setEditId(client.clientInfo?.id);
     setIsEditing(true);
@@ -447,6 +449,17 @@ const ClientsPage = () => {
                     {tiers.map(t => <option key={t.value} value={t.value} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-bold">{t.label}</option>)}
                   </select>
                 </div>
+              </div>
+
+              <div className="space-y-2.5">
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">إجمالي القنوات المدارة</label>
+                  <input 
+                    type="number" 
+                    placeholder="e.g. 3"
+                    value={form.managedChannels} 
+                    onChange={e => setForm({...form, managedChannels: e.target.value})} 
+                    className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold border-dashed" 
+                  />
               </div>
 
               <div className="p-6 bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-3xl flex items-center justify-between">
