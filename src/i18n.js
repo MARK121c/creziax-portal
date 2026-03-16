@@ -207,7 +207,21 @@ const resources = {
       "payment_verified": "Payment Verified",
       "payment_rejected": "Payment Rejected",
       "transaction_verified": "Transaction Verified Successfully",
-      "pay": "Pay Now"
+      "pay": "Pay Now",
+      "stat_clients": "Clients",
+      "stat_team": "Team",
+      "stat_admins": "Admins",
+      "stat_active_projects": "Active Projects",
+      "stat_managed_channels": "Managed Channels",
+      "stat_gross_revenue": "Gross Revenue",
+      "stat_net_profit": "Net Profit",
+      "export_excel": "Export to Excel",
+      "financial_overview": "Financial Overview",
+      "add_manual_expense": "Add Expense",
+      "add_team_bonus": "Add Team Bonus",
+      "audit_log": "Audit Log",
+      "no_recent_activity": "No recent activity recorded.",
+      "performed_action": "performed an action"
     }
   },
   ar: {
@@ -414,7 +428,21 @@ const resources = {
       "payment_verified": "تم تأكيد الدفع",
       "payment_rejected": "تم رفض الدفع",
       "transaction_verified": "تم تأكيد المعاملة بنجاح",
-      "pay": "ادفع الآن"
+      "pay": "ادفع الآن",
+      "stat_clients": "العملاء الحاليين",
+      "stat_team": "القوى العاملة",
+      "stat_admins": "المسئولين",
+      "stat_active_projects": "المشاريع النشطة",
+      "stat_managed_channels": "القنوات المدارة",
+      "stat_gross_revenue": "إجمالي الإيرادات",
+      "stat_net_profit": "صافي الأرباح",
+      "export_excel": "تصدير التقارير Excel",
+      "financial_overview": "الملخص المالي",
+      "add_manual_expense": "إضافة نفقات تشغيلية",
+      "add_team_bonus": "إضافة مكافأة للفريق",
+      "audit_log": "سجل العمليات",
+      "no_recent_activity": "لا توجد عمليات مسجلة حديثاً.",
+      "performed_action": "قام بإجراء معاملة"
     }
   }
 };

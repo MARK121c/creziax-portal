@@ -85,4 +85,20 @@ export const getTicketAPI = (id) => api.get(`/tickets/${id}`);
 export const createTicketAPI = (data) => api.post('/tickets', data);
 export const updateTicketAPI = (id, data) => api.put(`/tickets/${id}`, data);
 
+// Dashboard & Financials
+export const getDashboardStatsAPI = () => api.get('/stats/dashboard');
+
+// Expenses
+export const getExpensesAPI = () => api.get('/expenses');
+export const createExpenseAPI = (data) => api.post('/expenses', data);
+export const deleteExpenseAPI = (id) => api.delete(`/expenses/${id}`);
+
+// Bonuses
+export const getBonusesAPI = () => api.get('/bonuses');
+export const createBonusAPI = (data) => api.post('/bonuses', data);
+export const deleteBonusAPI = (id) => api.delete(`/bonuses/${id}`);
+
+// Activity Log
+export const getRecentActivityAPI = (limit = 5) => api.get(`/activities?limit=${limit}`);
+
 export default api;
