@@ -39,14 +39,83 @@ const ClientsPage = () => {
   };
 
   const QuickAccessMenu = ({ client }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (menuRef.current && !menuRef.current.contains(event.target)) {
+          setIsOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     return (
-      <Link 
-        to={`/admin/clients/${client.clientInfo?.id || client.id}`}
-        className="p-2.5 rounded-xl border text-slate-400 hover:text-brand-500 bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-brand-500/20 transition-all duration-300"
-        title={t('full_audit_log')}
-      >
-        <FileText size={18} />
-      </Link>
+      <div className="relative" ref={menuRef}>
+        <button 
+          onClick={() => setIsOpen(!isOpen)}
+          className={`p-2.5 rounded-xl border transition-all duration-300 ${isOpen ? 'bg-brand-500 text-white border-brand-500' : 'text-slate-400 hover:text-brand-500 bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-brand-500/20'}`}
+          title={t('quick_actions')}
+        >
+          <FileText size={18} />
+        </button>
+
+        {isOpen && (
+          <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-[#0f0f12] shadow-2xl border border-slate-100 dark:border-white/5 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-2 space-y-1">
+              <Link 
+                to={`/admin/clients/${client.clientInfo?.id || client.id}`}
+                className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                  <UserPlus size={16} />
+                </div>
+                <span>{t('client_profile')}</span>
+              </Link>
+              
+              {client.clientInfo?.notionLink && (
+                <a 
+                  href={client.clientInfo.notionLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-black/10 dark:bg-white/10 flex items-center justify-center">
+                    <img src="https://www.notion.so/images/favicon.ico" className="w-4 h-4" alt="Notion" />
+                  </div>
+                  <span>Notion Board</span>
+                </a>
+              )}
+
+              <Link 
+                to={`/admin/contracts?clientId=${client.id}`}
+                className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                  <Briefcase size={16} />
+                </div>
+                <span>{t('contracts')}</span>
+              </Link>
+
+              <Link 
+                to={`/admin/payments?clientId=${client.id}`}
+                className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                <div className="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-500">
+                  <Receipt size={16} />
+                </div>
+                <span>{t('invoices')}</span>
+              </Link>
+            </div>
+          </div>
+        )}
+      </div>
     );
   };
 
