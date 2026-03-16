@@ -90,12 +90,17 @@ const ClientsPage = () => {
 
   useEffect(() => { fetchClients(); }, []);
 
+  const [countryCode, setCountryCode] = useState('+20');
+
   const handleCreateOrUpdate = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
     const loadingToast = toast.loading(isEditing ? t('syncing') : t('onboarding_client'));
     try {
+      // Merge country code with phone for storage
+      const fullPhone = form.phone.startsWith('+') ? form.phone : `${countryCode}${form.phone}`;
+      
       if (isEditing) {
         await updateClientAPI(editId, { 
           firstName: form.firstName,
@@ -103,7 +108,7 @@ const ClientsPage = () => {
           email: form.email,
           password: form.password,
           company: form.company, 
-          phone: form.phone, 
+          phone: fullPhone, 
           tier: form.tier,
           isVip: form.isVip,
           logoUrl: form.logoUrl,
@@ -115,11 +120,11 @@ const ClientsPage = () => {
           internalNotes: form.internalNotes
         });
         toast.success(t('saved_successfully'), { id: loadingToast });
-        addNotification(`تم تحديث بيانات العميل: ${form.firstName} ${form.lastName}`, 'success');
+        addNotification(`${t('saved_successfully')}: ${form.firstName} ${form.lastName}`, 'success');
       } else {
-        await createUserAPI({ ...form, role: 'CLIENT' });
+        await createUserAPI({ ...form, phone: fullPhone, role: 'CLIENT' });
         toast.success(`${form.firstName} ${t('client_added')}`, { id: loadingToast });
-        addNotification(`تم إضافة العميل الجديد: ${form.firstName} ${form.lastName}`, 'success');
+        addNotification(`${t('client_added')}: ${form.firstName} ${form.lastName}`, 'success');
       }
       setShowModal(false);
       setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '', tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', managedChannels: '', contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: '' });
@@ -203,9 +208,9 @@ const ClientsPage = () => {
     try {
       const { data } = await uploadImageAPI(formData);
       setForm({ ...form, logoUrl: data.url });
-      toast.success("تم رفع اللوجو بنجاح");
+      toast.success(t('saved_successfully'));
     } catch (err) {
-      toast.error("فشل رفع اللوجو");
+      toast.error(t('error_general'));
     } finally {
       setUploadingLogo(false);
     }
@@ -220,10 +225,10 @@ const ClientsPage = () => {
     try {
       const { data } = await uploadImageAPI(formData);
       await updateClientAPI(clientId, { logoUrl: data.url });
-      toast.success("تم تحديث اللوجو", { id: loadingToast });
+      toast.success(t('saved_successfully'), { id: loadingToast });
       fetchClients();
     } catch (err) {
-      toast.error("فشل التحديث", { id: loadingToast });
+      toast.error(t('error_general'), { id: loadingToast });
     }
   };
 
@@ -379,7 +384,7 @@ const ClientsPage = () => {
                               {c.clientInfo?.isVip && (
                                 <div className="flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20 animate-pulse">
                                   <Star size={10} className="fill-amber-500 text-amber-500" />
-                                  <span className="text-[9px] font-black text-amber-600 uppercase tracking-tighter">VIP Member</span>
+                                  <span className="text-[9px] font-black text-amber-600 uppercase tracking-tighter">{t('vip_member')}</span>
                                 </div>
                               )}
                             </div>
@@ -491,7 +496,7 @@ const ClientsPage = () => {
                   <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400">
                     <Building2 size={16} />
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">البيانات الأساسية</h3>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">{t('basic_info')}</h3>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -514,8 +519,8 @@ const ClientsPage = () => {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('password')} (اتركه فارغاً للحفاظ على القديم)</label>
-                      <input type="password" name="password" value={form.password} onChange={handleChange} placeholder="تغيير كلمة المرور..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('password')}</label>
+                      <input type="password" name="password" value={form.password} onChange={handleChange} placeholder={t('password_placeholder')} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
                     </div>
                   )}
                   <div className="space-y-2">
@@ -524,7 +529,32 @@ const ClientsPage = () => {
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('phone_number')}</label>
-                    <input name="phone" value={form.phone} onChange={handleChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
+                    <div className="flex gap-2">
+                      <select 
+                        value={countryCode} 
+                        onChange={(e) => setCountryCode(e.target.value)}
+                        className="w-24 px-3 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold"
+                      >
+                        <option value="+20">🇪🇬 +20</option>
+                        <option value="+966">🇸🇦 +966</option>
+                        <option value="+971">🇦🇪 +971</option>
+                        <option value="+974">🇶🇦 +974</option>
+                        <option value="+965">🇰🇼 +965</option>
+                        <option value="+968">🇴🇲 +968</option>
+                        <option value="+973">🇧🇭 +973</option>
+                        <option value="+962">🇯🇴 +962</option>
+                        <option value="+961">🇱🇧 +961</option>
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+44">🇬🇧 +44</option>
+                      </select>
+                      <input 
+                        name="phone" 
+                        value={form.phone} 
+                        onChange={handleChange} 
+                        placeholder="012xxxxxxx"
+                        className="flex-1 px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" 
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -535,7 +565,7 @@ const ClientsPage = () => {
                   <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400">
                     <Briefcase size={16} />
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">تفاصيل الباقة والمستوى</h3>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">{t('professional_info')}</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -550,24 +580,24 @@ const ClientsPage = () => {
                     <input type="number" name="managedChannels" value={form.managedChannels} onChange={handleChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">رابط Notion (مشروع العميل)</label>
-                    <input name="notionLink" value={form.notionLink} onChange={handleChange} placeholder="https://notion.so/..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('notion_link_label')}</label>
+                    <input name="notionLink" value={form.notionLink} onChange={handleChange} placeholder={t('notion_link_placeholder')} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
                   </div>
                   
                   {/* VIP Toggle & Logo Upload */}
                   <div className="grid grid-cols-2 gap-4 items-end">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">حالة الـ VIP</label>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('vip_status')}</label>
                       <button type="button" onClick={() => setForm({...form, isVip: !form.isVip})} className={`w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl border transition-all font-black text-sm ${form.isVip ? 'bg-amber-500 border-amber-600 text-white shadow-lg shadow-amber-500/20' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400'}`}>
                         <Star size={16} className={form.isVip ? 'fill-white' : ''} />
-                        {form.isVip ? 'VIP ACTIVATED' : 'SET AS VIP'}
+                        {form.isVip ? t('vip_activated') : t('set_as_vip')}
                       </button>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">لوجو الشركة</label>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('company_logo')}</label>
                       <label className={`w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl border cursor-pointer transition-all font-black text-sm ${uploadingLogo ? 'bg-slate-100 animate-pulse' : 'bg-brand-500/10 border-brand-500/20 text-brand-600 hover:bg-brand-500 hover:text-white group'}`}>
                         <UploadCloud size={16} />
-                        {uploadingLogo ? 'UPLOADING...' : (form.logoUrl ? 'CHANGE LOGO' : 'UPLOAD LOGO')}
+                        {uploadingLogo ? t('uploading') : (form.logoUrl ? t('change_logo') : t('upload_logo'))}
                         <input type="file" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
                       </label>
                     </div>
@@ -581,7 +611,7 @@ const ClientsPage = () => {
                   <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400">
                     <Calendar size={16} />
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">التعاقد والعمليات</h3>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">{t('contract_ops')}</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -619,7 +649,7 @@ const ClientsPage = () => {
                   )}
                   <div className="space-y-2 md:col-span-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('internal_notes')}</label>
-                    <textarea name="internalNotes" value={form.internalNotes} onChange={handleChange} rows="3" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold resize-none" placeholder="سجل ملاحظاتك الخاصة حول العميل هنا..." />
+                    <textarea name="internalNotes" value={form.internalNotes} onChange={handleChange} rows="3" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold resize-none" placeholder={t('internal_notes_placeholder')} />
                   </div>
                 </div>
               </div>

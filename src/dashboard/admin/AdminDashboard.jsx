@@ -191,7 +191,7 @@ const AdminDashboard = () => {
               type="month"
               value={exportMonth}
               onChange={(e) => setExportMonth(e.target.value)}
-              title="اختر شهر التقرير"
+              title={t('select_report_month')}
               className="pl-9 pr-4 py-2.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all w-full sm:w-44 cursor-pointer"
             />
           </div>
@@ -237,7 +237,7 @@ const AdminDashboard = () => {
                 className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-2xl shadow-lg shadow-brand-600/20 transition-all hover:-translate-y-0.5 active:scale-95 text-sm"
               >
                 <Plus size={16} />
-                إضافة نفقة / مكافأة
+                {t('add_expense_bonus')}
                 <ChevronDown size={14} className={`transition-transform duration-200 ${showActionMenu ? 'rotate-180' : ''}`} />
               </button>
               
@@ -436,7 +436,7 @@ const AdminDashboard = () => {
                     
                     <div className="flex items-center justify-between mt-auto">
                       <div className="space-y-0.5">
-                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">ينتهي في</p>
+                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('ends_on')}</p>
                          <p className={`text-xs font-black ${isExpired ? 'text-rose-500' : isCritical ? 'text-amber-600' : 'text-slate-600 dark:text-slate-400'}`}>
                            {new Date(client.clientInfo.contractEndDate).toLocaleDateString()}
                          </p>
@@ -446,7 +446,7 @@ const AdminDashboard = () => {
                         isCritical ? 'bg-amber-500 text-white' :
                         'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400'
                       }`}>
-                        {isExpired ? 'مـنتهي' : `${client.daysLeft} يوم متبقي`}
+                        {isExpired ? t('expired_badge') : `${client.daysLeft} ${t('days_remaining')}`}
                       </div>
                     </div>
 
@@ -458,9 +458,7 @@ const AdminDashboard = () => {
                 );
               })}
             {clients.filter(c => c.clientInfo?.contractEndDate).length === 0 && (
-              <div className="col-span-full py-10 text-center bg-slate-50 dark:bg-white/[0.02] border border-dashed border-slate-200 dark:border-white/10 rounded-[2rem]">
-                <p className="text-slate-400 font-bold text-sm">لا يوجد عقود نشطة حالياً</p>
-              </div>
+                <p className="text-slate-400 font-bold text-sm">{t('no_active_contracts')}</p>
             )}
           </div>
         </div>

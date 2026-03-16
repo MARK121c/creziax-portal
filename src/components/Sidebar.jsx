@@ -151,7 +151,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             </p>
             {user?.role === 'OWNER' ? (
               <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mt-0.5">
-                {isRTL ? 'المالك' : 'OWNER'}
+                {t('owner')}
               </p>
             ) : (
               <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-wider mt-0.5">
