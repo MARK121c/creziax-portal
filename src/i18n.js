@@ -221,7 +221,27 @@ const resources = {
       "add_team_bonus": "Add Team Bonus",
       "audit_log": "Audit Log",
       "no_recent_activity": "No recent activity recorded.",
-      "performed_action": "performed an action"
+      "performed_action": "performed an action",
+      "saved_successfully": "Saved successfully!",
+      "error_general": "An error occurred. Please try again.",
+      "save_changes": "Save Changes",
+      "edit_client": "Edit Client",
+      "notifications": "Notifications",
+      "mark_all_read": "Mark all read",
+      "no_notifications": "No notifications yet",
+      "tier": "Tier",
+      "budget": "Budget",
+      "my_profile": "My Profile",
+      "banner_placeholder": "Type a system-wide broadcast message...",
+      "save_broadcast": "Save Broadcast",
+      "clear_broadcast": "Clear Broadcast",
+      "broadcast_saved": "Broadcast message saved!",
+      "expense_category": "Category",
+      "expense_description": "Description (optional)",
+      "bonus_reason": "Reason (optional)",
+      "select_team_member": "Select Team Member",
+      "owner": "Owner",
+      "admin": "Admin"
     }
   },
   ar: {
@@ -442,7 +462,27 @@ const resources = {
       "add_team_bonus": "إضافة مكافأة للفريق",
       "audit_log": "سجل العمليات",
       "no_recent_activity": "لا توجد عمليات مسجلة حديثاً.",
-      "performed_action": "قام بإجراء معاملة"
+      "performed_action": "قام بإجراء معاملة",
+      "saved_successfully": "تم الحفظ بنجاح!",
+      "error_general": "حدث خطأ. حاول مرة أخرى.",
+      "save_changes": "حفظ التغييرات",
+      "edit_client": "تعديل بيانات العميل",
+      "notifications": "الإشعارات",
+      "mark_all_read": "تعيين الكل كمقروء",
+      "no_notifications": "لا توجد إشعارات بعد",
+      "tier": "الباقة",
+      "budget": "الميزانية",
+      "my_profile": "ملفي الشخصي",
+      "banner_placeholder": "اكتب رسالة إعلانية على مستوى النظام...",
+      "save_broadcast": "حفظ الإعلان",
+      "clear_broadcast": "مسح الإعلان",
+      "broadcast_saved": "تم حفظ الرسالة الإعلانية!",
+      "expense_category": "التصنيف",
+      "expense_description": "الوصف (اختياري)",
+      "bonus_reason": "سبب المكافأة (اختياري)",
+      "select_team_member": "اختر عضو الفريق",
+      "owner": "المالك",
+      "admin": "المسئول"
     }
   }
 };

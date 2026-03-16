@@ -26,9 +26,10 @@ const useAuthStore = create((set) => ({
       const { data } = await getProfileAPI();
       set({ user: data });
     } catch (err) {
+      // 401 is handled globally by the axios interceptor in api.js
+      // Only clear user state on 401 (not on network errors etc)
       if (err.response?.status === 401) {
         set({ user: null, token: null });
-        localStorage.removeItem('token');
       }
     }
   },

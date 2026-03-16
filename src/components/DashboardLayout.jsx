@@ -181,6 +181,54 @@ const DashboardLayout = () => {
           <Outlet />
         </div>
       </main>
+
+      {/* Broadcast Edit Modal */}
+      {isEditingBroadcast && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-slate-900/60 dark:bg-[#0a0a0c]/80 backdrop-blur-md"
+            onClick={() => setIsEditingBroadcast(false)}
+          />
+          <div className="relative z-10 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2rem] w-full max-w-lg shadow-2xl p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <Megaphone size={20} className="text-amber-500" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-800 dark:text-white">رسالة النظام الإعلانية</h3>
+                <p className="text-xs text-slate-400">ستظهر للجميع عند دخولهم للنظام</p>
+              </div>
+              <button 
+                onClick={() => setIsEditingBroadcast(false)} 
+                className="mr-auto p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-all"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <textarea
+              value={broadcastInput}
+              onChange={(e) => setBroadcastInput(e.target.value)}
+              placeholder={t('banner_placeholder')}
+              rows={4}
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-medium resize-none mb-6"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setBroadcastInput(''); }}
+                className="flex-1 py-3 px-4 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 font-bold rounded-2xl transition-all text-sm"
+              >
+                {t('clear_broadcast')}
+              </button>
+              <button
+                onClick={handleSaveBroadcast}
+                className="flex-1 py-3 px-4 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-2xl shadow-lg shadow-brand-600/20 transition-all text-sm"
+              >
+                {t('save_broadcast')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

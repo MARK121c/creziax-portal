@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Use environment variable or fallback to relative path (best for Coolify/Docker)
 const API_URL = import.meta.env.VITE_API_URL || '/api';
-// Version: 1.2.1 (Verified sync)
+// Version: 1.3.2 (Session-safe 401 handling)
 
 const api = axios.create({
   baseURL: API_URL,
@@ -16,6 +16,20 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Global response interceptor: ONLY force logout if the auth profile endpoint returns 401
+// DO NOT logout on 401 from expense, bonus, or other non-auth endpoints
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const isAuthEndpoint = error.config?.url?.includes('/auth/profile');
+    if (error.response?.status === 401 && isAuthEndpoint) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Auth
 export const loginAPI = (data) => api.post('/auth/login', data);
