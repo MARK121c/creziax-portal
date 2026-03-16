@@ -5,7 +5,7 @@ import {
   Building2, Mail, Phone, Calendar, Star, ExternalLink, 
   ChevronLeft, FileText, Receipt, Briefcase, Activity,
   Download, Plus, Search, Filter, ArrowUpRight, Wallet, Shield,
-  FolderKanban, FileBadge, Building
+  FolderKanban, FileBadge, Building, Send, MessageCircle, SendHorizontal, MoreVertical, Loader2, StarHalf
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
@@ -19,6 +19,8 @@ const ClientProfilePage = () => {
   const [projects, setProjects] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showContactDropdown, setShowContactDropdown] = useState(false);
+  const contactDropdownRef = useRef(null);
 
   useEffect(() => {
     const fetchClientData = async () => {
@@ -44,6 +46,16 @@ const ClientProfilePage = () => {
     };
     fetchClientData();
   }, [id, t]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (contactDropdownRef.current && !contactDropdownRef.current.contains(event.target)) {
+        setShowContactDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   if (loading) {
     return (
@@ -72,13 +84,38 @@ const ClientProfilePage = () => {
     { label: t('total_paid'), value: `$${(client.totalPaid || 0).toLocaleString()}`, icon: Wallet, color: 'bg-amber-500' },
   ];
 
-  const handleContact = () => {
-    const phone = client.clientInfo?.phone;
-    if (phone) {
-      const cleanPhone = phone.replace(/\D/g, '');
-      window.open(`https://wa.me/${cleanPhone}`, '_blank');
-    } else {
-      window.open(`mailto:${client.email}`, '_blank');
+  const handleContactAction = (type) => {
+    setShowContactDropdown(false);
+    switch (type) {
+      case 'INTERNAL':
+        navigate(`/admin/messages?clientId=${client.id}`);
+        break;
+      case 'WHATSAPP':
+        if (client.clientInfo?.phone) {
+          const cleanPhone = client.clientInfo.phone.replace(/\D/g, '');
+          window.open(`https://wa.me/${cleanPhone}`, '_blank');
+        } else {
+          toast.error(t('missing_whatsapp'));
+        }
+        break;
+      case 'EMAIL':
+        if (client.email) {
+          window.open(`mailto:${client.email}`, '_blank');
+        } else {
+          toast.error(t('missing_email'));
+        }
+        break;
+      case 'TELEGRAM':
+        if (client.clientInfo?.telegram) {
+          const url = client.clientInfo.telegram.startsWith('http') 
+            ? client.clientInfo.telegram 
+            : `https://t.me/${client.clientInfo.telegram.replace('@', '')}`;
+          window.open(url, '_blank');
+        } else {
+          toast.error(t('missing_telegram'));
+        }
+        break;
+      default: break;
     }
   };
 
@@ -113,30 +150,62 @@ const ClientProfilePage = () => {
                 )}
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-widest text-[10px]">
-                {client.clientInfo?.company || 'Creziax Elite Partner'} • {client.clientInfo?.tier || 'REGULAR'}
+                {client.clientInfo?.company || t('creziax_partner')} • {client.clientInfo?.tier || 'REGULAR'}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 relative" ref={contactDropdownRef}>
            {client.clientInfo?.notionLink && (
              <a 
               href={client.clientInfo.notionLink} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="px-6 py-3.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-2xl font-bold flex items-center gap-2 hover:bg-brand-50/10 hover:text-brand-500 transition-all"
+              className="px-6 py-3.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-2xl font-bold flex items-center gap-2 hover:bg-brand-50/10 hover:text-brand-500 transition-all border border-slate-200 dark:border-white/10"
              >
-               <Briefcase size={18} />
+               <img src="https://www.notion.so/images/favicon.ico" className="w-[18px] h-[18px]" alt="Notion" />
                {t('notion_project')}
              </a>
            )}
            <button 
-            onClick={handleContact}
-            className="px-6 py-3.5 bg-brand-600 text-white rounded-2xl font-bold shadow-lg shadow-brand-600/20 hover:-translate-y-1 transition-all"
+            onClick={() => setShowContactDropdown(!showContactDropdown)}
+            className="px-6 py-3.5 bg-brand-600 text-white rounded-2xl font-bold shadow-lg shadow-brand-600/20 hover:-translate-y-1 transition-all flex items-center gap-2"
            >
+             <Send size={18} />
              {t('contact_client')}
            </button>
+
+           {showContactDropdown && (
+             <div className="absolute top-full right-0 mt-3 w-64 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+               <div className="p-3 space-y-1">
+                 <button onClick={() => handleContactAction('INTERNAL')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300 transition-all font-bold text-sm text-left">
+                   <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                     <MessageCircle size={16} />
+                   </div>
+                   {t('send_internal_message')}
+                 </button>
+                 <button onClick={() => handleContactAction('WHATSAPP')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300 transition-all font-bold text-sm text-left">
+                   <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                     <SendHorizontal size={16} />
+                   </div>
+                   {t('contact_whatsapp')}
+                 </button>
+                 <button onClick={() => handleContactAction('TELEGRAM')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300 transition-all font-bold text-sm text-left">
+                   <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+                     <img src="https://telegram.org/favicon.ico" className="w-4 h-4" alt="" />
+                   </div>
+                   {t('contact_telegram')}
+                 </button>
+                 <button onClick={() => handleContactAction('EMAIL')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300 transition-all font-bold text-sm text-left">
+                   <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
+                     <Mail size={16} />
+                   </div>
+                   {t('contact_email')}
+                 </button>
+               </div>
+             </div>
+           )}
         </div>
       </div>
 
@@ -180,11 +249,13 @@ const ClientProfilePage = () => {
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400 border border-slate-100 dark:border-white/10">
-                    <Phone size={18} />
+                    <img src="https://telegram.org/favicon.ico" className="w-4 h-4 grayscale opacity-60" alt="" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('mobile_number')}</p>
-                    <p className="font-bold text-slate-700 dark:text-slate-200 mt-1">{client.clientInfo?.phone || '--'}</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('telegram_link')}</p>
+                    <p className={`font-bold mt-1 ${client.clientInfo?.telegram ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 italic'}`}>
+                      {client.clientInfo?.telegram || t('missing_telegram')}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -205,10 +276,14 @@ const ClientProfilePage = () => {
                   </div>
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('contract_validity')}</p>
-                    <p className="font-bold text-slate-700 dark:text-slate-200 mt-1">
-                      {client.clientInfo?.contractStartDate ? new Date(client.clientInfo.contractStartDate).toLocaleDateString() : 'N/A'} 
-                      - {client.clientInfo?.contractEndDate ? new Date(client.clientInfo.contractEndDate).toLocaleDateString() : 'N/A'}
-                    </p>
+                    {client.clientInfo?.contractEndDate ? (
+                      <p className="font-bold text-slate-700 dark:text-slate-200 mt-1">
+                        {new Date(client.clientInfo.contractStartDate).toLocaleDateString()} 
+                        - {new Date(client.clientInfo.contractEndDate).toLocaleDateString()}
+                      </p>
+                    ) : (
+                      <p className="text-slate-400 font-bold italic mt-1">{t('no_active_contract')}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -216,9 +291,9 @@ const ClientProfilePage = () => {
 
             <div className="mt-10 p-6 bg-slate-100 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-3xl">
                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">{t('internal_notes_title')}</p>
-               <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed italic">
-                 {client.clientInfo?.internalNotes || 'No internal strategic notes provided for this partner.'}
-               </p>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed italic">
+                  {client.clientInfo?.internalNotes || t('no_internal_notes')}
+                </p>
             </div>
           </div>
 

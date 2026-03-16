@@ -26,7 +26,7 @@ const ClientsPage = () => {
   
   const [form, setForm] = useState({ 
     firstName: '', lastName: '', email: '', password: '', company: '', phone: '',
-    tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', managedChannels: '',
+    tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', telegram: '', managedChannels: '',
     contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: ''
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -113,6 +113,7 @@ const ClientsPage = () => {
           isVip: form.isVip,
           logoUrl: form.logoUrl,
           notionLink: form.notionLink,
+          telegram: form.telegram,
           managedChannels: form.managedChannels || 0,
           contractStartDate: form.contractStartDate,
           contractEndDate: form.contractEndDate,
@@ -127,7 +128,7 @@ const ClientsPage = () => {
         addNotification(`${t('client_added')}: ${form.firstName} ${form.lastName}`, 'success');
       }
       setShowModal(false);
-      setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '', tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', managedChannels: '', contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: '' });
+      setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '', tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', telegram: '', managedChannels: '', contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: '' });
       setIsEditing(false);
       setEditId(null);
       fetchClients();
@@ -167,6 +168,7 @@ const ClientsPage = () => {
       isVip: !!client.clientInfo?.isVip,
       logoUrl: client.clientInfo?.logoUrl || '',
       notionLink: client.clientInfo?.notionLink || '',
+      telegram: client.clientInfo?.telegram || '',
       managedChannels: client.clientInfo?.managedChannels || '',
       contractStartDate: formatDate(client.clientInfo?.contractStartDate),
       contractEndDate: formatDate(client.clientInfo?.contractEndDate),
@@ -542,10 +544,18 @@ const ClientsPage = () => {
                         <option value="+965">🇰🇼 +965</option>
                         <option value="+968">🇴🇲 +968</option>
                         <option value="+973">🇧🇭 +973</option>
-                        <option value="+962">🇯🇴 +962</option>
                         <option value="+961">🇱🇧 +961</option>
+                        <option value="+962">🇯🇴 +962</option>
                         <option value="+1">🇺🇸 +1</option>
-                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+39">🇮🇹 +39</option>
+                        <option value="+7">🇷🇺 +7</option>
+                        <option value="+33">🇫🇷 +33</option>
+                        <option value="+49">🇩🇪 +49</option>
+                        <option value="+90">🇹🇷 +90</option>
+                        <option value="+212">🇲🇦 +212</option>
+                        <option value="+213">🇩🇿 +213</option>
+                        <option value="+216">🇹🇳 +216</option>
+                        <option value="+249">🇸🇩 +249</option>
                       </select>
                       <input 
                         name="phone" 
@@ -582,6 +592,10 @@ const ClientsPage = () => {
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('notion_link_label')}</label>
                     <input name="notionLink" value={form.notionLink} onChange={handleChange} placeholder={t('notion_link_placeholder')} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('telegram_link')}</label>
+                    <input name="telegram" value={form.telegram} onChange={handleChange} placeholder={t('telegram_placeholder')} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
                   </div>
                   
                   {/* VIP Toggle & Logo Upload */}

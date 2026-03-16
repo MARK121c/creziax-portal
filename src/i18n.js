@@ -311,7 +311,19 @@ const resources = {
       "ends_on": "Ends on",
       "no_active_contracts": "No active contracts currently",
       "days_remaining": "days remaining",
-      "expired_badge": "Expired"
+      "expired_badge": "Expired",
+      "telegram_link": "Telegram Link",
+      "telegram_placeholder": "https://t.me/username...",
+      "contact_options": "Contact Options",
+      "send_internal_message": "Internal System Message",
+      "contact_whatsapp": "WhatsApp Chat",
+      "contact_email": "Send Email",
+      "contact_telegram": "Telegram Message",
+      "missing_telegram": "Telegram account not added yet.",
+      "missing_whatsapp": "WhatsApp number not added yet.",
+      "missing_email": "Email address not added yet.",
+      "creziax_partner": "Creziax Elite Partner",
+      "no_internal_notes": "No internal strategic notes provided for this partner."
     }
   },
   ar: {
@@ -622,7 +634,19 @@ const resources = {
       "ends_on": "ينتهي في",
       "no_active_contracts": "لا يوجد عقود نشطة حالياً",
       "days_remaining": "يوم متبقي",
-      "expired_badge": "مـنتهي"
+      "expired_badge": "مـنتهي",
+      "telegram_link": "رابط تليجرام",
+      "telegram_placeholder": "https://t.me/username...",
+      "contact_options": "خيارات التواصل",
+      "send_internal_message": "رسالة داخل السيستم",
+      "contact_whatsapp": "محادثة واتساب",
+      "contact_email": "إرسال إيميل",
+      "contact_telegram": "محادثة تليجرام",
+      "missing_telegram": "لم يتم إضافة حساب تليجرام للعميل بعد.",
+      "missing_whatsapp": "لم يتم إضافة رقم واتساب للعميل بعد.",
+      "missing_email": "لم يتم إضافة بريد إلكتروني للعميل بعد.",
+      "creziax_partner": "شريك كاريزياكس المميز",
+      "no_internal_notes": "لا توجد ملاحظات إستراتيجية داخلية لهذا الشريك."
     }
   }
 };
