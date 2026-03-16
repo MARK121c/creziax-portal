@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { getUsersAPI, createUserAPI, deleteUserAPI, updateClientAPI, uploadImageAPI } from '../../store/api';
-import { Trash2, Plus, X, Building2, Mail, Phone, Calendar, Loader2, Search, UserPlus, Edit2, Star, Camera, UploadCloud, ExternalLink } from 'lucide-react';
+import { Trash2, Plus, X, Building2, Mail, Phone, Calendar, Loader2, Search, UserPlus, Edit2, Star, Camera, UploadCloud, ExternalLink, Bell, FileText, Briefcase, Filter, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
+
+const healthScores = [
+  { value: 'GOOD', label: 'health_good', emoji: '🟢', color: 'text-emerald-500' },
+  { value: 'MONITOR', label: 'health_monitor', emoji: '🟡', color: 'text-amber-500' },
+  { value: 'AT_RISK', label: 'health_risk', emoji: '🔴', color: 'text-rose-500' },
+];
 
 const ClientsPage = () => {
   const { t } = useTranslation();
@@ -19,9 +26,46 @@ const ClientsPage = () => {
   
   const [form, setForm] = useState({ 
     firstName: '', lastName: '', email: '', password: '', company: '', phone: '',
-    tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', managedChannels: ''
+    tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', managedChannels: '',
+    contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: ''
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [activeFilter, setActiveFilter] = useState({ tier: 'ALL', health: 'ALL' });
+
+  const QuickAccessMenu = ({ client }) => {
+    const [open, setOpen] = useState(false);
+    return (
+      <div className="relative">
+        <button 
+          onClick={() => setOpen(!open)}
+          className="p-2 text-slate-400 hover:text-brand-500 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10 transition-all"
+          title={t('quick_access')}
+        >
+          <FileText size={16} />
+        </button>
+        {open && (
+          <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-4 py-2 bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('documents')}</span>
+            </div>
+            <button className="w-full text-right px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-brand-500/10 hover:text-brand-500 transition-colors flex items-center justify-between group">
+              <span>{t('contract')}</span>
+              <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+            <button className="w-full text-right px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-brand-500/10 hover:text-brand-500 transition-colors flex items-center justify-between group">
+              <span>{t('invoices')}</span>
+              <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+            <div className="h-px bg-slate-100 dark:bg-white/5 mx-2" />
+            <Link to={`/admin/clients/${client.id}`} className="w-full text-right px-4 py-3 text-sm font-bold text-brand-500 hover:bg-brand-500/10 transition-colors flex items-center justify-between group">
+              <span>{t('client_history')}</span>
+              <ChevronRight size={14} />
+            </Link>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const tiers = [
     { value: 'REGULAR', label: 'Regular', color: 'bg-slate-500' },
@@ -71,9 +115,13 @@ const ClientsPage = () => {
           isVip: form.isVip,
           logoUrl: form.logoUrl,
           notionLink: form.notionLink,
-          managedChannels: form.managedChannels || 0
+          managedChannels: form.managedChannels || 0,
+          contractStartDate: form.contractStartDate,
+          contractEndDate: form.contractEndDate,
+          healthScore: form.healthScore,
+          internalNotes: form.internalNotes
         });
-        toast.success(t('loading'), { id: loadingToast });
+        toast.success(t('saved_successfully'), { id: loadingToast });
         addNotification(`تم تحديث بيانات العميل: ${form.firstName} ${form.lastName}`, 'success');
       } else {
         await createUserAPI({ ...form, role: 'CLIENT' });
@@ -81,12 +129,12 @@ const ClientsPage = () => {
         addNotification(`تم إضافة العميل الجديد: ${form.firstName} ${form.lastName}`, 'success');
       }
       setShowModal(false);
-      setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '', tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '' });
+      setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '', tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', managedChannels: '', contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: '' });
       setIsEditing(false);
       setEditId(null);
       fetchClients();
     } catch (err) {
-      const msg = err.response?.data?.message || t('loading');
+      const msg = err.response?.data?.message || t('error_general');
       setError(msg);
       toast.error(msg, { id: loadingToast });
       addNotification(`فشل العملية: ${msg}`, 'error');
@@ -100,7 +148,7 @@ const ClientsPage = () => {
       firstName: client.firstName,
       lastName: client.lastName,
       email: client.email,
-      password: '', // Don't show password for edit
+      password: '', 
       company: client.clientInfo?.company || '',
       phone: client.clientInfo?.phone || '',
       tier: client.clientInfo?.tier || 'REGULAR',
@@ -108,7 +156,11 @@ const ClientsPage = () => {
       isVip: client.clientInfo?.isVip || false,
       logoUrl: client.clientInfo?.logoUrl || '',
       notionLink: client.clientInfo?.notionLink || '',
-      managedChannels: client.clientInfo?.managedChannels || ''
+      managedChannels: client.clientInfo?.managedChannels || '',
+      contractStartDate: client.clientInfo?.contractStartDate ? new Date(client.clientInfo.contractStartDate).toISOString().split('T')[0] : '',
+      contractEndDate: client.clientInfo?.contractEndDate ? new Date(client.clientInfo.contractEndDate).toISOString().split('T')[0] : '',
+      healthScore: client.clientInfo?.healthScore || 'GOOD',
+      internalNotes: client.clientInfo?.internalNotes || ''
     });
     setEditId(client.clientInfo?.id);
     setIsEditing(true);
@@ -169,11 +221,45 @@ const ClientsPage = () => {
     }
   };
 
-  const filteredClients = clients.filter(c => 
-    `${c.firstName} ${c.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (c.clientInfo?.company?.toLowerCase() || '').includes(searchQuery.toLowerCase())
-  );
+  const filteredClients = clients.filter(c => {
+    const queryMatch = `${c.firstName} ${c.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                       c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                       (c.clientInfo?.company?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+    
+    const tierMatch = activeFilter.tier === 'ALL' || c.clientInfo?.tier === activeFilter.tier;
+    const healthMatch = activeFilter.health === 'ALL' || c.clientInfo?.healthScore === activeFilter.health;
+
+    return queryMatch && tierMatch && healthMatch;
+  });
+
+  const sortedClients = [...filteredClients].sort((a, b) => {
+    // 1. VIP First
+    if (a.clientInfo?.isVip && !b.clientInfo?.isVip) return -1;
+    if (!a.clientInfo?.isVip && b.clientInfo?.isVip) return 1;
+
+    // 2. Expiring contracts first (< 7 days)
+    const now = new Date();
+    const aEndDate = a.clientInfo?.contractEndDate ? new Date(a.clientInfo.contractEndDate) : null;
+    const bEndDate = b.clientInfo?.contractEndDate ? new Date(b.clientInfo.contractEndDate) : null;
+    
+    const aIsExpiring = aEndDate && (aEndDate - now) / (1000 * 60 * 60 * 24) < 7;
+    const bIsExpiring = bEndDate && (bEndDate - now) / (1000 * 60 * 60 * 24) < 7;
+
+    if (aIsExpiring && !bIsExpiring) return -1;
+    if (!aIsExpiring && bIsExpiring) return 1;
+
+    return 0;
+  });
+
+  const getHealthDisplay = (score) => {
+    return healthScores.find(h => h.value === score) || healthScores[0];
+  };
+
+  const getContractStatus = (endDate) => {
+    if (!endDate) return null;
+    const daysLeft = Math.ceil((new Date(endDate) - new Date()) / (1000 * 60 * 60 * 24));
+    return { daysLeft, isCritical: daysLeft < 7, isExpired: daysLeft < 0 };
+  };
 
   return (
     <div className="space-y-8 md:space-y-10">
@@ -183,19 +269,42 @@ const ClientsPage = () => {
           <p className="text-slate-500 dark:text-slate-400 font-medium mt-2 text-base md:text-lg">{t('manage_clients')}</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="relative group">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+          <div className="relative group flex-1 sm:flex-none">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={18} />
             <input 
               type="text"
               placeholder={t('search_clients')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-11 pr-6 py-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all w-full sm:w-72 md:w-80 shadow-sm font-bold"
+              className="pl-11 pr-6 py-3.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all w-full sm:w-72 md:w-80 shadow-sm font-bold"
             />
           </div>
+          
+          <div className="flex items-center gap-2 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-1 shadow-sm">
+            <div className="flex items-center gap-1 px-3 text-slate-400 border-r border-slate-100 dark:border-white/5 mr-1">
+              <Filter size={16} />
+            </div>
+            <select 
+              value={activeFilter.tier}
+              onChange={(e) => setActiveFilter({...activeFilter, tier: e.target.value})}
+              className="bg-transparent text-xs font-bold text-slate-600 dark:text-slate-400 focus:outline-none px-2 py-1.5 cursor-pointer"
+            >
+              <option value="ALL">{t('tier')}: الكل</option>
+              {tiers.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            <select 
+              value={activeFilter.health}
+              onChange={(e) => setActiveFilter({...activeFilter, health: e.target.value})}
+              className="bg-transparent text-xs font-bold text-slate-600 dark:text-slate-400 focus:outline-none px-2 py-1.5 cursor-pointer"
+            >
+              <option value="ALL">{t('health_score')}: الكل</option>
+              {healthScores.map(h => <option key={h.value} value={h.value}>{h.emoji} {t(h.label)}</option>)}
+            </select>
+          </div>
+
           <button 
-            onClick={() => setShowModal(true)} 
+            onClick={() => { setIsEditing(false); setShowModal(true); }} 
             className="flex items-center justify-center gap-2 px-6 py-3.5 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-bold shadow-lg shadow-brand-600/20 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
           >
             <UserPlus size={18} />
@@ -224,96 +333,113 @@ const ClientsPage = () => {
               <thead>
                 <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b border-slate-100 dark:border-white/5">
                   <th className="px-6 md:px-10 py-5 md:py-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">{t('client_name')}</th>
-                  <th className="px-6 md:px-10 py-5 md:py-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] hidden md:table-cell">{t('contact_info')}</th>
-                  <th className="px-6 md:px-10 py-5 md:py-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] hidden lg:table-cell">{t('joined_date')}</th>
+                  <th className="px-6 md:px-10 py-5 md:py-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] hidden md:table-cell">{t('contract')}</th>
+                  <th className="px-6 md:px-10 py-5 md:py-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] hidden lg:table-cell">{t('health_score')}</th>
+                  <th className="px-6 md:px-10 py-5 md:py-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] hidden lg:table-cell">{t('total_paid')}</th>
                   <th className="px-6 md:px-10 py-5 md:py-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] text-right">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                {filteredClients.map(c => (
-                  <tr key={c.id} className="hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-all group">
-                    <td className="px-6 md:px-10 py-5 md:py-7">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400 text-sm font-black shadow-sm border border-brand-100 dark:border-brand-500/20 flex-shrink-0 overflow-hidden relative group/logo">
-                          {c.clientInfo?.logoUrl ? (
-                            <img src={c.clientInfo.logoUrl} alt={c.clientInfo.company} className="w-full h-full object-cover" />
-                          ) : (
-                            <span>{c.firstName?.[0]}{c.lastName?.[0]}</span>
-                          )}
-                          <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/logo:opacity-100 transition-opacity flex items-center justify-center cursor-pointer z-10">
-                            <Camera size={14} className="text-white pointer-events-none" />
-                            <input type="file" className="hidden" onChange={(e) => handleQuickLogoUpload(c.clientInfo?.id, e)} onClick={(e) => e.stopPropagation()} />
-                          </label>
+                {sortedClients.map(c => {
+                  const contractStatus = getContractStatus(c.clientInfo?.contractEndDate);
+                  const health = getHealthDisplay(c.clientInfo?.healthScore);
+                  
+                  return (
+                    <tr key={c.id} className={`hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-all group ${contractStatus?.isCritical ? 'bg-rose-500/[0.02]' : ''}`}>
+                      <td className="px-6 md:px-10 py-5 md:py-7">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400 text-sm font-black shadow-sm border border-brand-100 dark:border-brand-500/20 flex-shrink-0 overflow-hidden relative group/logo">
+                            {c.clientInfo?.logoUrl ? (
+                              <img src={c.clientInfo.logoUrl} alt={c.clientInfo.company} className="w-full h-full object-cover" />
+                            ) : (
+                              <Building2 size={20} className="opacity-40" />
+                            )}
+                            <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/logo:opacity-100 transition-opacity flex items-center justify-center cursor-pointer z-10">
+                              <Camera size={14} className="text-white pointer-events-none" />
+                              <input type="file" className="hidden" onChange={(e) => handleQuickLogoUpload(c.clientInfo?.id, e)} onClick={(e) => e.stopPropagation()} />
+                            </label>
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm md:text-base font-bold text-slate-800 dark:text-white leading-tight">{c.firstName} {c.lastName}</p>
+                              {c.clientInfo?.isVip && (
+                                <div className="flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20 animate-pulse">
+                                  <Star size={10} className="fill-amber-500 text-amber-500" />
+                                  <span className="text-[9px] font-black text-amber-600 uppercase tracking-tighter">VIP Member</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1.5">
+                               <p className="text-xs font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1.5 uppercase tracking-wide">
+                                <Building2 size={12} className="text-brand-500 flex-shrink-0" /> {c.clientInfo?.company || 'Creziax Partner'}
+                              </p>
+                              {c.clientInfo?.tier && c.clientInfo.tier !== 'REGULAR' && (
+                                <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 text-[9px] font-black uppercase tracking-tighter border border-slate-200 dark:border-white/10">
+                                  {c.clientInfo.tier.replace('VIP_', '').replace('_', ' ')}
+                                </span>
+                              )}
+                              {c.clientInfo?.notionLink && (
+                                <a href={c.clientInfo.notionLink} target="_blank" rel="noopener noreferrer" className="p-1 px-1.5 bg-slate-100 dark:bg-white/5 text-slate-400 hover:text-brand-500 rounded-lg border border-slate-200 dark:border-white/10 transition-colors">
+                                  <img src="https://www.notion.so/images/favicon.ico" className="w-3 h-3 grayscale group-hover:grayscale-0" alt="Notion" />
+                                </a>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm md:text-base font-bold text-slate-800 dark:text-white leading-tight">{c.firstName} {c.lastName}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                             <p className="text-xs font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1.5 uppercase tracking-wide">
-                              <Building2 size={12} className="text-brand-500 flex-shrink-0" /> {c.clientInfo?.company || t('add_client')}
-                            </p>
-                                {c.clientInfo?.isVip && (
-                                  <div className="flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
-                                    <Star size={10} className="fill-amber-500 text-amber-500" />
-                                    <span className="text-[9px] font-black text-amber-600 uppercase tracking-tighter">VIP</span>
-                                  </div>
-                                )}
-                                {c.clientInfo?.tier && c.clientInfo.tier !== 'REGULAR' && (
-                                  <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 text-[9px] font-black uppercase tracking-tighter border border-slate-200 dark:border-white/10">
-                                    {c.clientInfo.tier.replace('VIP_', '').replace('_', ' ')}
-                                  </span>
-                                )}
-                                {c.clientInfo?.notionLink && (
-                                  <a href={c.clientInfo.notionLink} target="_blank" rel="noopener noreferrer" className="p-1 px-2 bg-slate-100 dark:bg-white/5 text-slate-500 hover:text-brand-500 rounded-lg border border-slate-200 dark:border-white/10 flex items-center gap-1.5 transition-colors group/notion">
-                                    <img src="https://www.notion.so/images/favicon.ico" className="w-3 h-3 grayscale group-hover/notion:grayscale-0 transition-all" alt="Notion" />
-                                    <span className="text-[9px] font-black uppercase tracking-tighter">Notion</span>
-                                  </a>
-                                )}
+                      </td>
+                      <td className="px-6 md:px-10 py-5 md:py-7 hidden md:table-cell">
+                        <div className="space-y-1.5">
+                          {contractStatus ? (
+                            <div className="flex items-center gap-2">
+                              <div className={`flex items-center gap-2 px-3 py-1 rounded-xl border ${contractStatus.isCritical ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400'}`}>
+                                <Bell size={13} className={contractStatus.isCritical ? 'animate-bounce' : ''} />
+                                <span className="text-xs font-black uppercase tracking-tight">
+                                  {contractStatus.isExpired ? t('expired') : `${contractStatus.daysLeft} ${t('days_left')}`}
+                                </span>
                               </div>
-                          <p className="text-xs text-slate-400 mt-1 md:hidden">{c.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 md:px-10 py-5 md:py-7 hidden md:table-cell">
-                      <div className="space-y-1.5">
-                        <p className="text-sm font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2">
-                          <Mail size={13} className="text-slate-400" />
-                          {c.email}
-                        </p>
-                        {c.clientInfo?.phone && (
-                          <p className="text-xs font-bold text-slate-400 dark:text-slate-500 flex items-center gap-2">
-                            <Phone size={13} className="text-slate-400" /> {c.clientInfo.phone}
+                            </div>
+                          ) : (
+                            <span className="text-xs font-bold text-slate-400 italic">No Active Contract</span>
+                          )}
+                          <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">
+                            {c.clientInfo?.contractEndDate ? new Date(c.clientInfo.contractEndDate).toLocaleDateString() : '--'}
                           </p>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 md:px-10 py-5 md:py-7 hidden lg:table-cell">
-                      <div className="flex items-center gap-3">
-                        <Calendar size={16} className="text-slate-300 dark:text-slate-600" />
-                        <span className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                          {new Date(c.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 md:px-10 py-5 md:py-7 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button 
-                          onClick={() => openEditModal(c)} 
-                          className="p-2 md:p-2.5 text-slate-400 hover:text-brand-500 hover:bg-brand-500/10 rounded-xl transition-all border border-slate-200 dark:border-white/10 hover:border-brand-500/20"
-                          title="تعديل"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(c.id, `${c.firstName} ${c.lastName}`)} 
-                          className="p-2 md:p-2.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all border border-slate-200 dark:border-white/10 hover:border-rose-500/20"
-                          title="حذف"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        </div>
+                      </td>
+                      <td className="px-6 md:px-10 py-5 md:py-7 hidden lg:table-cell">
+                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 ${health.color}`}>
+                          <span className="text-lg">{health.emoji}</span>
+                          <span className="text-xs font-black uppercase tracking-tight">{t(health.label)}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 md:px-10 py-5 md:py-7 hidden lg:table-cell">
+                        <div className="flex flex-col">
+                          <span className="text-base font-black text-slate-800 dark:text-white">${(c.totalPaid || 0).toLocaleString()}</span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t('total_paid')}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 md:px-10 py-5 md:py-7 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <QuickAccessMenu client={c} />
+                          <button 
+                            onClick={() => openEditModal(c)} 
+                            className="p-2.5 text-slate-400 hover:text-brand-500 hover:bg-brand-500/10 rounded-xl transition-all border border-slate-200 dark:border-white/10 hover:border-brand-500/20"
+                            title={t('edit_client')}
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(c.id, `${c.firstName} ${c.lastName}`)} 
+                            className="p-2.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all border border-slate-200 dark:border-white/10 hover:border-rose-500/20"
+                            title={t('delete_client')}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -321,167 +447,171 @@ const ClientsPage = () => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 dark:bg-[#0a0a0c]/80 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowModal(false)}></div>
-          
-          <div className="bg-white dark:bg-[#0d0d12] border border-slate-200 dark:border-white/5 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 max-h-[90vh] overflow-y-auto">
-            <div className="px-6 md:px-10 py-6 md:py-8 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/30 dark:bg-white/[0.01] sticky top-0 z-10">
-              <div>
-                <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white tracking-tight">
-                  {isEditing ? t('edit_client') : t('add_client')}
-                </h2>
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-                  {isEditing ? 'تحديث بيانات العميل الحالية' : t('add_client_desc')}
-                </p>
+        <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-[#0a0a0c] w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-white/10 flex flex-col animate-in zoom-in-95 duration-300 custom-scrollbar relative">
+            
+            {/* Modal Header */}
+            <div className="p-6 md:p-8 border-b border-slate-100 dark:border-white/5 flex items-center justify-between sticky top-0 bg-white/80 dark:bg-[#0a0a0c]/80 backdrop-blur-md z-10">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500">
+                  <UserPlus size={24} />
+                </div>
+                <div>
+                  <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">{isEditing ? t('edit_client') : t('add_client')}</h2>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">{t('add_client_desc')}</p>
+                </div>
               </div>
-              <button onClick={() => { setShowModal(false); setIsEditing(false); }} className="p-3 text-slate-400 hover:text-slate-800 dark:hover:text-white bg-slate-100 dark:bg-white/5 rounded-2xl transition-all">
+              <button onClick={() => { setShowModal(false); setIsEditing(false); }} className="p-3 text-slate-400 hover:text-rose-50 dark:hover:bg-rose-500/10 rounded-2xl transition-all">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateOrUpdate} className="p-6 md:p-10 space-y-5 md:space-y-7">
+            <form onSubmit={handleCreateOrUpdate} className="p-6 md:p-8 space-y-8">
               {error && (
-                <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-sm font-bold">{error}</div>
+                <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-sm font-bold animate-shake">{error}</div>
               )}
 
-              {/* Logo Upload Section */}
-              <div className="flex flex-col sm:flex-row items-center gap-5 p-5 border border-slate-200 dark:border-white/10 rounded-3xl bg-slate-50/50 dark:bg-white/[0.02]">
-                {/* Preview */}
-                <div className="relative w-24 h-24 rounded-2xl bg-white dark:bg-white/5 shadow-lg border border-slate-200 dark:border-white/10 overflow-hidden flex items-center justify-center flex-shrink-0">
-                  {form.logoUrl ? (
-                    <img src={form.logoUrl} alt="Logo Preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="text-slate-300 dark:text-slate-600 flex flex-col items-center">
-                      <Building2 size={28} />
-                      <span className="text-[9px] font-black uppercase tracking-tighter mt-1">Logo</span>
+              {/* Section 1: Basic Information */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400">
+                    <Building2 size={16} />
+                  </div>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">البيانات الأساسية</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('first_name')}</label>
+                    <input name="firstName" value={form.firstName} onChange={handleChange} required className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('last_name')}</label>
+                    <input name="lastName" value={form.lastName} onChange={handleChange} required className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('email_address')}</label>
+                    <input type="email" name="email" value={form.email} onChange={handleChange} required className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
+                  </div>
+                  {!isEditing && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('password')}</label>
+                      <input type="password" name="password" value={form.password} onChange={handleChange} required className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
                     </div>
                   )}
-                  {uploadingLogo && (
-                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center">
-                      <Loader2 className="animate-spin text-white" size={24} />
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('company_name')}</label>
+                    <input name="company" value={form.company} onChange={handleChange} required className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('phone_number')}</label>
+                    <input name="phone" value={form.phone} onChange={handleChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Professional Details */}
+              <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400">
+                    <Briefcase size={16} />
+                  </div>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">تفاصيل الباقة والمستوى</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('tier')}</label>
+                    <select name="tier" value={form.tier} onChange={handleChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold">
+                      {tiers.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('stat_managed_channels')}</label>
+                    <input type="number" name="managedChannels" value={form.managedChannels} onChange={handleChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">رابط Notion (مشروع العميل)</label>
+                    <input name="notionLink" value={form.notionLink} onChange={handleChange} placeholder="https://notion.so/..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
+                  </div>
+                  
+                  {/* VIP Toggle & Logo Upload */}
+                  <div className="grid grid-cols-2 gap-4 items-end">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">حالة الـ VIP</label>
+                      <button type="button" onClick={() => setForm({...form, isVip: !form.isVip})} className={`w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl border transition-all font-black text-sm ${form.isVip ? 'bg-amber-500 border-amber-600 text-white shadow-lg shadow-amber-500/20' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400'}`}>
+                        <Star size={16} className={form.isVip ? 'fill-white' : ''} />
+                        {form.isVip ? 'VIP ACTIVATED' : 'SET AS VIP'}
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">لوجو الشركة</label>
+                      <label className={`w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl border cursor-pointer transition-all font-black text-sm ${uploadingLogo ? 'bg-slate-100 animate-pulse' : 'bg-brand-500/10 border-brand-500/20 text-brand-600 hover:bg-brand-500 hover:text-white group'}`}>
+                        <UploadCloud size={16} />
+                        {uploadingLogo ? 'UPLOADING...' : (form.logoUrl ? 'CHANGE LOGO' : 'UPLOAD LOGO')}
+                        <input type="file" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Contract & Operations */}
+              <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400">
+                    <Calendar size={16} />
+                  </div>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">التعاقد والعمليات</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('contract_start')}</label>
+                    <input type="date" name="contractStartDate" value={form.contractStartDate} onChange={handleChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('contract_end')}</label>
+                    <input type="date" name="contractEndDate" value={form.contractEndDate} onChange={handleChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('health_score')}</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {healthScores.map(h => (
+                        <button
+                          key={h.value}
+                          type="button"
+                          onClick={() => setForm({...form, healthScore: h.value})}
+                          className={`flex items-center justify-center gap-2 py-3 rounded-xl border transition-all ${form.healthScore === h.value ? 'bg-white dark:bg-white/10 border-brand-500 text-brand-500 shadow-sm' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400'}`}
+                        >
+                          <span className="text-lg">{h.emoji}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {isEditing && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('total_paid')}</label>
+                      <div className="w-full px-5 py-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-sm font-black text-emerald-600 flex items-center justify-between">
+                         <span>$ {(clients.find(c => (c.clientInfo?.id || c.id) === (editId || editId))?.totalPaid || 0).toLocaleString()}</span>
+                         <span className="text-[9px] uppercase tracking-tighter">Verified Ledger</span>
+                      </div>
                     </div>
                   )}
-                </div>
-                {/* Info + Button */}
-                <div className="flex-1 text-center sm:text-left">
-                  <p className="text-sm font-black text-slate-700 dark:text-white mb-1">لوجو الشركة</p>
-                  <p className="text-xs text-slate-400 mb-4">JPG, PNG أو WebP • الحد الأقصى 5MB</p>
-                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-black rounded-xl shadow-sm shadow-brand-600/20 transition-all active:scale-95">
-                    <Camera size={14} />
-                    <span>{form.logoUrl ? 'تغيير اللوجو' : 'رفع اللوجو'}</span>
-                    <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
-                  </label>
-                  {form.logoUrl && (
-                    <button type="button" onClick={() => setForm({...form, logoUrl: ''})} className="mr-2 text-xs text-rose-400 hover:text-rose-600 font-bold transition-colors">حذف</button>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6">
-                <div className="space-y-2.5">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('label_first_name')}</label>
-                  <input value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
-                </div>
-                <div className="space-y-2.5">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('label_last_name')}</label>
-                  <input value={form.lastName} onChange={e => setForm({...form, lastName: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
-                </div>
-              </div>
-
-              {!isEditing && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6">
-                  <div className="space-y-2.5">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('email_address')}</label>
-                    <input value={form.email} onChange={e => setForm({...form, email: e.target.value})} type="email" required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
-                  </div>
-                  <div className="space-y-2.5">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('password')}</label>
-                    <input value={form.password} onChange={e => setForm({...form, password: e.target.value})} type="password" required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('internal_notes')}</label>
+                    <textarea name="internalNotes" value={form.internalNotes} onChange={handleChange} rows="3" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold resize-none" placeholder="سجل ملاحظاتك الخاصة حول العميل هنا..." />
                   </div>
                 </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6 pt-4 border-t border-slate-100 dark:border-white/5">
-                <div className="space-y-2.5">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('company_name')}</label>
-                  <input value={form.company} onChange={e => setForm({...form, company: e.target.value})} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
-                </div>
-                <div className="space-y-2.5">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('phone_number')}</label>
-                  <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
-                </div>
               </div>
 
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">رابط Notion (مشروع العميل)</label>
-                  <img src="https://www.notion.so/images/favicon.ico" className="w-4 h-4 opacity-40" alt="Notion" />
-                </div>
-                <input 
-                  placeholder="https://notion.so/your-page-id"
-                  value={form.notionLink} 
-                  onChange={e => setForm({...form, notionLink: e.target.value})} 
-                  className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" 
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6">
-                <div className="space-y-2.5">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('budget')} ($)</label>
-                  <input 
-                    type="number" 
-                    placeholder="e.g. 5000"
-                    value={form.budget} 
-                    onChange={e => {
-                      const tier = suggestTier(e.target.value);
-                      setForm({...form, budget: e.target.value, tier});
-                    }} 
-                    className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold border-dashed" 
-                  />
-                </div>
-                <div className="space-y-2.5">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('tier')}</label>
-                  <select 
-                    value={form.tier} 
-                    onChange={e => setForm({...form, tier: e.target.value})} 
-                    className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold appearance-none cursor-pointer"
-                  >
-                    {tiers.map(t => <option key={t.value} value={t.value} className="bg-white dark:bg-[#0f172a] text-slate-800 dark:text-white font-bold">{t.label}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-2.5">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">إجمالي القنوات المدارة</label>
-                  <input 
-                    type="number" 
-                    placeholder="e.g. 3"
-                    value={form.managedChannels} 
-                    onChange={e => setForm({...form, managedChannels: e.target.value})} 
-                    className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold border-dashed" 
-                  />
-              </div>
-
-              <div className="p-6 bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-3xl flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-bold text-slate-800 dark:text-white">حالة الـ VIP</h4>
-                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">تفعيل الشعار الذهبي لهذا العميل</p>
-                </div>
-                <button 
-                  type="button"
-                  onClick={() => setForm({...form, isVip: !form.isVip})}
-                  className={`w-14 h-8 rounded-full p-1 transition-all duration-300 ${form.isVip ? 'bg-amber-400' : 'bg-slate-200 dark:bg-white/10'}`}
-                >
-                  <div className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${form.isVip ? 'translate-x-6' : 'translate-x-0'}`} />
+              {/* Action Buttons */}
+              <div className="flex items-center gap-4 pt-4 sticky bottom-0 bg-white/80 dark:bg-[#0a0a0c]/80 backdrop-blur-md pb-2">
+                <button type="submit" disabled={submitting} className="flex-1 bg-brand-600 hover:bg-brand-500 text-white font-black py-4 rounded-2xl shadow-xl shadow-brand-600/20 transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:translate-y-0">
+                  {submitting ? <Loader2 className="animate-spin" size={20} /> : (isEditing ? t('save_changes') : t('complete_onboarding'))}
                 </button>
-              </div>
-
-              <div className="pt-6 flex gap-4 md:gap-5">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 px-6 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all">
+                <button type="button" onClick={() => { setShowModal(false); setIsEditing(false); }} className="px-8 py-4 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-black rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all">
                   {t('cancel')}
-                </button>
-                <button type="submit" disabled={submitting} className="flex-1 py-4 px-6 bg-brand-600 hover:bg-brand-500 disabled:bg-slate-300 dark:disabled:bg-white/5 text-white font-bold rounded-2xl shadow-lg shadow-brand-600/20 transition-all active:scale-95">
-                  {submitting ? <Loader2 className="animate-spin mx-auto" size={24} /> : (isEditing ? t('save_changes') : t('complete_onboarding'))}
                 </button>
               </div>
             </form>

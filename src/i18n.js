@@ -245,7 +245,21 @@ const resources = {
       "bonus_reason": "Reason (optional)",
       "select_team_member": "Select Team Member",
       "owner": "Owner",
-      "admin": "Admin"
+      "admin": "Admin",
+      "contract_start": "Contract Start",
+      "contract_end": "Contract End",
+      "health_score": "Health Score",
+      "internal_notes": "Internal Notes",
+      "total_paid": "Total Paid",
+      "health_good": "Satisfied",
+      "health_monitor": "Needs Follow-up",
+      "health_risk": "At Risk",
+      "days_left": "days left",
+      "expired": "Expired",
+      "quick_access": "Quick Access",
+      "documents": "Documents",
+      "contract": "Contract",
+      "client_history": "Full Client History"
     }
   },
   ar: {
@@ -490,7 +504,21 @@ const resources = {
       "bonus_reason": "سبب المكافأة (اختياري)",
       "select_team_member": "اختر عضو الفريق",
       "owner": "المالك",
-      "admin": "المسئول"
+      "admin": "المسئول",
+      "contract_start": "بداية التعاقد",
+      "contract_end": "نهاية التعاقد",
+      "health_score": "الحالة الصحية",
+      "internal_notes": "ملاحظات داخلية",
+      "total_paid": "إجمالي ما دفعه",
+      "health_good": "راضٍ",
+      "health_monitor": "متابعة",
+      "health_risk": "خطر انسحاب",
+      "days_left": "أيام متبقية",
+      "expired": "منتهي",
+      "quick_access": "وصول سريع",
+      "documents": "المستندات",
+      "contract": "العقد",
+      "client_history": "تاريخ العميل الكامل"
     }
   }
 };

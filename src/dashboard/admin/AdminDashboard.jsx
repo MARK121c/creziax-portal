@@ -4,7 +4,7 @@ import {
   TrendingUp, TrendingDown, Activity, Plus, Rocket, Wallet, Download, 
   ArrowUpRight, ChevronDown, DollarSign, MinusCircle, Gift
 } from 'lucide-react';
-import { getDashboardStatsAPI, getRecentActivityAPI } from '../../store/api';
+import { getDashboardStatsAPI, getRecentActivityAPI, getClientsAPI } from '../../store/api';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
@@ -87,6 +87,7 @@ const BreakdownCard = ({ icon: Icon, label, amount, loading, iconColor, borderCo
 const AdminDashboard = () => {
   const { t } = useTranslation();
   const [stats, setStats] = useState(null);
+  const [clients, setClients] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showActionMenu, setShowActionMenu] = useState(false);
@@ -101,12 +102,14 @@ const AdminDashboard = () => {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        const [statsRes, logsRes] = await Promise.all([
+        const [statsRes, logsRes, clientsRes] = await Promise.all([
           getDashboardStatsAPI().catch(() => ({ data: null })),
-          getRecentActivityAPI(5).catch(() => ({ data: [] }))
+          getRecentActivityAPI(5).catch(() => ({ data: [] })),
+          getClientsAPI().catch(() => ({ data: [] }))
         ]);
         if (statsRes.data) setStats(statsRes.data);
         if (logsRes.data) setActivityLogs(logsRes.data);
+        if (clientsRes.data) setClients(clientsRes.data);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -371,6 +374,93 @@ const AdminDashboard = () => {
                   <p className="text-[10px] text-slate-400 mt-2">{new Date(log.createdAt).toLocaleString()}</p>
                 </div>
               ))
+            )}
+          </div>
+        </div>
+
+        {/* Contract Alerts Widget */}
+        <div className="col-span-1 lg:col-span-3 bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-6 md:p-8">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500">
+                <Bell size={20} className="animate-swing" />
+              </div>
+              <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider">{t('contract_alerts')}</h3>
+            </div>
+            <Link to="/admin/clients" className="text-xs font-black text-brand-500 hover:text-brand-400 uppercase tracking-widest border-b-2 border-brand-500/20 pb-0.5 transition-all">
+              {t('view_all_clients')}
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {clients
+              .filter(c => c.clientInfo?.contractEndDate)
+              .map(c => {
+                const end = new Date(c.clientInfo.contractEndDate);
+                const diff = Math.ceil((end - new Date()) / (1000 * 60 * 60 * 24));
+                return { ...c, daysLeft: diff };
+              })
+              .sort((a, b) => a.daysLeft - b.daysLeft)
+              .slice(0, 4)
+              .map(client => {
+                const isCritical = client.daysLeft <= 7;
+                const isExpired = client.daysLeft < 0;
+
+                return (
+                  <Link 
+                    key={client.id} 
+                    to={`/admin/clients`}
+                    className={`group relative overflow-hidden p-5 rounded-3xl border transition-all duration-300 hover:-translate-y-1 ${
+                      isExpired ? 'bg-rose-50 dark:bg-rose-500/5 border-rose-500/20' :
+                      isCritical ? 'bg-amber-50 dark:bg-amber-500/5 border-amber-500/20' :
+                      'bg-slate-50 dark:bg-white/[0.02] border-slate-100 dark:border-white/5'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-black shadow-sm flex-shrink-0 ${
+                        isExpired ? 'bg-rose-500 text-white' :
+                        isCritical ? 'bg-amber-500 text-white' :
+                        'bg-white dark:bg-white/10 dark:text-white text-slate-800 border dark:border-white/10 border-slate-100'
+                      }`}>
+                        {client.clientInfo?.logoUrl ? (
+                          <img src={client.clientInfo.logoUrl} alt="" className="w-full h-full object-cover rounded-2xl" />
+                        ) : (
+                          client.clientInfo?.company?.charAt(0) || <Building2 size={20} />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-black text-slate-800 dark:text-white truncate">{client.clientInfo?.company}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{client.firstName} {client.lastName}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mt-auto">
+                      <div className="space-y-0.5">
+                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">ينتهي في</p>
+                         <p className={`text-xs font-black ${isExpired ? 'text-rose-500' : isCritical ? 'text-amber-600' : 'text-slate-600 dark:text-slate-400'}`}>
+                           {new Date(client.clientInfo.contractEndDate).toLocaleDateString()}
+                         </p>
+                      </div>
+                      <div className={`px-3 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-tighter ${
+                        isExpired ? 'bg-rose-500 text-white' :
+                        isCritical ? 'bg-amber-500 text-white' :
+                        'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400'
+                      }`}>
+                        {isExpired ? 'مـنتهي' : `${client.daysLeft} يوم متبقي`}
+                      </div>
+                    </div>
+
+                    {/* Hover Glow */}
+                    <div className={`absolute -right-4 -bottom-4 w-16 h-16 blur-2xl opacity-0 group-hover:opacity-40 transition-opacity pointer-events-none rounded-full ${
+                      isExpired ? 'bg-rose-400' : isCritical ? 'bg-amber-400' : 'bg-brand-400'
+                    }`} />
+                  </Link>
+                );
+              })}
+            {clients.filter(c => c.clientInfo?.contractEndDate).length === 0 && (
+              <div className="col-span-full py-10 text-center bg-slate-50 dark:bg-white/[0.02] border border-dashed border-slate-200 dark:border-white/10 rounded-[2rem]">
+                <p className="text-slate-400 font-bold text-sm">لا يوجد عقود نشطة حالياً</p>
+              </div>
             )}
           </div>
         </div>
