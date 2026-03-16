@@ -10,6 +10,34 @@ import {
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 
+const COUNTRY_FLAGS = {
+  '+20': '🇪🇬',
+  '+966': '🇸🇦',
+  '+971': '🇦🇪',
+  '+974': '🇶🇦',
+  '+965': '🇰🇼',
+  '+968': '🇴🇲',
+  '+973': '🇧🇭',
+  '+961': '🇱🇧',
+  '+962': '🇯🇴',
+  '+1': '🇺🇸',
+  '+39': '🇮🇹',
+  '+7': '🇷🇺',
+  '+33': '🇫🇷',
+  '+49': '🇩🇪',
+  '+90': '🇹🇷',
+  '+212': '🇲🇦',
+  '+213': '🇩🇿',
+  '+216': '🇹🇳',
+  '+249': '🇸🇩',
+};
+
+const getCountryFlag = (phone) => {
+  if (!phone) return null;
+  const match = Object.keys(COUNTRY_FLAGS).find(code => phone.startsWith(code));
+  return match ? COUNTRY_FLAGS[match] : null;
+};
+
 const ClientProfilePage = () => {
   const { id } = useParams();
   const { t, i18n } = useTranslation();
@@ -20,8 +48,6 @@ const ClientProfilePage = () => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [showContactDropdown, setShowContactDropdown] = useState(false);
-  const contactDropdownRef = useRef(null);
 
   useEffect(() => {
     const fetchClientData = async () => {
@@ -48,15 +74,7 @@ const ClientProfilePage = () => {
     fetchClientData();
   }, [id, t]);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (contactDropdownRef.current && !contactDropdownRef.current.contains(event.target)) {
-        setShowContactDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+
 
   if (loading) {
     return (
@@ -150,6 +168,7 @@ const ClientProfilePage = () => {
             </div>
             <div>
               <div className="flex items-center gap-3">
+                <span className="text-3xl" title="Country Flag">{getCountryFlag(client.clientInfo?.phone)}</span>
                 <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">
                   {client.firstName} {client.lastName}
                 </h1>
@@ -167,56 +186,50 @@ const ClientProfilePage = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 relative" ref={contactDropdownRef}>
+        <div className="flex flex-wrap items-center gap-3">
            {client.clientInfo?.notionLink && (
              <a 
               href={client.clientInfo.notionLink} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="px-6 py-3.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-2xl font-bold flex items-center gap-2 hover:bg-brand-50/10 hover:text-brand-500 transition-all border border-slate-200 dark:border-white/10"
+              className="px-6 py-4 bg-[#0a0a0c] text-white rounded-2xl font-bold flex items-center gap-2 hover:bg-brand-600 transition-all border border-white/10 shadow-lg"
              >
                <img src="https://www.notion.so/images/favicon.ico" className="w-[18px] h-[18px]" alt="Notion" />
-               {t('notion_project')}
+               Notion
              </a>
            )}
+           
            <button 
-            onClick={() => setShowContactDropdown(!showContactDropdown)}
-            className="px-6 py-3.5 bg-brand-600 text-white rounded-2xl font-bold shadow-lg shadow-brand-600/20 hover:-translate-y-1 transition-all flex items-center gap-2"
+            onClick={() => handleContactAction('WHATSAPP')}
+            className="px-6 py-4 bg-emerald-600 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/20 hover:-translate-y-1 transition-all flex items-center gap-2"
            >
-             <Send size={18} />
-             {t('contact_client')}
+             <SendHorizontal size={18} />
+             WhatsApp
            </button>
 
-           {showContactDropdown && (
-             <div className="absolute top-full right-0 mt-3 w-64 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-               <div className="p-3 space-y-1">
-                 <button onClick={() => handleContactAction('INTERNAL')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300 transition-all font-bold text-sm text-left">
-                   <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
-                     <MessageCircle size={16} />
-                   </div>
-                   {t('send_internal_message')}
-                 </button>
-                 <button onClick={() => handleContactAction('WHATSAPP')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300 transition-all font-bold text-sm text-left">
-                   <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                     <SendHorizontal size={16} />
-                   </div>
-                   {t('contact_whatsapp')}
-                 </button>
-                 <button onClick={() => handleContactAction('TELEGRAM')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300 transition-all font-bold text-sm text-left">
-                   <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
-                     <img src="https://telegram.org/favicon.ico" className="w-4 h-4" alt="" />
-                   </div>
-                   {t('contact_telegram')}
-                 </button>
-                 <button onClick={() => handleContactAction('EMAIL')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 text-slate-700 dark:text-slate-300 transition-all font-bold text-sm text-left">
-                   <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
-                     <Mail size={16} />
-                   </div>
-                   {t('contact_email')}
-                 </button>
-               </div>
-             </div>
-           )}
+           <button 
+            onClick={() => handleContactAction('TELEGRAM')}
+            className="px-6 py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-600/20 hover:-translate-y-1 transition-all flex items-center gap-2"
+           >
+             <img src="https://telegram.org/favicon.ico" className="w-5 h-5" alt="" />
+             Telegram
+           </button>
+
+           <button 
+            onClick={() => handleContactAction('EMAIL')}
+            className="px-6 py-4 bg-amber-600 text-white rounded-2xl font-bold shadow-lg shadow-amber-600/20 hover:-translate-y-1 transition-all flex items-center gap-2"
+           >
+             <Mail size={18} />
+             Email
+           </button>
+
+           <button 
+            onClick={() => handleContactAction('INTERNAL')}
+            className="px-6 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-600/20 hover:-translate-y-1 transition-all flex items-center gap-2"
+           >
+             <MessageCircle size={18} />
+             Chat
+           </button>
         </div>
       </div>
 

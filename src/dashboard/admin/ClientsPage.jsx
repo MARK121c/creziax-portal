@@ -12,6 +12,34 @@ const healthScores = [
   { value: 'AT_RISK', label: 'health_risk', emoji: '🔴', color: 'text-rose-500' },
 ];
 
+const COUNTRY_FLAGS = {
+  '+20': '🇪🇬',
+  '+966': '🇸🇦',
+  '+971': '🇦🇪',
+  '+974': '🇶🇦',
+  '+965': '🇰🇼',
+  '+968': '🇴🇲',
+  '+973': '🇧🇭',
+  '+961': '🇱🇧',
+  '+962': '🇯🇴',
+  '+1': '🇺🇸',
+  '+39': '🇮🇹',
+  '+7': '🇷🇺',
+  '+33': '🇫🇷',
+  '+49': '🇩🇪',
+  '+90': '🇹🇷',
+  '+212': '🇲🇦',
+  '+213': '🇩🇿',
+  '+216': '🇹🇳',
+  '+249': '🇸🇩',
+};
+
+const getCountryFlag = (phone) => {
+  if (!phone) return null;
+  const match = Object.keys(COUNTRY_FLAGS).find(code => phone.startsWith(code));
+  return match ? COUNTRY_FLAGS[match] : null;
+};
+
 const ClientsPage = () => {
   const { t } = useTranslation();
   const [clients, setClients] = useState([]);
@@ -38,86 +66,7 @@ const ClientsPage = () => {
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const QuickAccessMenu = ({ client }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const menuRef = useRef(null);
 
-    useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (menuRef.current && !menuRef.current.contains(event.target)) {
-          setIsOpen(false);
-        }
-      };
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    return (
-      <div className="relative" ref={menuRef}>
-        <button 
-          onClick={() => setIsOpen(!isOpen)}
-          className={`p-2.5 rounded-xl border transition-all duration-300 ${isOpen ? 'bg-brand-500 text-white border-brand-500' : 'text-slate-400 hover:text-brand-500 bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-brand-500/20'}`}
-          title={t('quick_actions')}
-        >
-          <FileText size={18} />
-        </button>
-
-        {isOpen && (
-          <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-[#0f0f12] shadow-2xl border border-slate-100 dark:border-white/5 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-2 space-y-1">
-              <Link 
-                to={`/admin/clients/${client.clientInfo?.id || client.id}`}
-                className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
-                  <UserPlus size={16} />
-                </div>
-                <span>{t('client_profile')}</span>
-              </Link>
-              
-              {client.clientInfo?.notionLink && (
-                <a 
-                  href={client.clientInfo.notionLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-black/10 dark:bg-white/10 flex items-center justify-center">
-                    <img src="https://www.notion.so/images/favicon.ico" className="w-4 h-4" alt="Notion" />
-                  </div>
-                  <span>Notion Board</span>
-                </a>
-              )}
-
-              <Link 
-                to={`/admin/contracts?clientId=${client.id}`}
-                className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                  <Briefcase size={16} />
-                </div>
-                <span>{t('contracts')}</span>
-              </Link>
-
-              <Link 
-                to={`/admin/payments?clientId=${client.id}`}
-                className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                <div className="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-500">
-                  <Receipt size={16} />
-                </div>
-                <span>{t('invoices')}</span>
-              </Link>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const tiers = [
     { value: 'REGULAR', label: 'Regular', color: 'bg-slate-500' },
@@ -286,7 +235,9 @@ const ClientsPage = () => {
 
     try {
       const { data } = await uploadImageAPI(formData);
-      setForm({ ...form, logoUrl: data.url });
+      // Ensure the logo URL is complete
+      const finalUrl = data.url.startsWith('http') ? data.url : `${import.meta.env.VITE_API_URL || ''}${data.url}`;
+      setForm({ ...form, logoUrl: finalUrl });
       toast.success(t('saved_successfully'));
     } catch (err) {
       toast.error(t('error_general'));
@@ -303,7 +254,8 @@ const ClientsPage = () => {
     formData.append('image', file);
     try {
       const { data } = await uploadImageAPI(formData);
-      await updateClientAPI(clientId, { logoUrl: data.url });
+      const finalUrl = data.url.startsWith('http') ? data.url : `${import.meta.env.VITE_API_URL || ''}${data.url}`;
+      await updateClientAPI(clientId, { logoUrl: finalUrl });
       toast.success(t('saved_successfully'), { id: loadingToast });
       fetchClients();
     } catch (err) {
@@ -445,7 +397,7 @@ const ClientsPage = () => {
                   return (
                     <tr key={c.id} className={`hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-all group ${contractStatus?.isCritical ? 'bg-rose-500/[0.02]' : ''}`}>
                       <td className="px-6 md:px-10 py-5 md:py-7">
-                        <div className="flex items-center gap-4">
+                        <Link to={`/admin/clients/${c.clientInfo?.id || c.id}`} className="flex items-center gap-4 group/item">
                           <div className="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400 text-sm font-black shadow-sm border border-brand-100 dark:border-brand-500/20 flex-shrink-0 overflow-hidden relative group/logo">
                             {c.clientInfo?.logoUrl ? (
                               <img src={c.clientInfo.logoUrl} alt={c.clientInfo.company} className="w-full h-full object-cover" />
@@ -459,9 +411,10 @@ const ClientsPage = () => {
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <p className="text-sm md:text-base font-bold text-slate-800 dark:text-white leading-tight">{c.firstName} {c.lastName}</p>
+                              <span className="text-xl" title="Country Flag">{getCountryFlag(c.clientInfo?.phone)}</span>
+                              <p className="text-sm md:text-base font-bold text-slate-800 dark:text-white leading-tight group-hover/item:text-brand-500 transition-colors">{c.firstName} {c.lastName}</p>
                               {c.clientInfo?.isVip && (
-                                <div className="flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20 animate-pulse">
+                                <div className="flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
                                   <Star size={10} className="fill-amber-500 text-amber-500" />
                                   <span className="text-[9px] font-black text-amber-600 uppercase tracking-tighter">{t('vip_member')}</span>
                                 </div>
@@ -476,14 +429,9 @@ const ClientsPage = () => {
                                   {c.clientInfo.tier.replace('VIP_', '').replace('_', ' ')}
                                 </span>
                               )}
-                              {c.clientInfo?.notionLink && (
-                                <a href={c.clientInfo.notionLink} target="_blank" rel="noopener noreferrer" className="p-1 px-1.5 bg-slate-100 dark:bg-white/5 text-slate-400 hover:text-brand-500 rounded-lg border border-slate-200 dark:border-white/10 transition-colors">
-                                  <img src="https://www.notion.so/images/favicon.ico" className="w-3 h-3 grayscale group-hover:grayscale-0" alt="Notion" />
-                                </a>
-                              )}
                             </div>
                           </div>
-                        </div>
+                        </Link>
                       </td>
                       <td className="px-6 md:px-10 py-5 md:py-7 hidden md:table-cell">
                         <div className="space-y-1.5">
@@ -518,7 +466,13 @@ const ClientsPage = () => {
                       </td>
                       <td className="px-6 md:px-10 py-5 md:py-7 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <QuickAccessMenu client={c} />
+                          <Link 
+                            to={`/admin/clients/${c.clientInfo?.id || c.id}`}
+                            className="p-2.5 text-slate-400 hover:text-brand-500 hover:bg-brand-500/10 rounded-xl transition-all border border-slate-200 dark:border-white/10 hover:border-brand-500/20"
+                            title={t('view_profile')}
+                          >
+                            <ExternalLink size={16} />
+                          </Link>
                           <button 
                             onClick={() => openEditModal(c)} 
                             className="p-2.5 text-slate-400 hover:text-brand-500 hover:bg-brand-500/10 rounded-xl transition-all border border-slate-200 dark:border-white/10 hover:border-brand-500/20"
