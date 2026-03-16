@@ -14,6 +14,7 @@ import Login from './pages/Login';
 // Admin Dashboard Pages
 import AdminDashboard from './dashboard/admin/AdminDashboard';
 import ClientsPage from './dashboard/admin/ClientsPage';
+import ClientProfilePage from './dashboard/admin/ClientProfilePage';
 import TeamPage from './dashboard/admin/TeamPage';
 import ProjectsPage from './dashboard/admin/ProjectsPage';
 import TasksPage from './dashboard/admin/TasksPage';
@@ -22,6 +23,7 @@ import FilesPage from './dashboard/admin/FilesPage';
 import MessagesPage from './dashboard/admin/MessagesPage';
 import PaymentsPage from './dashboard/admin/PaymentsPage';
 import ExpensesPage from './dashboard/admin/ExpensesPage';
+import ContractsPage from './dashboard/admin/ContractsPage';
 
 // Shared Pages
 import ProfilePage from './dashboard/shared/ProfilePage';
@@ -91,6 +93,7 @@ function App() {
         >
           <Route index element={<AdminDashboard />} />
           <Route path="clients" element={<ClientsPage />} />
+          <Route path="clients/:id" element={<ClientProfilePage />} />
           <Route path="team" element={<TeamPage />} />
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="tasks" element={<TasksPage />} />
@@ -100,6 +103,7 @@ function App() {
           <Route path="payments" element={<PaymentsPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="expenses" element={<ExpensesPage />} />
+          <Route path="contracts" element={<ContractsPage />} />
         </Route>
 
         {/* Team Routes */}

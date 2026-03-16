@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { getUsersAPI, createUserAPI, deleteUserAPI, updateClientAPI, uploadImageAPI } from '../../store/api';
-import { Trash2, Plus, X, Building2, Mail, Phone, Calendar, Loader2, Search, UserPlus, Edit2, Star, Camera, UploadCloud, ExternalLink, Bell, FileText, Briefcase, Filter, ChevronRight } from 'lucide-react';
+import { Trash2, Plus, X, Building2, Mail, Phone, Calendar, Loader2, Search, UserPlus, Edit2, Star, Camera, UploadCloud, ExternalLink, Bell, FileText, Briefcase, Filter, ChevronRight, Receipt } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
@@ -32,38 +32,20 @@ const ClientsPage = () => {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [activeFilter, setActiveFilter] = useState({ tier: 'ALL', health: 'ALL' });
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
+
   const QuickAccessMenu = ({ client }) => {
-    const [open, setOpen] = useState(false);
     return (
-      <div className="relative">
-        <button 
-          onClick={() => setOpen(!open)}
-          className="p-2 text-slate-400 hover:text-brand-500 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10 transition-all"
-          title={t('quick_access')}
-        >
-          <FileText size={16} />
-        </button>
-        {open && (
-          <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="px-4 py-2 bg-slate-50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('documents')}</span>
-            </div>
-            <button className="w-full text-right px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-brand-500/10 hover:text-brand-500 transition-colors flex items-center justify-between group">
-              <span>{t('contract')}</span>
-              <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-            </button>
-            <button className="w-full text-right px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-brand-500/10 hover:text-brand-500 transition-colors flex items-center justify-between group">
-              <span>{t('invoices')}</span>
-              <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-            </button>
-            <div className="h-px bg-slate-100 dark:bg-white/5 mx-2" />
-            <Link to={`/admin/clients/${client.id}`} className="w-full text-right px-4 py-3 text-sm font-bold text-brand-500 hover:bg-brand-500/10 transition-colors flex items-center justify-between group">
-              <span>{t('client_history')}</span>
-              <ChevronRight size={14} />
-            </Link>
-          </div>
-        )}
-      </div>
+      <Link 
+        to={`/admin/clients/${client.id}`}
+        className="p-2.5 rounded-xl border text-slate-400 hover:text-brand-500 bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-brand-500/20 transition-all duration-300"
+        title={t('full_audit_log')}
+      >
+        <FileText size={18} />
+      </Link>
     );
   };
 
@@ -90,9 +72,16 @@ const ClientsPage = () => {
   const fetchClients = async () => {
     setLoading(true);
     try {
-      const { data } = await getUsersAPI();
-      setClients(data.filter(u => u.role === 'CLIENT'));
+      const response = await getUsersAPI();
+      const data = response?.data || [];
+      if (!Array.isArray(data)) {
+        console.error("API returned non-array data:", data);
+        setClients([]);
+        return;
+      }
+      setClients(data.filter(u => u?.role === 'CLIENT'));
     } catch (err) {
+      console.error("Error fetching clients:", err);
       toast.error(t('failed_load_clients'));
     } finally {
       setLoading(false);
@@ -144,25 +133,38 @@ const ClientsPage = () => {
   };
 
   const openEditModal = (client) => {
+    if (!client) return;
+
+    const formatDate = (dateString) => {
+      if (!dateString) return '';
+      const d = new Date(dateString);
+      if (isNaN(d.getTime())) return '';
+      try {
+        return d.toISOString().split('T')[0];
+      } catch (e) {
+        return '';
+      }
+    };
+
     setForm({
-      firstName: client.firstName,
-      lastName: client.lastName,
-      email: client.email,
+      firstName: client.firstName || '',
+      lastName: client.lastName || '',
+      email: client.email || '',
       password: '', 
       company: client.clientInfo?.company || '',
       phone: client.clientInfo?.phone || '',
       tier: client.clientInfo?.tier || 'REGULAR',
       budget: '',
-      isVip: client.clientInfo?.isVip || false,
+      isVip: !!client.clientInfo?.isVip,
       logoUrl: client.clientInfo?.logoUrl || '',
       notionLink: client.clientInfo?.notionLink || '',
       managedChannels: client.clientInfo?.managedChannels || '',
-      contractStartDate: client.clientInfo?.contractStartDate ? new Date(client.clientInfo.contractStartDate).toISOString().split('T')[0] : '',
-      contractEndDate: client.clientInfo?.contractEndDate ? new Date(client.clientInfo.contractEndDate).toISOString().split('T')[0] : '',
+      contractStartDate: formatDate(client.clientInfo?.contractStartDate),
+      contractEndDate: formatDate(client.clientInfo?.contractEndDate),
       healthScore: client.clientInfo?.healthScore || 'GOOD',
       internalNotes: client.clientInfo?.internalNotes || ''
     });
-    setEditId(client.clientInfo?.id);
+    setEditId(client.clientInfo?.id || client.id);
     setIsEditing(true);
     setShowModal(true);
   };
@@ -221,10 +223,18 @@ const ClientsPage = () => {
     }
   };
 
-  const filteredClients = clients.filter(c => {
-    const queryMatch = `${c.firstName} ${c.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                       c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                       (c.clientInfo?.company?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+  const filteredClients = (clients || []).filter(c => {
+    if (!c) return false;
+    const query = (searchQuery || '').toLowerCase();
+    const firstName = (c.firstName || '').toLowerCase();
+    const lastName = (c.lastName || '').toLowerCase();
+    const email = (c.email || '').toLowerCase();
+    const company = (c.clientInfo?.company || '').toLowerCase();
+
+    const queryMatch = firstName.includes(query) ||
+                       lastName.includes(query) ||
+                       email.includes(query) ||
+                       company.includes(query);
     
     const tierMatch = activeFilter.tier === 'ALL' || c.clientInfo?.tier === activeFilter.tier;
     const healthMatch = activeFilter.health === 'ALL' || c.clientInfo?.healthScore === activeFilter.health;
@@ -592,9 +602,9 @@ const ClientsPage = () => {
                   {isEditing && (
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('total_paid')}</label>
-                      <div className="w-full px-5 py-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-sm font-black text-emerald-600 flex items-center justify-between">
-                         <span>$ {(clients.find(c => (c.clientInfo?.id || c.id) === (editId || editId))?.totalPaid || 0).toLocaleString()}</span>
-                         <span className="text-[9px] uppercase tracking-tighter">Verified Ledger</span>
+                       <div className="w-full px-5 py-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-sm font-black text-emerald-600 flex items-center justify-between">
+                          <span>$ {(clients.find(c => (c.clientInfo?.id || c.id) === editId)?.totalPaid || 0).toLocaleString()}</span>
+                          <span className="text-[9px] uppercase tracking-tighter">Verified Ledger</span>
                       </div>
                     </div>
                   )}

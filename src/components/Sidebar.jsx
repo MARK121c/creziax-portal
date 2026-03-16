@@ -13,7 +13,9 @@ import {
   LogOut,
   UserCircle,
   UserRound,
-  ExternalLink
+  ExternalLink,
+  ShieldAlert,
+  FileBadge
 } from 'lucide-react';
 
 const adminLinks = [
@@ -25,6 +27,7 @@ const adminLinks = [
   { to: '/admin/files', icon: FileText, labelKey: 'files' },
   { to: '/admin/messages', icon: MessageSquare, labelKey: 'messages' },
   { to: '/admin/invoices', icon: Receipt, labelKey: 'invoices' },
+  { to: '/admin/contracts', icon: FileBadge, labelKey: 'contracts' },
   { to: '/admin/payments', icon: CreditCard, labelKey: 'payments' },
   { to: '/admin/profile', icon: UserRound, labelKey: 'my_profile' },
 ];

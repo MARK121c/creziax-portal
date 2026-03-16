@@ -259,7 +259,16 @@ const resources = {
       "quick_access": "Quick Access",
       "documents": "Documents",
       "contract": "Contract",
-      "client_history": "Full Client History"
+      "client_history": "Full Client History",
+      "contracts": "Contracts",
+      "contracts_vault": "Contracts Vault",
+      "manage_legal_docs": "Manage and audit client legal agreements",
+      "search_contracts": "Search by client or company...",
+      "new_contract": "New Contract",
+      "open_contract": "Open Contract",
+      "view_invoices": "View Invoices",
+      "documents_vault": "Documents Vault",
+      "full_audit_log": "Full Audit Log"
     }
   },
   ar: {
@@ -518,7 +527,16 @@ const resources = {
       "quick_access": "وصول سريع",
       "documents": "المستندات",
       "contract": "العقد",
-      "client_history": "تاريخ العميل الكامل"
+      "client_history": "تاريخ العميل الكامل",
+      "contracts": "العقود",
+      "contracts_vault": "خزنة العقود",
+      "manage_legal_docs": "إدارة ومراجعة الاتفاقيات القانونية للعملاء",
+      "search_contracts": "بحث عن طريق العميل أو الشركة...",
+      "new_contract": "عقد جديد",
+      "open_contract": "فتح العقد",
+      "view_invoices": "عرض الفواتير",
+      "documents_vault": "خزنة المستندات",
+      "full_audit_log": "سجل المراجعة الكامل"
     }
   }
 };
