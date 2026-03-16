@@ -40,7 +40,7 @@ const ClientsPage = () => {
   const QuickAccessMenu = ({ client }) => {
     return (
       <Link 
-        to={`/admin/clients/${client.id}`}
+        to={`/admin/clients/${client.clientInfo?.id || client.id}`}
         className="p-2.5 rounded-xl border text-slate-400 hover:text-brand-500 bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-brand-500/20 transition-all duration-300"
         title={t('full_audit_log')}
       >
@@ -98,6 +98,10 @@ const ClientsPage = () => {
     try {
       if (isEditing) {
         await updateClientAPI(editId, { 
+          firstName: form.firstName,
+          lastName: form.lastName,
+          email: form.email,
+          password: form.password,
           company: form.company, 
           phone: form.phone, 
           tier: form.tier,
@@ -503,10 +507,15 @@ const ClientsPage = () => {
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('email_address')}</label>
                     <input type="email" name="email" value={form.email} onChange={handleChange} required className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
                   </div>
-                  {!isEditing && (
+                  {!isEditing ? (
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('password')}</label>
                       <input type="password" name="password" value={form.password} onChange={handleChange} required className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('password')} (اتركه فارغاً للحفاظ على القديم)</label>
+                      <input type="password" name="password" value={form.password} onChange={handleChange} placeholder="تغيير كلمة المرور..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" />
                     </div>
                   )}
                   <div className="space-y-2">
