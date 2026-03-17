@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { getProjectsAPI, createProjectAPI, updateProjectAPI, deleteProjectAPI, getClientsAPI, downloadContractPDFAPI } from '../../store/api';
 import { Plus, X, Trash2, Layout, Search, Briefcase, Calendar, Loader2, CheckCircle2, Clock, PlayCircle, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -24,7 +25,16 @@ const ProjectsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
   const addNotification = useNotificationStore(state => state.addNotification);
-  const [form, setForm] = useState({ name: '', description: '', clientId: '', status: 'CHANNEL_SETUP' });
+  const [form, setForm] = useState({ 
+    name: '', 
+    description: '', 
+    clientId: '', 
+    status: 'CHANNEL_SETUP',
+    notionUrl: '',
+    driveUrl: '',
+    brandUrl: '',
+    annualContractDate: ''
+  });
 
   const fetchData = async () => {
     setLoading(true);
@@ -183,7 +193,9 @@ const ProjectsPage = () => {
               </div>
 
               <div className="mb-6">
-                <h3 className="text-lg md:text-xl font-black text-slate-800 dark:text-white leading-tight mb-2 group-hover:text-brand-600 transition-colors">{p.name}</h3>
+                <Link to={`/admin/projects/${p.id}`}>
+                  <h3 className="text-lg md:text-xl font-black text-slate-800 dark:text-white leading-tight mb-2 group-hover:text-brand-600 transition-colors uppercase tracking-tight">{p.name}</h3>
+                </Link>
                 <p className="text-sm font-bold text-slate-400 dark:text-slate-500 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-brand-500 flex-shrink-0"></span>
                   {p.client?.user?.firstName} {p.client?.user?.lastName}
@@ -264,7 +276,23 @@ const ProjectsPage = () => {
 
               <div className="space-y-2.5">
                 <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('label_description')}</label>
-                <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder={t('brief_description')} rows={3} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold resize-none" />
+                <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder={t('brief_description')} rows={2} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold resize-none" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-5">
+                 <div className="space-y-2.5">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Notion Link</label>
+                    <input value={form.notionUrl} onChange={e => setForm({...form, notionUrl: e.target.value})} placeholder="https://notion.so/..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all font-bold" />
+                 </div>
+                 <div className="space-y-2.5">
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Drive Link</label>
+                    <input value={form.driveUrl} onChange={e => setForm({...form, driveUrl: e.target.value})} placeholder="https://drive.google.com/..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all font-bold" />
+                 </div>
+              </div>
+
+              <div className="space-y-2.5">
+                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Annual Contract Renewal</label>
+                <input type="date" value={form.annualContractDate} onChange={e => setForm({...form, annualContractDate: e.target.value})} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all font-bold" />
               </div>
 
               <div className="pt-6 flex gap-5 border-t border-slate-100 dark:border-white/5">

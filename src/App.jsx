@@ -19,6 +19,7 @@ import ClientProfilePage from './dashboard/admin/ClientProfilePage';
 import TeamPage from './dashboard/admin/TeamPage';
 import TeamMemberProfilePage from './dashboard/admin/TeamMemberProfilePage';
 import ProjectsPage from './dashboard/admin/ProjectsPage';
+import WorkspaceDetail from './dashboard/admin/WorkspaceDetail';
 import TasksPage from './dashboard/admin/TasksPage';
 import InvoicesPage from './dashboard/admin/InvoicesPage';
 import FilesPage from './dashboard/admin/FilesPage';
@@ -122,6 +123,7 @@ function App() {
           <Route path="team" element={<TeamPage />} />
           <Route path="team/:id" element={<TeamMemberProfilePage />} />
           <Route path="projects" element={<ProjectsPage />} />
+          <Route path="projects/:id" element={<WorkspaceDetail />} />
           <Route path="tasks" element={<TasksPage />} />
           <Route path="files" element={<FilesPage />} />
           <Route path="messages" element={<MessagesPage />} />

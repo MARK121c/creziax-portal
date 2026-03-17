@@ -118,4 +118,12 @@ export const deleteBonusAPI = (id) => api.delete(`/bonuses/${id}`);
 // Activity Log
 export const getRecentActivityAPI = (limit = 5) => api.get(`/activities?limit=${limit}`);
 
+// Workspaces (Professional Retainer Management)
+export const getWorkspacesAPI = () => api.get('/workspaces');
+export const getWorkspaceAPI = (id) => api.get(`/workspaces/${id}`);
+export const getPhaseTasksAPI = (phaseId) => api.get(`/workspaces/phases/${phaseId}/tasks`);
+export const updateWorkspaceTaskAPI = (id, data) => api.put(`/workspaces/tasks/${id}`, data);
+export const createPhaseAPI = (projectId, data) => api.post(`/workspaces/${projectId}/phases`, data);
+export const createWorkspaceTaskAPI = (phaseId, data) => api.post(`/workspaces/phases/${phaseId}/tasks`, data);
+
 export default api;
