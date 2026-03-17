@@ -79,7 +79,6 @@ function App() {
   return (
     <>
       <ThemeInitializer />
-      <LanguageInitializer />
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
