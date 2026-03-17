@@ -39,7 +39,9 @@ export const updateProfileAPI = (data) => api.put('/auth/profile', data);
 // Users
 export const getUsersAPI = () => api.get('/users');
 export const createUserAPI = (data) => api.post('/users', data);
+export const updateUserAPI = (id, data) => api.put(`/users/${id}`, data);
 export const deleteUserAPI = (id) => api.delete(`/users/${id}`);
+export const resetPasswordAPI = (id, newPassword) => api.post(`/users/${id}/reset-password`, { newPassword });
 
 // Clients
 export const getClientsAPI = () => api.get('/clients');
