@@ -1,0 +1,12 @@
+[phases.setup]
+nixPkgs = ["nodejs-20_x"]
+
+[phases.build]
+cmds = ["npm install", "npm run build"]
+
+[phases.serving]
+# This explicitly tells Nixpacks to serve the build output from the dist folder
+# For Vite projects, it's usually dist
+directory = "dist"
+#SPA routing
+cmds = ["npx -y serve -s dist"]
