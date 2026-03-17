@@ -142,7 +142,7 @@ const ClientProfilePage = () => {
         break;
       case 'EMAIL':
         if (email) {
-          window.location.assign(`mailto:${email}`);
+          window.location.href = `mailto:${email}`;
         } else {
           toast.error(t('missing_email'));
         }
@@ -223,9 +223,9 @@ const ClientProfilePage = () => {
           >
             <ChevronLeft size={20} />
           </button>
-          <div className="flex items-center gap-5">
-             <div className="relative group">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2rem] bg-white dark:bg-white/10 flex items-center justify-center text-3xl font-black text-slate-400 border-4 border-white dark:border-[#0a0a0c] shadow-2xl overflow-hidden relative group/inner">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-8 flex-1">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2rem] bg-white dark:bg-white/10 flex items-center justify-center text-3xl font-black text-slate-400 border-4 border-white dark:border-[#0a0a0c] shadow-2xl overflow-hidden relative group">
                 {uploadingLogo ? (
                   <Loader2 size={32} className="animate-spin text-brand-500" />
                 ) : previewUrl || getClientLogo(client) ? (
@@ -237,56 +237,45 @@ const ClientProfilePage = () => {
                   </div>
                 )}
                 
-                {/* View/Zoom Button */}
                 {(previewUrl || getClientLogo(client)) && (
                   <button 
                     onClick={() => window.open(previewUrl || getFormattedLogoUrl(getClientLogo(client)), '_blank')}
-                    className="absolute inset-0 bg-black/40 opacity-0 group-hover/inner:opacity-100 transition-opacity flex items-center justify-center text-white"
+                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
                   >
                     <Search size={28} />
                   </button>
                 )}
               </div>
 
-              {/* Advanced Controls */}
-              <div className="absolute -bottom-2 -right-2 flex flex-col gap-2 z-30">
+              {/* Advanced Controls moved below logo */}
+              <div className="flex flex-col items-center gap-2">
                 {uploadingLogo ? (
-                   <div className="p-3 bg-white dark:bg-white/10 rounded-2xl shadow-xl border border-slate-200 dark:border-white/10">
+                   <div className="flex items-center gap-2 px-6 py-3 bg-white/50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
                       <Loader2 size={18} className="animate-spin text-brand-500" />
+                      <span className="text-[10px] font-black uppercase text-slate-500">{i18n.language === 'ar' ? 'جاري التحميل...' : 'UPLOADING...'}</span>
                    </div>
                 ) : selectedFile ? (
-                  <div className="flex flex-col gap-2 scale-90 md:scale-100 origin-bottom-right">
+                  <div className="flex items-center gap-3 animate-in slide-in-from-top-2">
                     <button 
                       onClick={handleConfirmLogo}
-                      className="p-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl shadow-xl transition-all border-4 border-white dark:border-[#0a0a0c]"
-                      title="Confirm Upload"
+                      className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl shadow-xl shadow-emerald-600/20 transition-all font-black text-[10px] uppercase tracking-widest flex items-center gap-2"
                     >
-                      <Shield size={18} />
+                      <Shield size={14} />
+                      {i18n.language === 'ar' ? 'تأكيد الحفظ' : 'CONFIRM SAVE'}
                     </button>
                     <button 
                       onClick={() => { setSelectedFile(null); setPreviewUrl(null); }}
-                      className="p-3 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl shadow-xl transition-all border-4 border-white dark:border-[#0a0a0c]"
-                      title="Cancel"
+                      className="px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl shadow-xl shadow-rose-600/20 transition-all font-black text-[10px] uppercase tracking-widest flex items-center gap-2"
                     >
-                      <X size={18} />
+                      <X size={14} />
+                      {i18n.language === 'ar' ? 'إلغاء' : 'CANCEL'}
                     </button>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2">
-                    {getClientLogo(client) && (
-                      <button 
-                        onClick={handleDeleteLogo}
-                        className="p-3 bg-rose-600/10 text-rose-600 rounded-2xl shadow-sm cursor-pointer transition-all hover:bg-rose-500 hover:text-white border-4 border-white dark:border-[#0a0a0c]"
-                        title="Delete Logo"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    )}
-                    <label className="p-3 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl shadow-lg cursor-pointer transition-all hover:scale-110 active:scale-95 border-4 border-white dark:border-[#0a0a0c] flex items-center gap-2 pr-4">
-                      <Plus size={18} />
-                      <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
-                        {i18n.language === 'ar' ? 'ارفع الصورة' : 'UPLOAD LOGO'}
-                      </span>
+                  <div className="flex items-center gap-3">
+                    <label className="px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl shadow-lg shadow-brand-600/20 cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2 font-black text-[10px] uppercase tracking-widest">
+                      <Plus size={16} />
+                      {i18n.language === 'ar' ? 'ارفع الصورة' : 'UPLOAD LOGO'}
                       <input type="file" className="hidden" accept="image/*" onChange={(e) => {
                         const file = e.target.files[0];
                         if (!file) return;
@@ -298,12 +287,22 @@ const ClientProfilePage = () => {
                         setPreviewUrl(URL.createObjectURL(file));
                       }} />
                     </label>
+                    {getClientLogo(client) && (
+                      <button 
+                        onClick={handleDeleteLogo}
+                        className="px-6 py-3 bg-rose-600/10 text-rose-600 hover:bg-rose-600 hover:text-white rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest flex items-center gap-2"
+                      >
+                        <Trash2 size={14} />
+                        {i18n.language === 'ar' ? 'حذف اللوجو' : 'DELETE LOGO'}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
             </div>
-            <div>
-              <div className="flex items-center gap-3">
+
+            <div className="flex flex-col gap-2 pt-2 text-center md:text-start">
+              <div className="flex items-center justify-center md:justify-start gap-3">
                 {getCountryFlagUrl(getClientPhone(client)) && (
                   <img src={getCountryFlagUrl(getClientPhone(client))} alt="flag" className="w-8 h-auto rounded-sm shadow-md" />
                 )}
@@ -318,7 +317,7 @@ const ClientProfilePage = () => {
                 )}
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-widest text-[10px]">
-                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.3.7
+                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.3.8
               </p>
             </div>
           </div>
