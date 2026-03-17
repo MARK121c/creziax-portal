@@ -21,12 +21,12 @@ import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
 
 const taskStatusConfig = {
-  IDEA: { color: 'text-slate-500', bg: 'bg-slate-500/10', label: 'Idea', dot: 'bg-slate-500' },
-  SCRIPTING: { color: 'text-indigo-500', bg: 'bg-indigo-500/10', label: 'Scripting', dot: 'bg-indigo-500' },
-  SHOOTING: { color: 'text-amber-500', bg: 'bg-amber-500/10', label: 'Shooting', dot: 'bg-amber-500' },
-  EDITING: { color: 'text-blue-500', bg: 'bg-blue-500/10', label: 'Editing', dot: 'bg-blue-500' },
-  REVIEW: { color: 'text-purple-500', bg: 'bg-purple-500/10', label: 'Review', dot: 'bg-purple-500' },
-  DELIVERED: { color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'Delivered', dot: 'bg-emerald-500' },
+  IDEA: { color: 'text-slate-500', bg: 'bg-slate-500/10', label: 'فكرة استراتيجية', dot: 'bg-slate-500' },
+  SCRIPTING: { color: 'text-indigo-500', bg: 'bg-indigo-500/10', label: 'كتابة السيناريو', dot: 'bg-indigo-500' },
+  SHOOTING: { color: 'text-amber-500', bg: 'bg-amber-500/10', label: 'جاري التصوير', dot: 'bg-amber-500' },
+  EDITING: { color: 'text-blue-500', bg: 'bg-blue-500/10', label: 'المونتاج والتحرير', dot: 'bg-blue-500' },
+  REVIEW: { color: 'text-purple-500', bg: 'bg-purple-500/10', label: 'مراجعة الجودة', dot: 'bg-purple-500' },
+  DELIVERED: { color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'تم التسليم بنجاح', dot: 'bg-emerald-500' },
 };
 
 const getFormattedLogoUrl = (url) => {
@@ -145,14 +145,27 @@ const WorkspaceDetail = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-32">
-        <Loader2 size={44} className="animate-spin text-brand-500 mb-6" />
-        <p className="font-bold tracking-widest uppercase text-xs text-slate-400">Syncing Workspace Portal...</p>
+      <div className="flex flex-col items-center justify-center py-48 bg-white dark:bg-[#0a0a0c]">
+        <div className="relative mb-12">
+           <div className="absolute inset-0 bg-brand-500/20 blur-3xl rounded-full scale-150 animate-pulse"></div>
+           <Loader2 size={80} className="animate-spin text-brand-500 relative z-10" />
+           <Activity className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-brand-500/30" size={32} />
+        </div>
+        <p className="font-black tracking-[0.5em] uppercase text-[11px] text-slate-400 animate-pulse">Synchronizing Elite Command Link</p>
       </div>
     );
   }
 
-  if (!workspace) return <div>Workspace not found</div>;
+  if (!workspace) return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-6">
+       <div className="w-24 h-24 bg-rose-500/10 rounded-[2rem] flex items-center justify-center text-rose-500 mb-8">
+          <AlertCircle size={48} />
+       </div>
+       <h2 className="text-3xl font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-4">Command Center Offline</h2>
+       <p className="text-slate-500 font-bold uppercase text-[11px] tracking-[0.2em] mb-10">The requested strategic coordinate could not be localized.</p>
+       <Link to="/admin/projects" className="px-10 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl">Back to Directory</Link>
+    </div>
+  );
 
   const currentPhase = workspace.phases?.[0]; 
   const financialStatus = currentPhase?.invoice;
@@ -193,20 +206,20 @@ const WorkspaceDetail = () => {
                   {workspace.name}
                 </h1>
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
-                  <div className="flex items-center gap-2 px-3 py-1 bg-amber-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest border-2 border-amber-600 shadow-lg animate-bounce">
-                    V2.2 PREMIUM PROVOCATIVE
+                  <div className="flex items-center gap-2 px-5 py-2 bg-brand-600 text-white rounded-full text-[10px] font-black uppercase tracking-[0.2em] border-2 border-white/20 shadow-2xl shadow-brand-600/40 animate-pulse">
+                    V2.4 ELITE COMMAND
                   </div>
-                  <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-white/10 rounded-2xl border border-slate-200 dark:border-white/5">
-                    <Users size={14} className="text-slate-500" />
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
-                      {workspace.client?.user?.firstName} {workspace.client?.user?.lastName} (Client)
+                  <div className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-white/5 rounded-[1.5rem] border-2 border-slate-100 dark:border-white/10 shadow-xl">
+                    <Users size={16} className="text-brand-500" />
+                    <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-tight">
+                      {workspace.client?.user?.firstName || 'Strategic'} {workspace.client?.user?.lastName || 'Partner'}
                     </span>
                   </div>
                   {workspace.annualContractDate && (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 rounded-2xl border border-indigo-500/20">
-                      <Calendar size={14} className="text-indigo-500" />
-                      <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-tighter">
-                        Contract Renewal: {new Date(workspace.annualContractDate).toLocaleDateString()}
+                    <div className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-white/5 rounded-[1.5rem] border-2 border-slate-100 dark:border-white/10 shadow-xl">
+                      <Calendar size={16} className="text-emerald-500" />
+                      <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-tight">
+                        Renewal: {new Date(workspace.annualContractDate).toLocaleDateString()}
                       </span>
                     </div>
                   )}
