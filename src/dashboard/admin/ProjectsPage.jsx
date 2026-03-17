@@ -15,6 +15,16 @@ const statusConfig = {
   COMPLETED: { label: 'Done', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', icon: CheckCircle2 },
 };
 
+const getStatusStyle = (status) => {
+  return statusConfig[status] || { 
+    label: status?.replace('_', ' ') || 'PROJECT', 
+    color: 'text-slate-500', 
+    bg: 'bg-slate-50', 
+    border: 'border-slate-200', 
+    icon: Activity 
+  };
+};
+
 const ProjectsPage = () => {
   const { t } = useTranslation();
   const [projects, setProjects] = useState([]);
@@ -126,9 +136,10 @@ const ProjectsPage = () => {
   };
 
   const filteredProjects = projects.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.client?.user?.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.client?.user?.lastName.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = (p.name?.toLowerCase() || '').includes(q) ||
+      (p.client?.user?.firstName?.toLowerCase() || '').includes(q) ||
+      (p.client?.user?.lastName?.toLowerCase() || '').includes(q);
     
     const matchesFilter = activeFilter === 'ALL' || p.status === activeFilter;
     
@@ -145,7 +156,7 @@ const ProjectsPage = () => {
                <Briefcase size={22} />
              </div>
              <div className="px-3 py-1 bg-brand-500/10 text-brand-500 text-[10px] font-black uppercase tracking-[0.15em] rounded-full border border-brand-500/20">
-               V2.5 STABLE
+               V2.5.2 STABLE
              </div>
           </div>
           <h1 className="text-3xl md:text-5xl font-black text-slate-800 dark:text-white tracking-tighter uppercase leading-none">
@@ -187,20 +198,23 @@ const ProjectsPage = () => {
         >
           {t('all_projects')}
         </button>
-        {Object.keys(statusConfig).map(status => (
-          <button 
-            key={status}
-            onClick={() => setActiveFilter(status)}
-            className={`flex items-center gap-4 px-8 py-4.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all border-2 whitespace-nowrap ${
-              activeFilter === status 
-              ? `${statusConfig[status].bg} ${statusConfig[status].color} ${statusConfig[status].border} shadow-xl translate-y-[-4px]` 
-              : 'bg-white dark:bg-white/5 text-slate-400 border-slate-100 dark:border-white/5 hover:border-brand-500/30'
-            }`}
-          >
-            <span className={`w-2.5 h-2.5 rounded-full ${activeFilter === status ? 'bg-current animate-ping' : 'bg-slate-300'}`}></span>
-            {status.replace('_', ' ')}
-          </button>
-        ))}
+        {Object.keys(statusConfig).map(status => {
+          const config = getStatusStyle(status);
+          return (
+            <button 
+              key={status}
+              onClick={() => setActiveFilter(status)}
+              className={`flex items-center gap-4 px-8 py-4.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all border-2 whitespace-nowrap ${
+                activeFilter === status 
+                ? `${config.bg} ${config.color} ${config.border} shadow-xl translate-y-[-4px]` 
+                : 'bg-white dark:bg-white/5 text-slate-400 border-slate-100 dark:border-white/5 hover:border-brand-500/30'
+              }`}
+            >
+              <span className={`w-2.5 h-2.5 rounded-full ${activeFilter === status ? 'bg-current animate-ping' : 'bg-slate-300'}`}></span>
+              {status.replace('_', ' ')}
+            </button>
+          );
+        })}
       </div>
 
       {loading ? (
@@ -223,8 +237,8 @@ const ProjectsPage = () => {
             <div key={p.id} className={`group relative bg-white dark:bg-[#0a0a0c]/40 border rounded-[2.5rem] p-8 shadow-xl transition-all duration-500 hover:-translate-y-2 border-slate-100 dark:border-white/5 hover:border-brand-500/30`}>
               <div className="flex flex-col gap-6">
                 <div className="flex items-start justify-between">
-                   <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${statusConfig[p.status].bg} ${statusConfig[p.status].color} ${statusConfig[p.status].border}`}>
-                      {p.status.replace('_', ' ')}
+                   <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${getStatusStyle(p.status).bg} ${getStatusStyle(p.status).color} ${getStatusStyle(p.status).border}`}>
+                      {p.status?.replace('_', ' ') || 'PROJECT'}
                    </div>
                    <div className="flex gap-2">
                       <button 
