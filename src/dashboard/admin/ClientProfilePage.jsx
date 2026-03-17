@@ -154,7 +154,8 @@ const ClientProfilePage = () => {
       case 'EMAIL':
         const targetEmail = getClientEmail(client);
         if (targetEmail) {
-          window.location.href = `mailto:${targetEmail}`;
+          // Direct Gmail web link for 100% reliability as per user request
+          window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${targetEmail}`, '_blank');
         } else {
           toast.error(t('missing_email'));
         }
@@ -336,7 +337,7 @@ const ClientProfilePage = () => {
                 )}
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-widest text-[10px]">
-                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.5.0
+                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.5.1
               </p>
             </div>
           </div>
