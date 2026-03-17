@@ -326,7 +326,7 @@ const ClientProfilePage = () => {
                 )}
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-widest text-[10px]">
-                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.3.9
+                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.4.0
               </p>
             </div>
           </div>
@@ -365,13 +365,14 @@ const ClientProfilePage = () => {
              Telegram
            </button>
 
-           <button 
-            onClick={() => handleContactAction('EMAIL')}
-            className="px-6 py-4 bg-amber-600 text-white rounded-2xl font-bold shadow-lg shadow-amber-600/20 hover:-translate-y-1 transition-all flex items-center gap-2"
-           >
-             <Mail size={18} />
-             Email
-           </button>
+            <a 
+             href={client?.email ? `mailto:${client.email}` : '#'}
+             onClick={(e) => { if(!client?.email) { e.preventDefault(); toast.error(t('missing_email')); } }}
+             className="px-6 py-4 bg-amber-600 text-white rounded-2xl font-bold shadow-lg shadow-amber-600/20 hover:-translate-y-1 transition-all flex items-center gap-2 active:scale-95"
+            >
+              <Mail size={18} />
+              Email
+            </a>
 
            <button 
             onClick={() => handleContactAction('INTERNAL')}
