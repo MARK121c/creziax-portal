@@ -142,8 +142,9 @@ const ClientProfilePage = () => {
         }
         break;
       case 'EMAIL':
-        if (client?.email) {
-          window.location.href = `mailto:${client.email}`;
+        const targetEmail = getClientEmail(client);
+        if (targetEmail) {
+          window.location.href = `mailto:${targetEmail}`;
         } else {
           toast.error(t('missing_email'));
         }
@@ -182,16 +183,15 @@ const ClientProfilePage = () => {
       const d = await r.json();
       if (d.url) {
         const updateId = getClientId(client);
-        // Important: Use flattened payload and sync BOTH locations in state
+        // Only update the logo specific fields to preserve other primary data
         await updateClientAPI(updateId, { 
-          ...client,
-          clientInfo: { ...(client.clientInfo || {}), logoUrl: d.url },
-          logoUrl: d.url 
+          logoUrl: d.url,
+          clientInfo: { ...(client.clientInfo || {}), logoUrl: d.url }
         });
         setClient(prev => ({ 
           ...prev, 
-          clientInfo: { ...(prev.clientInfo || {}), logoUrl: d.url },
-          logoUrl: d.url 
+          logoUrl: d.url,
+          clientInfo: { ...(prev.clientInfo || {}), logoUrl: d.url }
         }));
         toast.success(t('saved_successfully'));
         setSelectedFile(null);
@@ -207,14 +207,13 @@ const ClientProfilePage = () => {
     try {
       const updateId = getClientId(client);
       await updateClientAPI(updateId, { 
-        ...client,
-        clientInfo: { ...(client.clientInfo || {}), logoUrl: '' },
-        logoUrl: '' 
+        logoUrl: '',
+        clientInfo: { ...(client.clientInfo || {}), logoUrl: '' }
       });
       setClient(prev => ({ 
         ...prev, 
-        clientInfo: { ...(prev.clientInfo || {}), logoUrl: '' },
-        logoUrl: '' 
+        logoUrl: '',
+        clientInfo: { ...(prev.clientInfo || {}), logoUrl: '' }
       }));
       toast.success(t('saved_successfully'));
     } catch (err) { toast.error('Action failed'); }
@@ -327,7 +326,7 @@ const ClientProfilePage = () => {
                 )}
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-widest text-[10px]">
-                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.4.1
+                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.4.2
               </p>
             </div>
           </div>
