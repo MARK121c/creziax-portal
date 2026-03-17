@@ -16,6 +16,7 @@ import AdminDashboard from './dashboard/admin/AdminDashboard';
 import ClientsPage from './dashboard/admin/ClientsPage';
 import ClientProfilePage from './dashboard/admin/ClientProfilePage';
 import TeamPage from './dashboard/admin/TeamPage';
+import TeamMemberProfilePage from './dashboard/admin/TeamMemberProfilePage';
 import ProjectsPage from './dashboard/admin/ProjectsPage';
 import TasksPage from './dashboard/admin/TasksPage';
 import InvoicesPage from './dashboard/admin/InvoicesPage';
@@ -96,6 +97,7 @@ function App() {
           <Route path="clients" element={<ClientsPage />} />
           <Route path="clients/:id" element={<ClientProfilePage />} />
           <Route path="team" element={<TeamPage />} />
+          <Route path="team/:id" element={<TeamMemberProfilePage />} />
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="tasks" element={<TasksPage />} />
           <Route path="files" element={<FilesPage />} />

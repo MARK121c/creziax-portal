@@ -1,10 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { getUsersAPI, createUserAPI, updateUserAPI, deleteUserAPI, uploadImageAPI, resetPasswordAPI, createExpenseAPI } from '../../store/api';
 import { 
   Trash2, Plus, X, User, Mail, Calendar, Search, Loader2, UserPlus, 
   ShieldAlert, ShieldCheck, Camera, UploadCloud, ExternalLink, 
   MessageCircle, SendHorizontal, DollarSign, Wallet, ArrowUpRight, 
-  Key, RefreshCw, Power, Heart, Briefcase, ChevronRight
+  Key, RefreshCw, Power, Heart, Briefcase, ChevronRight, Filter, 
+  Settings, UserCheck, UserX, CreditCard, Layout
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../store/authStore';
@@ -12,6 +14,7 @@ import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
 
 const jobTitles = [
+  { value: 'ALL', label: 'الكل (All Roles)' },
   { value: 'Video Editor', label: 'Video Editor' },
   { value: 'Media Buyer', label: 'Media Buyer' },
   { value: 'Graphic Designer', label: 'Graphic Designer' },
@@ -30,14 +33,18 @@ const getFormattedAvatarUrl = (url) => {
 const TeamPage = () => {
   const { t, i18n } = useTranslation();
   const { user: currentUser } = useAuthStore();
-  const isRTL = i18n.language === 'ar';
+  const navigate = useNavigate();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
+  
+  // Filtering state
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState({ position: 'ALL', status: 'ALL' });
+  
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [newPassword, setNewPassword] = useState('');
@@ -113,14 +120,15 @@ const TeamPage = () => {
     setEditId(null);
   };
 
-  const handleEdit = (member) => {
+  const openEditModal = (member) => {
+    const isCustom = !jobTitles.some(jt => jt.value !== 'ALL' && jt.value !== 'Custom' && jt.value === member.teamMemberInfo?.position);
     setForm({
       firstName: member.firstName,
       lastName: member.lastName,
       email: member.email,
       password: '',
-      position: jobTitles.some(jt => jt.value === member.teamMemberInfo?.position) ? member.teamMemberInfo?.position : 'Custom',
-      customJobTitle: jobTitles.some(jt => jt.value === member.teamMemberInfo?.position) ? '' : member.teamMemberInfo?.position,
+      position: isCustom ? 'Custom' : member.teamMemberInfo?.position,
+      customJobTitle: isCustom ? member.teamMemberInfo?.position : '',
       monthlySalary: member.teamMemberInfo?.monthlySalary || '',
       role: member.role,
       avatarUrl: member.avatarUrl || '',
@@ -180,27 +188,28 @@ const TeamPage = () => {
 
   const handleContactAction = (type, member) => {
     const email = member.email;
-    const phone = member.teamMemberInfo?.phone || ''; // Assuming we add phone soon or use user phone
-    
     switch(type) {
-      case 'WHATSAPP':
-        if(!phone) return toast.error("رقم الهاتف غير مسجل");
-        window.open(`https://wa.me/${phone.replace('+', '')}`, '_blank');
-        break;
-      case 'TELEGRAM':
-        toast.info("تواصل عبر التليجرام قريباً");
-        break;
       case 'EMAIL':
         window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`, '_blank');
         break;
+      default: break;
     }
   };
 
-  const filteredMembers = members.filter(m => 
-    `${m.firstName} ${m.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    m.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (m.teamMemberInfo?.position?.toLowerCase() || '').includes(searchQuery.toLowerCase())
-  );
+  const filteredMembers = members.filter(m => {
+    const query = searchQuery.toLowerCase();
+    const fullName = `${m.firstName} ${m.lastName}`.toLowerCase();
+    const email = m.email.toLowerCase();
+    const pos = (m.teamMemberInfo?.position || '').toLowerCase();
+    
+    const matchesSearch = fullName.includes(query) || email.includes(query) || pos.includes(query);
+    const matchesPosition = activeFilter.position === 'ALL' || m.teamMemberInfo?.position === activeFilter.position;
+    const matchesStatus = activeFilter.status === 'ALL' || 
+                         (activeFilter.status === 'ACTIVE' && m.isActive !== false) || 
+                         (activeFilter.status === 'INACTIVE' && m.isActive === false);
+
+    return matchesSearch && matchesPosition && matchesStatus;
+  });
 
   return (
     <div className="space-y-8 md:space-y-10">
@@ -211,20 +220,45 @@ const TeamPage = () => {
             {t('team_management')}
             <span className="px-3 py-1 bg-brand-500/10 text-brand-500 text-xs rounded-full border border-brand-500/20">v1.6.0</span>
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium mt-2 text-lg">إدارة القوى العاملة والنظام المالي للفريق</p>
+          <p className="text-slate-500 dark:text-slate-400 font-medium mt-2 text-lg">إدارة القوى العاملة والنظام المالي الموحد</p>
         </div>
         
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="relative group">
+          {/* Advanced Search */}
+          <div className="relative group flex-1 md:flex-none">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={18} />
             <input 
               type="text"
-              placeholder={t('search_team')}
+              placeholder="بحث بالاسم، البريد، أو الوظيفة..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-11 pr-6 py-3.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-[1.25rem] text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all w-full sm:w-80 shadow-sm font-bold"
+              className="pl-11 pr-6 py-3.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-[1.25rem] text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all w-full sm:w-72 md:w-80 shadow-sm font-bold"
             />
           </div>
+
+          {/* Filtering Hub */}
+          <div className="flex items-center gap-2 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-[1.25rem] p-1.5 shadow-sm">
+            <div className="flex items-center gap-2 px-3 text-slate-400 border-r border-slate-100 dark:border-white/10 mr-1">
+              <Filter size={16} />
+            </div>
+            <select 
+              value={activeFilter.position}
+              onChange={(e) => setActiveFilter({...activeFilter, position: e.target.value})}
+              className="bg-transparent text-xs font-black text-slate-600 dark:text-slate-400 focus:outline-none px-2 py-1.5 cursor-pointer appearance-none"
+            >
+              {jobTitles.map(jt => <option key={jt.value} value={jt.value}>{jt.label}</option>)}
+            </select>
+            <select 
+              value={activeFilter.status}
+              onChange={(e) => setActiveFilter({...activeFilter, status: e.target.value})}
+              className="bg-transparent text-xs font-black text-slate-600 dark:text-slate-400 focus:outline-none px-2 py-1.5 cursor-pointer appearance-none"
+            >
+              <option value="ALL">Status: All</option>
+              <option value="ACTIVE">Active Only</option>
+              <option value="INACTIVE">Inactive Only</option>
+            </select>
+          </div>
+
           <button 
             onClick={() => { resetForm(); setShowModal(true); }} 
             className="flex items-center justify-center gap-2 px-7 py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-[1.25rem] font-bold shadow-xl shadow-brand-600/20 hover:-translate-y-1 active:scale-95 transition-all duration-300"
@@ -239,23 +273,36 @@ const TeamPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {loading ? (
           Array(6).fill(0).map((_, i) => (
-            <div key={i} className="h-80 bg-slate-100 dark:bg-white/5 rounded-[2.5rem] animate-pulse"></div>
+            <div key={i} className="h-96 bg-slate-100 dark:bg-white/5 rounded-[2.5rem] animate-pulse"></div>
           ))
+        ) : filteredMembers.length === 0 ? (
+          <div className="col-span-full py-24 text-center">
+            <div className="w-20 h-20 bg-slate-50 dark:bg-white/5 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
+               <UserX className="text-slate-300" size={32} />
+            </div>
+            <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">No members found</h3>
+            <p className="text-slate-500 font-medium mt-2">جرب تعديل الفلترة أو البحث باسم آخر</p>
+          </div>
         ) : filteredMembers.map(m => (
           <div key={m.id} className={`group relative bg-white dark:bg-[#0a0a0c]/40 border rounded-[2.5rem] p-8 shadow-xl transition-all duration-500 hover:-translate-y-2 ${
-            m.isActive === false ? 'border-rose-500/30 opacity-75' : 'border-slate-100 dark:border-white/5 hover:border-brand-500/30'
+            m.isActive === false ? 'border-rose-500/30' : 'border-slate-100 dark:border-white/5 hover:border-brand-500/30'
           }`}>
+            {/* Direct Link to Profile */}
+            <Link to={`/admin/team/${m.id}`} className="absolute top-6 left-6 p-2 bg-slate-50 dark:bg-white/5 text-slate-400 hover:text-brand-500 rounded-xl transition-all opacity-0 group-hover:opacity-100">
+               <ExternalLink size={16} />
+            </Link>
+
             {/* Status Badge */}
-            <div className={`absolute top-6 right-6 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+            <div className={`absolute top-6 right-6 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
               m.isActive === false ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
             }`}>
               {m.isActive === false ? 'Inactive' : 'Active'}
             </div>
 
             {/* Profile Info */}
-            <div className="flex flex-col items-center text-center">
-              <div className="relative mb-4">
-                <div className={`w-24 h-24 rounded-[2rem] overflow-hidden border-4 shadow-2xl transition-transform duration-500 group-hover:scale-105 ${
+            <div className="flex flex-col items-center text-center pt-2">
+              <div className="relative mb-5">
+                <div className={`w-24 h-24 rounded-[2rem] overflow-hidden border-4 shadow-2xl transition-transform duration-500 group-hover:scale-110 ${
                   m.role === 'OWNER' ? 'border-amber-500' : 'border-slate-100 dark:border-white/10'
                 }`}>
                   {m.avatarUrl ? (
@@ -274,34 +321,11 @@ const TeamPage = () => {
               </div>
 
               <h3 className="text-xl font-black text-slate-800 dark:text-white mb-1 uppercase tracking-tight">{m.firstName} {m.lastName}</h3>
-              <div className="px-4 py-1.5 bg-brand-500/5 text-brand-500 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border border-brand-500/10 mb-4">
-                {m.teamMemberInfo?.position || 'Specialist'}
+              <div className="px-4 py-1.5 bg-brand-500/10 text-brand-500 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border border-brand-500/20 mb-5">
+                {m.teamMemberInfo?.position || 'Team Member'}
               </div>
 
-              {/* Contact Icons */}
-              <div className="flex items-center gap-3 mb-6">
-                <button 
-                  onClick={() => handleContactAction('EMAIL', m)}
-                  className="p-3 bg-amber-500/10 text-amber-500 rounded-2xl hover:bg-amber-500 hover:text-white transition-all shadow-sm"
-                  title="Gmail Compose"
-                >
-                  <Mail size={18} />
-                </button>
-                <button 
-                  onClick={() => handleContactAction('WHATSAPP', m)}
-                  className="p-3 bg-emerald-500/10 text-emerald-500 rounded-2xl hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
-                >
-                  <SendHorizontal size={18} />
-                </button>
-                <button 
-                  onClick={() => handleContactAction('TELEGRAM', m)}
-                  className="p-3 bg-blue-500/10 text-blue-500 rounded-2xl hover:bg-blue-500 hover:text-white transition-all shadow-sm"
-                >
-                  <MessageCircle size={18} />
-                </button>
-              </div>
-
-              {/* Finance Tracker (The "Hassala") */}
+              {/* Finance Tracker */}
               <div className="w-full grid grid-cols-3 gap-2 p-5 bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-[2rem] mb-6">
                 <div className="text-center border-r border-slate-200 dark:border-white/5">
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">Due</p>
@@ -317,211 +341,252 @@ const TeamPage = () => {
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2 w-full mt-auto">
-                <button 
-                  onClick={() => handleEdit(m)}
-                  className="flex-1 py-3 bg-slate-100 dark:bg-white/5 hover:bg-brand-500 hover:text-white text-slate-600 dark:text-slate-400 font-bold rounded-2xl transition-all flex items-center justify-center gap-2 text-xs"
+              {/* Action Hub */}
+              <div className="flex flex-col gap-2 w-full mt-auto">
+                <Link 
+                  to={`/admin/team/${m.id}`}
+                  className="w-full py-3.5 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-2xl transition-all flex items-center justify-center gap-2 text-sm shadow-xl shadow-brand-600/20 active:scale-95 group-hover:-translate-y-1"
                 >
-                  <RefreshCw size={14} />
-                  إدارة
-                </button>
-                <button 
-                  onClick={() => { setSelectedMember(m); setShowPasswordModal(true); }}
-                  className="p-3 bg-indigo-500/10 text-indigo-500 rounded-2xl hover:bg-indigo-500 hover:text-white transition-all"
-                  title="Reset Password"
-                >
-                  <Key size={16} />
-                </button>
-                {m.role !== 'OWNER' && (
+                  <ExternalLink size={18} />
+                  فتح بروفايل العضو المستقل
+                </Link>
+                <div className="flex gap-2 w-full">
                   <button 
-                    onClick={() => handleDelete(m.id, `${m.firstName} ${m.lastName}`)}
-                    className="p-3 bg-rose-500/10 text-rose-500 rounded-2xl hover:bg-rose-500 hover:text-white transition-all"
+                    onClick={() => openEditModal(m)}
+                    className="flex-1 p-2.5 bg-slate-50 dark:bg-white/5 text-slate-500 hover:text-brand-500 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all font-bold text-xs flex items-center justify-center gap-2"
                   >
-                    <Trash2 size={16} />
+                    <Settings size={14} /> تعديل
                   </button>
-                )}
+                  <button 
+                    onClick={() => { setSelectedMember(m); setShowPasswordModal(true); }}
+                    className="p-2.5 bg-slate-50 dark:bg-white/5 text-slate-500 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all"
+                  >
+                    <Key size={16} />
+                  </button>
+                  {m.role !== 'OWNER' && (
+                    <button 
+                      onClick={() => handleDelete(m.id, `${m.firstName} ${m.lastName}`)}
+                      className="p-2.5 bg-slate-50 dark:bg-white/5 text-slate-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-all"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Create/Edit Modal */}
+      {/* Unified Sectioned Modal */}
       {showModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 dark:bg-[#0a0a0c]/80 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowModal(false)}></div>
           
-          <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-2xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-400 max-h-[90vh] overflow-y-auto">
-            <div className="px-8 md:px-10 py-8 border-b border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-white/[0.01] flex items-center justify-between sticky top-0 z-10">
-              <div>
-                <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">
-                  {isEditing ? 'تعديل بيانات العضو' : 'إضافة عضو جديد للفريق'}
-                </h2>
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">ضبط الصلاحيات والبيانات الوظيفية والمالية</p>
+          <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-4xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-400 max-h-[95vh] overflow-y-auto custom-scrollbar">
+            
+            {/* Modal Header */}
+            <div className="px-8 md:px-10 py-8 border-b border-slate-100 dark:border-white/5 bg-white/80 dark:bg-[#0a0a0c]/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-20">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 shadow-inner">
+                   <UserPlus size={28} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight uppercase">
+                    {isEditing ? 'تعديل بيانات العضو' : 'إضافة عضو جديد للفريق'}
+                  </h2>
+                  <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-[0.2em]">{isEditing ? 'UPDATE PARTNER ACCESS' : 'CREATE TEAM MEMBER PROFILE'}</p>
+                </div>
               </div>
-              <button onClick={() => setShowModal(false)} className="p-3 text-slate-400 hover:text-slate-800 dark:hover:text-white bg-slate-100 dark:bg-white/5 rounded-2xl transition-all">
+              <button onClick={() => setShowModal(false)} className="p-4 text-slate-400 hover:text-rose-500 bg-slate-100 dark:bg-white/5 rounded-2xl transition-all active:scale-95">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleAction} className="p-8 md:p-10 space-y-8">
-              {/* Avatar Upload */}
-              <div className="flex flex-col sm:flex-row items-center gap-6 p-6 border border-slate-200 dark:border-white/10 rounded-[2rem] bg-slate-50/50 dark:bg-white/[0.02]">
-                <div className="relative w-28 h-28 rounded-[2rem] bg-white dark:bg-white/5 shadow-lg border border-slate-200 dark:border-white/10 overflow-hidden flex items-center justify-center flex-shrink-0">
-                  {form.avatarUrl ? (
-                    <img src={getFormattedAvatarUrl(form.avatarUrl)} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <User size={32} className="text-slate-300" />
-                  )}
-                  {uploadingAvatar && (
-                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center">
-                      <Loader2 className="animate-spin text-white" size={24} />
-                    </div>
-                  )}
+            <form onSubmit={handleAction} className="p-8 md:p-10 space-y-12">
+              
+              {/* Section 1: Basic Profile */}
+              <div className="space-y-8">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10">
+                    <User size={16} />
+                  </div>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">البيانات الأساسية (Basic Profile)</h3>
                 </div>
-                <div className="text-center sm:text-left flex-1">
-                  <p className="text-base font-black text-slate-800 dark:text-white mb-1 uppercase tracking-tight">الصورة الشخصية</p>
-                  <p className="text-xs text-slate-400 font-bold mb-4">يُنصح بصور مربعة عالية الجودة (بحد أقصى 5MB)</p>
-                  <div className="flex items-center gap-3 justify-center sm:justify-start">
-                    <label className="cursor-pointer inline-flex items-center gap-2 px-5 py-3 bg-brand-600 hover:bg-brand-500 text-white text-xs font-black rounded-xl shadow-lg shadow-brand-600/20 transition-all active:scale-95">
-                      <Camera size={16} />
-                      {form.avatarUrl ? 'تغيير' : 'رفع صورة'}
-                      <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-                    </label>
-                    {form.avatarUrl && (
-                      <button type="button" onClick={() => setForm({...form, avatarUrl: ''})} className="px-5 py-3 bg-rose-500/10 text-rose-500 text-xs font-black rounded-xl border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all">
-                        حذف
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+                   {/* Avatar Hub */}
+                   <div className="flex flex-col items-center gap-4 p-8 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-[2.5rem] bg-slate-50/50 dark:bg-white/[0.01]">
+                      <div className="relative w-32 h-32 rounded-[2.5rem] bg-white dark:bg-white/5 shadow-2xl border-4 border-white dark:border-[#0a0a0c] overflow-hidden flex items-center justify-center group/avatar">
+                        {form.avatarUrl ? (
+                          <img src={getFormattedAvatarUrl(form.avatarUrl)} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <User size={40} className="text-slate-300" />
+                        )}
+                        {uploadingAvatar && (
+                          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                            <Loader2 className="animate-spin text-white" size={28} />
+                          </div>
+                        )}
+                        <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                           <Camera size={24} className="text-white" />
+                           <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                        </label>
+                      </div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Team Identity Picture</p>
+                      {form.avatarUrl && (
+                        <button type="button" onClick={() => setForm({...form, avatarUrl: ''})} className="text-[10px] font-black text-rose-500 hover:underline uppercase tracking-widest">Remove Photo</button>
+                      )}
+                   </div>
+
+                   {/* Fields Grid */}
+                   <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">الاسم الأول</label>
+                        <input value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value})} required className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500/50 transition-all" placeholder="Test" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">الاسم الأخير</label>
+                        <input value={form.lastName} onChange={e => setForm({...form, lastName: e.target.value})} required className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500/50 transition-all" placeholder="VIP" />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">البريد الإلكتروني</label>
+                        <div className="relative">
+                          <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                          <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" placeholder="user@creziax.cloud" />
+                        </div>
+                      </div>
+                      {!isEditing && (
+                        <div className="space-y-2 sm:col-span-2">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">كلمة المرور (البداية)</label>
+                          <div className="relative">
+                            <Key className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                            <input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" placeholder="••••••••" />
+                          </div>
+                        </div>
+                      )}
+                   </div>
+                </div>
+              </div>
+
+              {/* Section 2: Professional Details */}
+              <div className="space-y-8 pt-10 border-t border-slate-100 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10">
+                    <Briefcase size={16} />
+                  </div>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">التفاصيل المهنية (Professional Data)</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">المسمى الوظيفي</label>
+                      <select 
+                        value={form.position} 
+                        onChange={e => setForm({...form, position: e.target.value})} 
+                        className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold appearance-none cursor-pointer focus:ring-4 focus:ring-brand-500/10"
+                      >
+                        {jobTitles.filter(jt => jt.value !== 'ALL').map(jt => <option key={jt.value} value={jt.value}>{jt.label}</option>)}
+                      </select>
+                   </div>
+                   {form.position === 'Custom' && (
+                     <div className="space-y-2 animate-in slide-in-from-top-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">أدخل المسمى المخصص</label>
+                        <input value={form.customJobTitle} onChange={e => setForm({...form, customJobTitle: e.target.value})} required className="w-full px-6 py-4 bg-amber-50 dark:bg-amber-500/5 border border-amber-500/20 rounded-2xl text-amber-600 dark:text-amber-500 font-bold focus:ring-4 focus:ring-amber-500/10 transition-all" placeholder="e.g. Lead Storyteller" />
+                     </div>
+                   )}
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">الدور الوظيفي (Role)</label>
+                      <select 
+                        value={form.role} 
+                        onChange={e => setForm({...form, role: e.target.value})} 
+                        className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold appearance-none cursor-pointer focus:ring-4 focus:ring-brand-500/10"
+                      >
+                        <option value="TEAM">Team Member (Internal)</option>
+                        {currentUser?.role === 'OWNER' && <option value="ADMIN">System Administrator</option>}
+                      </select>
+                   </div>
+                </div>
+              </div>
+
+              {/* Section 3: Financial & Status */}
+              <div className="space-y-8 pt-10 border-t border-slate-100 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-emerald-500 border border-emerald-500/10">
+                    <DollarSign size={16} />
+                  </div>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">الحسابات والمالية (Ledger & Status)</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">الراتب المتفق عليه ($)</label>
+                      <div className="relative">
+                        <CreditCard className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <input type="number" value={form.monthlySalary} onChange={e => setForm({...form, monthlySalary: e.target.value})} className="w-full pl-14 pr-6 py-4 bg-emerald-500/5 dark:bg-emerald-500/[0.02] border border-emerald-500/20 rounded-2xl text-emerald-600 dark:text-emerald-500 font-black focus:ring-4 focus:ring-emerald-500/10" placeholder="0.00" />
+                      </div>
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">حالة الحساب</label>
+                      <button 
+                        type="button"
+                        onClick={() => setForm({...form, isActive: !form.isActive})}
+                        className={`w-full flex items-center justify-between px-6 py-4 rounded-2xl border-2 transition-all duration-300 ${
+                          form.isActive ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-rose-500/10 border-rose-500/20 text-rose-500'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 uppercase font-black tracking-widest text-[10px]">
+                           {form.isActive ? <UserCheck size={18} /> : <UserX size={18} />}
+                           {form.isActive ? 'ENABLED / ACTIVE' : 'DISABLED / INACTIVE'}
+                        </div>
+                        <div className={`w-4 h-4 rounded-full shadow-lg transition-all ${form.isActive ? 'bg-emerald-500 shadow-emerald-500/40' : 'bg-rose-500 shadow-rose-500/40'}`}></div>
                       </button>
-                    )}
-                  </div>
+                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">الاسم الأول</label>
-                  <input value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value})} required className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">الاسم الأخير</label>
-                  <input value={form.lastName} onChange={e => setForm({...form, lastName: e.target.value})} required className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">البريد الإلكتروني</label>
-                <input value={form.email} onChange={e => setForm({...form, email: e.target.value})} type="email" required className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all" />
-              </div>
-
-              {!isEditing && (
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">كلمة المرور</label>
-                  <input value={form.password} onChange={e => setForm({...form, password: e.target.value})} type="password" required className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all" />
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">نوع المستخدم</label>
-                  <select 
-                    value={form.role} 
-                    onChange={e => setForm({...form, role: e.target.value})} 
-                    className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold appearance-none cursor-pointer"
-                  >
-                    <option value="TEAM">Team Member</option>
-                    {currentUser?.role === 'OWNER' && <option value="ADMIN">Administrator</option>}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">المسمى الوظيفي</label>
-                  <select 
-                    value={form.position} 
-                    onChange={e => setForm({...form, position: e.target.value})} 
-                    className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold appearance-none cursor-pointer"
-                  >
-                    {jobTitles.map(jt => <option key={jt.value} value={jt.value}>{jt.label}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {form.position === 'Custom' && (
-                <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
-                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">أدخل المسمى الوظيفي يدوياً</label>
-                  <input value={form.customJobTitle} onChange={e => setForm({...form, customJobTitle: e.target.value})} required className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all" placeholder="e.g. Creative Lead" />
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">الراتب الشهري ($)</label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                    <input type="number" value={form.monthlySalary} onChange={e => setForm({...form, monthlySalary: e.target.value})} className="w-full pl-11 pr-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all" placeholder="0.00" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">حالة الحساب</label>
-                  <button 
-                    type="button"
-                    onClick={() => setForm({...form, isActive: !form.isActive})}
-                    className={`w-full flex items-center justify-between px-6 py-4 rounded-2xl border font-black transition-all ${
-                      form.isActive ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-rose-500/10 border-rose-500/30 text-rose-500'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 uppercase tracking-widest text-[10px]">
-                      <Power size={16} />
-                      {form.isActive ? 'Active Member' : 'Inactive Account'}
-                    </div>
-                    <div className={`w-3 h-3 rounded-full ${form.isActive ? 'bg-emerald-500 shadow-lg shadow-emerald-500/50 animate-pulse' : 'bg-rose-500'}`}></div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Permissions for Admin */}
+              {/* Section 4: Security Privileges */}
               {form.role === 'ADMIN' && (
-                <div className="space-y-6 p-8 bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-[2.5rem]">
-                  <div className="flex items-center gap-3 mb-2">
-                    <ShieldAlert size={20} className="text-amber-500" />
-                    <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">صلاحيات المدير (Admin Security Privileges)</h3>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {availablePermissions.map(perm => {
-                      const isActive = form.permissions.includes(perm.id);
-                      return (
-                        <button
-                          key={perm.id}
-                          type="button"
-                          onClick={() => {
-                            const newPerms = isActive ? form.permissions.filter(p => p !== perm.id) : [...form.permissions, perm.id];
-                            setForm({...form, permissions: newPerms});
-                          }}
-                          className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${
-                            isActive ? 'bg-brand-500/10 border-brand-500/30 text-brand-600 dark:text-brand-400' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/5 text-slate-400'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <perm.icon size={16} />
-                            <span className="text-xs font-bold uppercase tracking-tight">{perm.label}</span>
-                          </div>
-                          <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all ${
-                            isActive ? 'border-brand-500 bg-brand-500' : 'border-slate-200 dark:border-white/10'
-                          }`}>
-                            {isActive && <CheckIcon size={12} className="text-white" />}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div className="space-y-8 pt-10 border-t border-slate-100 dark:border-white/5">
+                   <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/10">
+                        <ShieldAlert size={16} />
+                      </div>
+                      <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">صلاحيات المدير (System Access)</h3>
+                   </div>
+                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      {availablePermissions.map(perm => {
+                        const active = form.permissions.includes(perm.id);
+                        return (
+                          <button
+                            key={perm.id}
+                            type="button"
+                            onClick={() => {
+                              const newPerms = active ? form.permissions.filter(p => p !== perm.id) : [...form.permissions, perm.id];
+                              setForm({...form, permissions: newPerms});
+                            }}
+                            className={`flex items-center gap-4 p-5 rounded-2xl border transition-all duration-300 ${
+                              active ? 'bg-brand-600 border-brand-700 text-white shadow-xl shadow-brand-600/20' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400'
+                            }`}
+                          >
+                             <div className={`p-2 rounded-lg ${active ? 'bg-white/20' : 'bg-slate-200 dark:bg-white/10'}`}>
+                                <perm.icon size={14} />
+                             </div>
+                             <span className="text-[10px] font-black uppercase tracking-widest">{perm.label}</span>
+                          </button>
+                        );
+                      })}
+                   </div>
                 </div>
               )}
 
-              <div className="flex gap-4 sticky bottom-0 bg-white dark:bg-[#0a0a0c] pt-4">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-bold rounded-2xl hover:bg-slate-200 transition-all">
-                  إلغاء
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 pt-8 sticky bottom-0 bg-white dark:bg-[#0a0a0c] z-10">
+                <button type="submit" disabled={submitting} className="flex-[3] py-5 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-[1.5rem] shadow-2xl shadow-brand-600/30 hover:-translate-y-1 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3">
+                  {submitting ? <Loader2 className="animate-spin" /> : (isEditing ? 'حفظ التعديلات النهائية' : 'إتمام عملية التوظيف')}
                 </button>
-                <button type="submit" disabled={submitting} className="flex-[2] py-4 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-2xl shadow-xl shadow-brand-600/20 active:scale-95 transition-all">
-                  {submitting ? <Loader2 className="animate-spin mx-auto" /> : (isEditing ? 'تحديث البيانات' : 'إضافة للفريق')}
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-5 bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 font-black rounded-[1.5rem] hover:bg-slate-200 dark:hover:bg-white/10 transition-all text-xs uppercase tracking-[0.2em]">
+                  {t('cancel')}
                 </button>
               </div>
             </form>
@@ -535,11 +600,11 @@ const TeamPage = () => {
           <div className="absolute inset-0 bg-slate-900/60 dark:bg-[#0a0a0c]/80 backdrop-blur-md" onClick={() => setShowPasswordModal(false)}></div>
           <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-md p-10 shadow-2xl relative z-10 animate-in zoom-in-95">
              <div className="mb-8 text-center">
-                <div className="w-16 h-16 bg-brand-500/10 text-brand-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-brand-500/10 text-brand-500 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-brand-500/10 shadow-inner">
                    <Key size={32} />
                 </div>
-                <h3 className="text-xl font-black text-slate-800 dark:text-white">إعادة تعيين كلمة المرور</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 font-medium">للعضو: {selectedMember?.firstName} {selectedMember?.lastName}</p>
+                <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">إعادة تعيين كلمة المرور</h3>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-black uppercase tracking-widest">RESET ACCESS FOR: {selectedMember?.firstName}</p>
              </div>
              
              <div className="space-y-6">
@@ -549,17 +614,17 @@ const TeamPage = () => {
                      type="password" 
                      value={newPassword} 
                      onChange={e => setNewPassword(e.target.value)} 
-                     className="w-full px-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-2 focus:ring-brand-500/20"
+                     className="w-full px-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10"
                      placeholder="••••••••"
                    />
                 </div>
                 <button 
                   onClick={handleResetPassword}
-                  className="w-full py-4 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-2xl shadow-lg shadow-brand-600/20 transition-all"
+                  className="w-full py-5 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl shadow-xl shadow-indigo-600/30 transition-all active:scale-95"
                 >
                   تغيير كلمة المرور فوراً
                 </button>
-                <button onClick={() => setShowPasswordModal(false)} className="w-full py-4 text-slate-400 font-bold text-xs hover:text-slate-600 transition-colors">إغلاق</button>
+                <button onClick={() => setShowPasswordModal(false)} className="w-full py-4 text-slate-400 font-black text-[10px] hover:text-slate-600 uppercase tracking-widest transition-colors">إلغاء العملية</button>
              </div>
           </div>
         </div>
@@ -567,7 +632,5 @@ const TeamPage = () => {
     </div>
   );
 };
-
-const CheckIcon = ({size, className}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="20 6 9 17 4 12" /></svg>;
 
 export default TeamPage;
