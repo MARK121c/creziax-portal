@@ -141,8 +141,8 @@ const ClientProfilePage = () => {
         }
         break;
       case 'EMAIL':
-        if (email) {
-          window.location.href = `mailto:${email}`;
+        if (client?.email) {
+          window.location.href = `mailto:${client.email}`;
         } else {
           toast.error(t('missing_email'));
         }
@@ -181,7 +181,12 @@ const ClientProfilePage = () => {
       const d = await r.json();
       if (d.url) {
         const updateId = getClientId(client);
-        await updateClientAPI(updateId, { clientInfo: { ...client.clientInfo, logoUrl: d.url } });
+        // Important: Use flattened payload and sync BOTH locations in state
+        await updateClientAPI(updateId, { 
+          ...client,
+          clientInfo: { ...(client.clientInfo || {}), logoUrl: d.url },
+          logoUrl: d.url 
+        });
         setClient(prev => ({ 
           ...prev, 
           clientInfo: { ...(prev.clientInfo || {}), logoUrl: d.url },
@@ -200,7 +205,11 @@ const ClientProfilePage = () => {
     setUploadingLogo(true);
     try {
       const updateId = getClientId(client);
-      await updateClientAPI(updateId, { clientInfo: { ...client.clientInfo, logoUrl: '' } });
+      await updateClientAPI(updateId, { 
+        ...client,
+        clientInfo: { ...(client.clientInfo || {}), logoUrl: '' },
+        logoUrl: '' 
+      });
       setClient(prev => ({ 
         ...prev, 
         clientInfo: { ...(prev.clientInfo || {}), logoUrl: '' },
@@ -317,7 +326,7 @@ const ClientProfilePage = () => {
                 )}
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-widest text-[10px]">
-                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.3.8
+                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.3.9
               </p>
             </div>
           </div>
