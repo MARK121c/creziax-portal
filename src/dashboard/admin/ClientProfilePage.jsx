@@ -56,7 +56,7 @@ const getClientCompany = (c) => c?.clientInfo?.company || c?.company || '';
 const getClientLogo = (c) => c?.clientInfo?.logoUrl || c?.logoUrl || '';
 const getClientTier = (c) => c?.clientInfo?.tier || c?.tier || 'REGULAR';
 const getClientId = (c) => c?.clientInfo?.id || c?.id;
-const getClientEmail = (c) => c?.email || c?.clientInfo?.email || '';
+const getClientEmail = (c) => c?.email || c?.user?.email || c?.clientInfo?.email || '';
 
 const ClientProfilePage = () => {
   const { id } = useParams();
@@ -326,7 +326,7 @@ const ClientProfilePage = () => {
                 )}
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-widest text-[10px]">
-                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.4.2
+                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.4.3
               </p>
             </div>
           </div>
