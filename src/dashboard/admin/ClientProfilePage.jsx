@@ -41,9 +41,21 @@ const getFormattedLogoUrl = (url) => {
 
 const getCountryFlagUrl = (phone) => {
   if (!phone) return null;
-  const match = Object.keys(COUNTRY_FLAGS).find(code => phone.startsWith(code));
+  // Support both strings and objects if it comes that way
+  const tel = typeof phone === 'string' ? phone : phone?.phone;
+  if (!tel) return null;
+  const match = Object.keys(COUNTRY_FLAGS).find(code => tel.startsWith(code));
   return match ? `https://flagcdn.com/w40/${COUNTRY_FLAGS[match]}.png` : null;
 };
+
+// Safe accessors to handle potential structure differences
+const getClientPhone = (c) => c?.clientInfo?.phone || c?.phone || '';
+const getClientNotion = (c) => c?.clientInfo?.notionLink || c?.notionLink || '';
+const getClientTelegram = (c) => c?.clientInfo?.telegram || c?.telegram || '';
+const getClientCompany = (c) => c?.clientInfo?.company || c?.company || '';
+const getClientLogo = (c) => c?.clientInfo?.logoUrl || c?.logoUrl || '';
+const getClientTier = (c) => c?.clientInfo?.tier || c?.tier || 'REGULAR';
+const getClientId = (c) => c?.clientInfo?.id || c?.id;
 
 const ClientProfilePage = () => {
   const { id } = useParams();
@@ -112,29 +124,32 @@ const ClientProfilePage = () => {
   ];
 
   const handleContactAction = (type) => {
+    const phone = getClientPhone(client);
+    const telegram = getClientTelegram(client);
+    const email = client.email || '';
+
     switch (type) {
       case 'INTERNAL':
         navigate(`/admin/messages?clientId=${client.id}`);
         break;
       case 'WHATSAPP':
-        if (client.clientInfo?.phone) {
-          // Robust cleaning: remove everything except numbers, but keep leading + if exists (though wa.me prefers no + usually)
-          const cleanPhone = client.clientInfo.phone.replace(/\D/g, '');
+        if (phone) {
+          const cleanPhone = phone.replace(/\D/g, '');
           window.open(`https://wa.me/${cleanPhone}`, '_blank');
         } else {
           toast.error(t('missing_whatsapp'));
         }
         break;
       case 'EMAIL':
-        if (client.email) {
-          window.open(`mailto:${client.email}`, '_blank');
+        if (email) {
+          window.open(`mailto:${email}`, '_blank');
         } else {
           toast.error(t('missing_email'));
         }
         break;
       case 'TELEGRAM':
-        if (client.clientInfo?.telegram) {
-          const raw = client.clientInfo.telegram.trim();
+        if (telegram) {
+          const raw = telegram.trim();
           const username = raw.startsWith('http') 
             ? raw.split('/').pop().replace('@', '') 
             : raw.replace('@', '').replace('t.me/', '');
@@ -161,8 +176,13 @@ const ClientProfilePage = () => {
       });
       const d = await r.json();
       if (d.url) {
-        await updateClientAPI(client.id, { clientInfo: { ...client.clientInfo, logoUrl: d.url } });
-        setClient(prev => ({ ...prev, clientInfo: { ...prev.clientInfo, logoUrl: d.url } }));
+        const updateId = getClientId(client);
+        await updateClientAPI(updateId, { clientInfo: { ...client.clientInfo, logoUrl: d.url } });
+        setClient(prev => ({ 
+          ...prev, 
+          clientInfo: { ...(prev.clientInfo || {}), logoUrl: d.url },
+          logoUrl: d.url 
+        }));
         toast.success(t('saved_successfully'));
         setSelectedFile(null);
         setPreviewUrl(null);
@@ -185,20 +205,20 @@ const ClientProfilePage = () => {
           </button>
           <div className="flex items-center gap-5">
              <div className="relative group">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2rem] bg-white dark:bg-white/10 flex items-center justify-center text-3xl font-black text-slate-400 border-4 border-white dark:border-[#0a0a0c] shadow-2xl overflow-hidden relative">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2rem] bg-white dark:bg-white/10 flex items-center justify-center text-3xl font-black text-slate-400 border-4 border-white dark:border-[#0a0a0c] shadow-2xl overflow-hidden relative group/inner">
                 {uploadingLogo ? (
                   <Loader2 size={32} className="animate-spin text-brand-500" />
-                ) : previewUrl || client.clientInfo?.logoUrl ? (
-                  <img src={previewUrl || getFormattedLogoUrl(client.clientInfo.logoUrl)} alt="" className="w-full h-full object-cover" />
+                ) : previewUrl || getClientLogo(client) ? (
+                  <img src={previewUrl || getFormattedLogoUrl(getClientLogo(client))} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  client.clientInfo?.company?.charAt(0) || <Building size={32} />
+                  getClientCompany(client).charAt(0) || <Building size={32} />
                 )}
                 
                 {/* View/Zoom Button */}
-                {(previewUrl || client.clientInfo?.logoUrl) && (
+                {(previewUrl || getClientLogo(client)) && (
                   <button 
-                    onClick={() => window.open(previewUrl || getFormattedLogoUrl(client.clientInfo.logoUrl), '_blank')}
-                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
+                    onClick={() => window.open(previewUrl || getFormattedLogoUrl(getClientLogo(client)), '_blank')}
+                    className="absolute inset-0 bg-black/40 opacity-0 group-hover/inner:opacity-100 transition-opacity flex items-center justify-center text-white"
                   >
                     <Search size={28} />
                   </button>
@@ -206,7 +226,7 @@ const ClientProfilePage = () => {
               </div>
 
               {/* Advanced Controls */}
-              <div className="absolute -bottom-2 -right-2 flex flex-col gap-2">
+              <div className="absolute -bottom-2 -right-2 flex flex-col gap-2 z-30">
                 {selectedFile ? (
                   <div className="flex flex-col gap-2 scale-90 md:scale-100 origin-bottom-right">
                     <button 
@@ -232,7 +252,7 @@ const ClientProfilePage = () => {
                       if (!file) return;
                       setSelectedFile(file);
                       setPreviewUrl(URL.createObjectURL(file));
-                      toast.success('Logo selected. Click confirm to save.');
+                      toast.success(t('saved_successfully')); // Using generic success for selection
                     }} />
                   </label>
                 )}
@@ -240,8 +260,8 @@ const ClientProfilePage = () => {
             </div>
             <div>
               <div className="flex items-center gap-3">
-                {getCountryFlagUrl(client.clientInfo?.phone) && (
-                  <img src={getCountryFlagUrl(client.clientInfo?.phone)} alt="flag" className="w-8 h-auto rounded-sm shadow-md" />
+                {getCountryFlagUrl(getClientPhone(client)) && (
+                  <img src={getCountryFlagUrl(getClientPhone(client))} alt="flag" className="w-8 h-auto rounded-sm shadow-md" />
                 )}
                 <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">
                   {client.firstName} {client.lastName}
@@ -254,16 +274,16 @@ const ClientProfilePage = () => {
                 )}
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-widest text-[10px]">
-                {client.clientInfo?.company || t('creziax_partner')} • {client.clientInfo?.tier || 'REGULAR'}
+                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.3.4
               </p>
             </div>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-            {client.clientInfo?.notionLink && (
+            {getClientNotion(client) && (
               <a 
-               href={client.clientInfo.notionLink} 
+               href={getClientNotion(client)} 
                target="_blank" 
                rel="noopener noreferrer"
                className="px-6 py-4 bg-white dark:bg-[#0a0a0c] text-slate-800 dark:text-white rounded-2xl font-bold flex items-center gap-2 hover:bg-brand-600 hover:text-white transition-all border border-slate-200 dark:border-white/10 shadow-lg group/notion"
