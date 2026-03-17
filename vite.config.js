@@ -7,5 +7,17 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-ui': ['lucide-react', 'react-hot-toast'],
+          'vendor-utils': ['axios', 'date-fns', 'zustand', 'i18next'],
+          'vendor-viz': ['recharts', 'xlsx']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
   }
 })
