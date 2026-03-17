@@ -21,12 +21,12 @@ import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
 
 const taskStatusConfig = {
-  IDEA: { color: 'text-slate-500', bg: 'bg-slate-500/10', label: 'فكرة استراتيجية', dot: 'bg-slate-500' },
-  SCRIPTING: { color: 'text-indigo-500', bg: 'bg-indigo-500/10', label: 'كتابة السيناريو', dot: 'bg-indigo-500' },
-  SHOOTING: { color: 'text-amber-500', bg: 'bg-amber-500/10', label: 'جاري التصوير', dot: 'bg-amber-500' },
-  EDITING: { color: 'text-blue-500', bg: 'bg-blue-500/10', label: 'المونتاج والتحرير', dot: 'bg-blue-500' },
-  REVIEW: { color: 'text-purple-500', bg: 'bg-purple-500/10', label: 'مراجعة الجودة', dot: 'bg-purple-500' },
-  DELIVERED: { color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'تم التسليم بنجاح', dot: 'bg-emerald-500' },
+  IDEA: { color: 'text-slate-500', bg: 'bg-slate-500/10', label: 'فكرة', dot: 'bg-slate-500' },
+  SCRIPTING: { color: 'text-indigo-500', bg: 'bg-indigo-500/10', label: 'كتابة', dot: 'bg-indigo-500' },
+  SHOOTING: { color: 'text-amber-500', bg: 'bg-amber-500/10', label: 'تصوير', dot: 'bg-amber-500' },
+  EDITING: { color: 'text-blue-500', bg: 'bg-blue-500/10', label: 'مونتاج', dot: 'bg-blue-500' },
+  REVIEW: { color: 'text-purple-500', bg: 'bg-purple-500/10', label: 'مراجعة', dot: 'bg-purple-500' },
+  DELIVERED: { color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'تم التسليم', dot: 'bg-emerald-500' },
 };
 
 const getFormattedLogoUrl = (url) => {
@@ -151,7 +151,7 @@ const WorkspaceDetail = () => {
            <Loader2 size={80} className="animate-spin text-brand-500 relative z-10" />
            <Activity className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-brand-500/30" size={32} />
         </div>
-        <p className="font-black tracking-[0.5em] uppercase text-[11px] text-slate-400 animate-pulse">Synchronizing Elite Command Link</p>
+        <p className="font-black tracking-[0.4em] uppercase text-[10px] text-slate-400 animate-pulse">Synchronizing Workspace...</p>
       </div>
     );
   }
@@ -161,8 +161,8 @@ const WorkspaceDetail = () => {
        <div className="w-24 h-24 bg-rose-500/10 rounded-[2rem] flex items-center justify-center text-rose-500 mb-8">
           <AlertCircle size={48} />
        </div>
-       <h2 className="text-3xl font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-4">Command Center Offline</h2>
-       <p className="text-slate-500 font-bold uppercase text-[11px] tracking-[0.2em] mb-10">The requested strategic coordinate could not be localized.</p>
+       <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight mb-4">Project Not Found</h2>
+       <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest mb-10">The requested project coordinates could not be found.</p>
        <Link to="/admin/projects" className="px-10 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl">Back to Directory</Link>
     </div>
   );
@@ -206,8 +206,8 @@ const WorkspaceDetail = () => {
                   {workspace.name}
                 </h1>
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
-                  <div className="flex items-center gap-2 px-5 py-2 bg-brand-600 text-white rounded-full text-[10px] font-black uppercase tracking-[0.2em] border-2 border-white/20 shadow-2xl shadow-brand-600/40 animate-pulse">
-                    V2.4 ELITE COMMAND
+                  <div className="flex items-center gap-2 px-5 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10 shadow-lg">
+                    V2.5 STABLE
                   </div>
                   <div className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-white/5 rounded-[1.5rem] border-2 border-slate-100 dark:border-white/10 shadow-xl">
                     <Users size={16} className="text-brand-500" />
