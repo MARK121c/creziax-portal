@@ -23,6 +23,25 @@ const jobTitles = [
   { value: 'Custom', label: 'أخرى (Custom)' },
 ];
 
+const healthScores = [
+  { value: 'GOOD', label: 'health_good', emoji: '🟢', color: 'text-emerald-500' },
+  { value: 'MONITOR', label: 'health_monitor', emoji: '🟡', color: 'text-amber-500' },
+  { value: 'AT_RISK', label: 'health_risk', emoji: '🔴', color: 'text-rose-500' },
+];
+
+const COUNTRY_FLAGS = {
+  '+20': 'eg', '+966': 'sa', '+971': 'ae', '+974': 'qa', '+965': 'kw',
+  '+968': 'om', '+973': 'bh', '+961': 'lb', '+962': 'jo', '+1': 'us',
+  '+39': 'it', '+7': 'ru', '+33': 'fr', '+49': 'de', '+90': 'tr',
+  '+212': 'ma', '+213': 'dz', '+216': 'tn', '+249': 'sd',
+};
+
+const getCountryFlagUrl = (phone) => {
+  if (!phone) return null;
+  const match = Object.keys(COUNTRY_FLAGS).find(code => phone.startsWith(code));
+  return match ? `https://flagcdn.com/w40/${COUNTRY_FLAGS[match]}.png` : null;
+};
+
 const getFormattedAvatarUrl = (url) => {
   if (!url || typeof url !== 'string') return null;
   if (url.startsWith('http') || url.startsWith('blob:')) return url;
@@ -52,8 +71,12 @@ const TeamPage = () => {
   const [form, setForm] = useState({ 
     firstName: '', lastName: '', email: '', password: '', 
     position: 'Video Editor', customJobTitle: '', monthlySalary: '',
-    role: 'TEAM', avatarUrl: '', permissions: [], isActive: true 
+    company: '', phone: '', notionLink: '', telegram: '', managedChannels: '',
+    role: 'TEAM', avatarUrl: '', permissions: [], isActive: true,
+    healthScore: 'GOOD', internalNotes: ''
   });
+  
+  const [countryCode, setCountryCode] = useState('+20');
   
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const addNotification = useNotificationStore(state => state.addNotification);
@@ -90,7 +113,15 @@ const TeamPage = () => {
     const loadingToast = toast.loading(t('syncing'));
     try {
       const finalPosition = form.position === 'Custom' ? form.customJobTitle : form.position;
-      const payload = { ...form, position: finalPosition };
+      const fullPhone = form.phone.startsWith('+') ? form.phone : `${countryCode}${form.phone}`;
+      
+      const payload = { 
+        ...form, 
+        position: finalPosition,
+        phone: fullPhone,
+        managedChannels: form.managedChannels ? parseInt(form.managedChannels) : 0,
+        monthlySalary: form.monthlySalary ? parseFloat(form.monthlySalary) : 0
+      };
       
       if (isEditing) {
         await updateUserAPI(editId, payload);
@@ -114,8 +145,11 @@ const TeamPage = () => {
     setForm({ 
       firstName: '', lastName: '', email: '', password: '', 
       position: 'Video Editor', customJobTitle: '', monthlySalary: '',
-      role: 'TEAM', avatarUrl: '', permissions: [], isActive: true 
+      company: '', phone: '', notionLink: '', telegram: '', managedChannels: '',
+      role: 'TEAM', avatarUrl: '', permissions: [], isActive: true,
+      healthScore: 'GOOD', internalNotes: ''
     });
+    setCountryCode('+20');
     setIsEditing(false);
     setEditId(null);
   };
@@ -130,11 +164,24 @@ const TeamPage = () => {
       position: isCustom ? 'Custom' : member.teamMemberInfo?.position,
       customJobTitle: isCustom ? member.teamMemberInfo?.position : '',
       monthlySalary: member.teamMemberInfo?.monthlySalary || '',
+      company: member.teamMemberInfo?.company || '',
+      phone: member.teamMemberInfo?.phone || '',
+      notionLink: member.teamMemberInfo?.notionLink || '',
+      telegram: member.teamMemberInfo?.telegram || '',
+      managedChannels: member.teamMemberInfo?.managedChannels || '',
       role: member.role,
       avatarUrl: member.avatarUrl || '',
       permissions: member.permissions || [],
-      isActive: member.isActive ?? true
+      isActive: member.isActive ?? true,
+      healthScore: member.teamMemberInfo?.healthScore || 'GOOD',
+      internalNotes: member.teamMemberInfo?.internalNotes || ''
     });
+    
+    if (member.teamMemberInfo?.phone?.startsWith('+')) {
+      const match = Object.keys(COUNTRY_FLAGS).find(code => member.teamMemberInfo.phone.startsWith(code));
+      if (match) setCountryCode(match);
+    }
+
     setEditId(member.id);
     setIsEditing(true);
     setShowModal(true);
@@ -405,185 +452,158 @@ const TeamPage = () => {
 
             <form onSubmit={handleAction} className="p-8 md:p-10 space-y-12">
               
-              {/* Section 1: Basic Profile */}
+              {/* Section 1: Basic Information */}
               <div className="space-y-8">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10">
                     <User size={16} />
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">البيانات الأساسية (Basic Profile)</h3>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">البيانات الأساسية (Basic Info)</h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-                   {/* Avatar Hub */}
-                   <div className="flex flex-col items-center gap-4 p-8 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-[2.5rem] bg-slate-50/50 dark:bg-white/[0.01]">
-                      <div className="relative w-32 h-32 rounded-[2.5rem] bg-white dark:bg-white/5 shadow-2xl border-4 border-white dark:border-[#0a0a0c] overflow-hidden flex items-center justify-center group/avatar">
-                        {form.avatarUrl ? (
-                          <img src={getFormattedAvatarUrl(form.avatarUrl)} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <User size={40} className="text-slate-300" />
-                        )}
-                        {uploadingAvatar && (
-                          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                            <Loader2 className="animate-spin text-white" size={28} />
-                          </div>
-                        )}
-                        <label className="absolute inset-0 bg-black/40 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                           <Camera size={24} className="text-white" />
-                           <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-                        </label>
-                      </div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Team Identity Picture</p>
-                      {form.avatarUrl && (
-                        <button type="button" onClick={() => setForm({...form, avatarUrl: ''})} className="text-[10px] font-black text-rose-500 hover:underline uppercase tracking-widest">Remove Photo</button>
-                      )}
-                   </div>
-
-                   {/* Fields Grid */}
-                   <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">الاسم الأول</label>
-                        <input value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value})} required className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500/50 transition-all" placeholder="Test" />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">الاسم الأخير</label>
-                        <input value={form.lastName} onChange={e => setForm({...form, lastName: e.target.value})} required className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500/50 transition-all" placeholder="VIP" />
-                      </div>
-                      <div className="space-y-2 sm:col-span-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">البريد الإلكتروني</label>
-                        <div className="relative">
-                          <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                          <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" placeholder="user@creziax.cloud" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">الاسم الأول</label>
+                    <input value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value})} required className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">الاسم الأخير</label>
+                    <input value={form.lastName} onChange={e => setForm({...form, lastName: e.target.value})} required className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">اسم الشركة (Work Entity)</label>
+                    <input value={form.company} onChange={e => setForm({...form, company: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all" placeholder="Creziax Associate" />
+                  </div>
+                  <div className="space-y-2 lg:col-span-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">البريد الإلكتروني</label>
+                    <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">كلمة المرور</label>
+                    <input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required={!isEditing} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all" placeholder={isEditing ? "••••••••" : ""} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2 lg:col-span-3">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">رقم الهاتف (WhatsApp)</label>
+                    <div className="flex gap-2">
+                      <select value={countryCode} onChange={e => setCountryCode(e.target.value)} className="w-24 px-3 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold focus:ring-4 focus:ring-brand-500/10">
+                        {Object.entries(COUNTRY_FLAGS).map(([code, iso]) => (
+                          <option key={code} value={code}>+{code.replace('+', '')} {iso.toUpperCase()}</option>
+                        ))}
+                      </select>
+                      <div className="flex-1 relative">
+                        <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" placeholder="012xxxxxxx" />
+                        <div className="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none">
+                           {getCountryFlagUrl(form.phone.startsWith('+') ? form.phone : `${countryCode}${form.phone}`) && (
+                             <img src={getCountryFlagUrl(form.phone.startsWith('+') ? form.phone : `${countryCode}${form.phone}`)} alt="flag" className="w-6 h-auto rounded-sm shadow-sm" />
+                           )}
                         </div>
                       </div>
-                      {!isEditing && (
-                        <div className="space-y-2 sm:col-span-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">كلمة المرور (البداية)</label>
-                          <div className="relative">
-                            <Key className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                            <input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" placeholder="••••••••" />
-                          </div>
-                        </div>
-                      )}
-                   </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Section 2: Professional Details */}
+              {/* Section 2: Functional Data */}
               <div className="space-y-8 pt-10 border-t border-slate-100 dark:border-white/5">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10">
                     <Briefcase size={16} />
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">التفاصيل المهنية (Professional Data)</h3>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">البيانات الوظيفية (Job Details)</h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">المسمى الوظيفي</label>
-                      <select 
-                        value={form.position} 
-                        onChange={e => setForm({...form, position: e.target.value})} 
-                        className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold appearance-none cursor-pointer focus:ring-4 focus:ring-brand-500/10"
-                      >
-                        {jobTitles.filter(jt => jt.value !== 'ALL').map(jt => <option key={jt.value} value={jt.value}>{jt.label}</option>)}
-                      </select>
-                   </div>
-                   {form.position === 'Custom' && (
-                     <div className="space-y-2 animate-in slide-in-from-top-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">أدخل المسمى المخصص</label>
-                        <input value={form.customJobTitle} onChange={e => setForm({...form, customJobTitle: e.target.value})} required className="w-full px-6 py-4 bg-amber-50 dark:bg-amber-500/5 border border-amber-500/20 rounded-2xl text-amber-600 dark:text-amber-500 font-bold focus:ring-4 focus:ring-amber-500/10 transition-all" placeholder="e.g. Lead Storyteller" />
-                     </div>
-                   )}
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">الدور الوظيفي (Role)</label>
-                      <select 
-                        value={form.role} 
-                        onChange={e => setForm({...form, role: e.target.value})} 
-                        className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold appearance-none cursor-pointer focus:ring-4 focus:ring-brand-500/10"
-                      >
-                        <option value="TEAM">Team Member (Internal)</option>
-                        {currentUser?.role === 'OWNER' && <option value="ADMIN">System Administrator</option>}
-                      </select>
-                   </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">المسمى الوظيفي</label>
+                    <select value={form.position} onChange={e => setForm({...form, position: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10">
+                      {jobTitles.filter(jt => jt.value !== 'ALL').map(jt => <option key={jt.value} value={jt.value}>{jt.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">القنوات المدارة</label>
+                    <input type="number" value={form.managedChannels} onChange={e => setForm({...form, managedChannels: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">رابط Notion الخاص بالعضو</label>
+                    <input value={form.notionLink} onChange={e => setForm({...form, notionLink: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" placeholder="https://notion.so/..." />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">رابط Telegram</label>
+                    <input value={form.telegram} onChange={e => setForm({...form, telegram: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" placeholder="@username" />
+                  </div>
                 </div>
               </div>
 
-              {/* Section 3: Financial & Status */}
+              {/* Section 3: Financial Data */}
               <div className="space-y-8 pt-10 border-t border-slate-100 dark:border-white/5">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-emerald-500 border border-emerald-500/10">
                     <DollarSign size={16} />
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">الحسابات والمالية (Ledger & Status)</h3>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">البيانات المالية (Financials)</h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">الراتب المتفق عليه ($)</label>
-                      <div className="relative">
-                        <CreditCard className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input type="number" value={form.monthlySalary} onChange={e => setForm({...form, monthlySalary: e.target.value})} className="w-full pl-14 pr-6 py-4 bg-emerald-500/5 dark:bg-emerald-500/[0.02] border border-emerald-500/20 rounded-2xl text-emerald-600 dark:text-emerald-500 font-black focus:ring-4 focus:ring-emerald-500/10" placeholder="0.00" />
-                      </div>
-                   </div>
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">حالة الحساب</label>
-                      <button 
-                        type="button"
-                        onClick={() => setForm({...form, isActive: !form.isActive})}
-                        className={`w-full flex items-center justify-between px-6 py-4 rounded-2xl border-2 transition-all duration-300 ${
-                          form.isActive ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-rose-500/10 border-rose-500/20 text-rose-500'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 uppercase font-black tracking-widest text-[10px]">
-                           {form.isActive ? <UserCheck size={18} /> : <UserX size={18} />}
-                           {form.isActive ? 'ENABLED / ACTIVE' : 'DISABLED / INACTIVE'}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">إجمالي الراتب ($)</label>
+                    <input type="number" value={form.monthlySalary} onChange={e => setForm({...form, monthlySalary: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-emerald-600 dark:text-emerald-400 font-black focus:ring-4 focus:ring-emerald-500/10" />
+                  </div>
+                  {isEditing && (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ما تم دفعه</label>
+                        <div className="w-full px-6 py-4 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-500 font-bold opacity-60">
+                          ${selectedMember?.finance?.paid || 0}
                         </div>
-                        <div className={`w-4 h-4 rounded-full shadow-lg transition-all ${form.isActive ? 'bg-emerald-500 shadow-emerald-500/40' : 'bg-rose-500 shadow-rose-500/40'}`}></div>
-                      </button>
-                   </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">المتبقي</label>
+                        <div className="w-full px-6 py-4 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-500 font-bold opacity-60">
+                          ${selectedMember?.finance?.remaining || 0}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
-              {/* Section 4: Security Privileges */}
-              {form.role === 'ADMIN' && (
-                <div className="space-y-8 pt-10 border-t border-slate-100 dark:border-white/5">
-                   <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/10">
-                        <ShieldAlert size={16} />
-                      </div>
-                      <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">صلاحيات المدير (System Access)</h3>
-                   </div>
-                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                      {availablePermissions.map(perm => {
-                        const active = form.permissions.includes(perm.id);
-                        return (
-                          <button
-                            key={perm.id}
-                            type="button"
-                            onClick={() => {
-                              const newPerms = active ? form.permissions.filter(p => p !== perm.id) : [...form.permissions, perm.id];
-                              setForm({...form, permissions: newPerms});
-                            }}
-                            className={`flex items-center gap-4 p-5 rounded-2xl border transition-all duration-300 ${
-                              active ? 'bg-brand-600 border-brand-700 text-white shadow-xl shadow-brand-600/20' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400'
-                            }`}
-                          >
-                             <div className={`p-2 rounded-lg ${active ? 'bg-white/20' : 'bg-slate-200 dark:bg-white/10'}`}>
-                                <perm.icon size={14} />
-                             </div>
-                             <span className="text-[10px] font-black uppercase tracking-widest">{perm.label}</span>
-                          </button>
-                        );
-                      })}
-                   </div>
+              {/* Section 4: Status & Health */}
+              <div className="space-y-8 pt-10 border-t border-slate-100 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10">
+                    <Heart size={16} />
+                  </div>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">حالة الحساب والصحة (Vitals)</h3>
                 </div>
-              )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">الحالة (Account Status)</label>
+                    <button type="button" onClick={() => setForm({...form, isActive: !form.isActive})} className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl border-2 transition-all font-black text-xs ${form.isActive ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600' : 'bg-rose-500/10 border-rose-500/20 text-rose-600'}`}>
+                      {form.isActive ? 'ACTIVE / مُفعل' : 'INACTIVE / مُعطل'}
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">الحالة الصحية (Health Score)</label>
+                    <div className="flex gap-2">
+                      {healthScores.map(score => (
+                        <button key={score.value} type="button" onClick={() => setForm({...form, healthScore: score.value})} className={`flex-1 py-4 rounded-2xl border-2 transition-all text-xl ${form.healthScore === score.value ? 'bg-white dark:bg-white/5 border-brand-500 shadow-lg' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 opacity-40'}`}>
+                          {score.emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ملاحظات داخلية</label>
+                    <textarea value={form.internalNotes} onChange={e => setForm({...form, internalNotes: e.target.value})} rows="3" className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all resize-none" />
+                  </div>
+                </div>
+              </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-8 sticky bottom-0 bg-white dark:bg-[#0a0a0c] z-10">
+              <div className="flex flex-col sm:flex-row gap-4 pt-8 sticky bottom-0 bg-white dark:bg-[#0a0a0c] z-10 transition-all">
                 <button type="submit" disabled={submitting} className="flex-[3] py-5 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-[1.5rem] shadow-2xl shadow-brand-600/30 hover:-translate-y-1 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3">
-                  {submitting ? <Loader2 className="animate-spin" /> : (isEditing ? 'حفظ التعديلات النهائية' : 'إتمام عملية التوظيف')}
+                  {submitting ? <Loader2 className="animate-spin" /> : (isEditing ? 'حفظ التعديلات' : 'إضافة عضو جديد')}
                 </button>
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-5 bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 font-black rounded-[1.5rem] hover:bg-slate-200 dark:hover:bg-white/10 transition-all text-xs uppercase tracking-[0.2em]">
                   {t('cancel')}

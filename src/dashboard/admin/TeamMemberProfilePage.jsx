@@ -1,16 +1,29 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getUserAPI, getInvoicesAPI, getProjectsAPI, getRecentActivityAPI, updateUserAPI, uploadImageAPI } from '../../store/api';
+import { getUserAPI, getProjectsAPI, getRecentActivityAPI, updateUserAPI, uploadImageAPI } from '../../store/api';
 import { 
   Building2, Mail, Phone, Calendar, Star, ExternalLink, 
   ChevronLeft, FileText, Receipt, Briefcase, Activity,
   Download, Plus, Search, Filter, ArrowUpRight, Wallet, Shield,
   FolderKanban, FileBadge, Building, Send, MessageCircle, SendHorizontal, 
   MoreVertical, Loader2, StarHalf, Trash2, X, CreditCard, DollarSign,
-  Briefcase as JobIcon, User, Camera, ShieldCheck, ShieldAlert
+  Briefcase as JobIcon, User, Camera, ShieldCheck, ShieldAlert, Heart, Layout
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
+
+const COUNTRY_FLAGS = {
+  '+20': 'eg', '+966': 'sa', '+971': 'ae', '+974': 'qa', '+965': 'kw',
+  '+968': 'om', '+973': 'bh', '+961': 'lb', '+962': 'jo', '+1': 'us',
+  '+39': 'it', '+7': 'ru', '+33': 'fr', '+49': 'de', '+90': 'tr',
+  '+212': 'ma', '+213': 'dz', '+216': 'tn', '+249': 'sd',
+};
+
+const getCountryFlagUrl = (phone) => {
+  if (!phone) return null;
+  const match = Object.keys(COUNTRY_FLAGS).find(code => phone.startsWith(code));
+  return match ? `https://flagcdn.com/w40/${COUNTRY_FLAGS[match]}.png` : null;
+};
 
 const getFormattedAvatarUrl = (url) => {
   if (!url || typeof url !== 'string') return null;
@@ -28,14 +41,11 @@ const TeamMemberProfilePage = () => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
     const fetchMemberData = async () => {
       setLoading(true);
       try {
-        // We use getUsers and filter for now or create a specific getUserAPI if needed
-        // Assuming getUserAPI exists or is added to store/api
         const { data: memberData } = await getUserAPI(id);
         setMember(memberData);
 
@@ -44,9 +54,8 @@ const TeamMemberProfilePage = () => {
           getRecentActivityAPI(10)
         ]);
         
-        // Filter projects where member is involved (assuming project has team member links)
         setProjects(projectsRes.data.filter(proj => proj.team?.some(tm => String(tm.id) === String(id))));
-        setActivities(activityRes.data.filter(log => String(log.userId) === String(id)));
+        setActivities(activityRes.data.filter(log => String(log.userId) === String(memberData?.id)));
       } catch (err) {
         toast.error("فشل تحميل بيانات العضو");
         console.error(err);
@@ -104,27 +113,59 @@ const TeamMemberProfilePage = () => {
   };
 
   const handleContactAction = (type) => {
-    const email = member.email || '';
+    const email = member?.email || '';
+    const phone = member?.phone || '';
+    const telegram = member?.telegram || '';
+
     switch (type) {
       case 'EMAIL':
         window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`, '_blank');
         break;
       case 'WHATSAPP':
-        toast.info("WhatsApp communication managed via centralized dashboard");
+        if (phone) {
+          const cleanPhone = phone.replace(/\D/g, '');
+          window.open(`https://wa.me/${cleanPhone}`, '_blank');
+        } else {
+          toast.error("Phone number missing");
+        }
+        break;
+      case 'TELEGRAM':
+        if (telegram) {
+          const username = telegram.replace('@', '').trim();
+          window.open(`https://t.me/${username}`, '_blank');
+        } else {
+          toast.error("Telegram handle missing");
+        }
+        break;
+      case 'NOTION':
+        if (member?.notionLink) {
+           window.open(member.notionLink, '_blank');
+        } else {
+           toast.error("Notion link missing");
+        }
         break;
       default: break;
     }
   };
 
   const stats = [
-    { label: 'Proposed Salary', value: `$${(member.teamMemberInfo?.monthlySalary || 0).toLocaleString()}`, icon: CreditCard, color: 'bg-brand-500' },
-    { label: 'Total Paid', value: `$${(member.finance?.paid || 0).toLocaleString()}`, icon: Wallet, color: 'bg-emerald-500' },
-    { label: 'Remaining', value: `$${(member.finance?.remaining || 0).toLocaleString()}`, icon: DollarSign, color: 'bg-indigo-500' },
+    { label: 'Proposed Salary', value: `$${(member?.finance?.totalSalary || 0).toLocaleString()}`, icon: CreditCard, color: 'bg-brand-500' },
+    { label: 'Total Paid', value: `$${(member?.finance?.paid || 0).toLocaleString()}`, icon: Wallet, color: 'bg-emerald-500' },
+    { label: 'Remaining', value: `$${(member?.finance?.remaining || 0).toLocaleString()}`, icon: DollarSign, color: 'bg-indigo-500' },
   ];
+
+  const getHealthEmoji = (score) => {
+    switch(score) {
+      case 'GOOD': return '🟢';
+      case 'MONITOR': return '🟡';
+      case 'AT_RISK': return '🔴';
+      default: return '🟢';
+    }
+  };
 
   return (
     <div className="space-y-8 pb-20">
-      {/* Header & Avatar Hub */}
+      {/* Header & Main Info Hub */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
            <button 
@@ -136,11 +177,11 @@ const TeamMemberProfilePage = () => {
 
            <div className="relative group">
               <div className={`w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] bg-white dark:bg-white/10 flex items-center justify-center text-4xl font-black text-slate-300 border-4 border-white dark:border-[#0a0a0c] shadow-2xl overflow-hidden ${
-                member.role === 'OWNER' ? 'border-amber-500' : ''
+                member?.role === 'OWNER' ? 'border-amber-500' : ''
               }`}>
                 {uploadingAvatar ? (
                   <Loader2 size={32} className="animate-spin text-brand-500" />
-                ) : member.avatarUrl ? (
+                ) : member?.avatarUrl ? (
                   <img src={getFormattedAvatarUrl(member.avatarUrl)} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <User size={48} className="text-slate-200" />
@@ -150,7 +191,7 @@ const TeamMemberProfilePage = () => {
                    <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                 </label>
               </div>
-              {member.role === 'OWNER' && (
+              {member?.role === 'OWNER' && (
                 <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white p-2 rounded-xl shadow-lg border-2 border-white dark:border-[#0a0a0c]">
                   <ShieldAlert size={20} />
                 </div>
@@ -159,52 +200,70 @@ const TeamMemberProfilePage = () => {
 
            <div className="text-center md:text-left pt-2">
               <div className="flex flex-col md:flex-row items-center gap-3">
+                 {getCountryFlagUrl(member?.phone) && (
+                   <img src={getCountryFlagUrl(member.phone)} alt="flag" className="w-8 h-auto rounded-sm shadow-md" />
+                 )}
                  <h1 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white tracking-tight">
-                   {member.firstName} {member.lastName}
+                   {(member?.firstName || '')} {(member?.lastName || '')}
                  </h1>
                  <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                   member.isActive === false ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                   member?.isActive === false ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
                  }`}>
-                   {member.isActive === false ? 'Inactive Account' : 'Active Member'}
+                   {member?.isActive === false ? 'Inactive Account' : 'Active Member'}
+                 </div>
+                 <div className="text-xl" title="Health Status">
+                    {getHealthEmoji(member?.healthScore)}
                  </div>
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-bold mt-2 uppercase tracking-[0.2em] text-xs">
-                {member.teamMemberInfo?.position || 'Specialist Partner'} • {member.role} • {member.email}
+                {member?.position || 'Creative Specialist'} • {member?.role} • {member?.company}
               </p>
               
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-6">
+                 {member?.notionLink && (
+                   <button 
+                     onClick={() => handleContactAction('NOTION')}
+                     className="px-6 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl transition-all flex items-center gap-2 active:scale-95"
+                   >
+                     <Layout size={16} /> Notion
+                   </button>
+                 )}
                  <button 
-                   onClick={() => handleContactAction('EMAIL')}
-                   className="px-6 py-3.5 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-brand-600/20 transition-all flex items-center gap-2 active:scale-95"
+                   onClick={() => handleContactAction('WHATSAPP')}
+                   className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-emerald-600/20 transition-all flex items-center gap-2 active:scale-95"
                  >
-                   <Mail size={16} />
-                   Send Gmail
+                   <SendHorizontal size={16} /> WhatsApp
                  </button>
                  <button 
-                   className="px-6 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg transition-all flex items-center gap-2"
+                   onClick={() => handleContactAction('TELEGRAM')}
+                   className="px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-600/20 transition-all flex items-center gap-2 active:scale-95"
                  >
-                   <MessageCircle size={16} />
-                   Internal Chat
+                   <Send size={16} /> Telegram
+                 </button>
+                 <button 
+                   onClick={() => handleContactAction('EMAIL')}
+                   className="px-6 py-3.5 bg-amber-600 hover:bg-amber-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-amber-600/20 transition-all flex items-center gap-2 active:scale-95"
+                 >
+                   <Mail size={16} /> Email
                  </button>
               </div>
            </div>
         </div>
 
-        {/* Quick View Dashboard Link */}
         <div className="hidden xl:block">
            <div className="p-6 bg-brand-500/5 border border-brand-500/10 rounded-[2rem] flex flex-col items-center gap-2 text-center">
-              <Layout className="text-brand-500" size={24} />
-              <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest">Team Performance v1.6.0</p>
+              <JobIcon className="text-brand-500" size={24} />
+              <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest">Team Performance v1.6.3</p>
            </div>
         </div>
       </div>
 
-      {/* Financial "Hassala" Stats */}
+      {/* Financial Hassala Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stats.map((s, i) => (
           <div key={i} className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-8 flex items-center gap-6 shadow-sm group hover:border-brand-500/20 transition-all">
-            <div className={`w-16 h-16 rounded-[1.5rem] ${s.color} bg-opacity-10 flex items-center justify-center text-white transition-transform group-hover:scale-110`}>
-              <div className={`p-4 rounded-xl ${s.color} shadow-lg shadow-${s.color.split('-')[1]}-500/20`}>
+            <div className={`w-16 h-16 rounded-[1.5rem] ${s.color} bg-opacity-10 flex items-center justify-center`}>
+              <div className={`p-4 rounded-xl ${s.color} shadow-lg shadow-${s.color.split('-')[1]}-500/20 group-hover:scale-110 transition-transform`}>
                 <s.icon size={24} />
               </div>
             </div>
@@ -236,7 +295,7 @@ const TeamMemberProfilePage = () => {
                        </div>
                        <div>
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Full Legal Name</p>
-                          <p className="font-bold text-slate-800 dark:text-slate-200">{member.firstName} {member.lastName}</p>
+                          <p className="font-bold text-slate-800 dark:text-slate-200">{member?.firstName} {member?.lastName}</p>
                        </div>
                     </div>
                     <div className="flex items-center gap-5 group">
@@ -245,7 +304,16 @@ const TeamMemberProfilePage = () => {
                        </div>
                        <div>
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Official Portal Email</p>
-                          <p className="font-bold text-slate-800 dark:text-slate-200">{member.email}</p>
+                          <p className="font-bold text-slate-800 dark:text-slate-200">{member?.email || 'N/A'}</p>
+                       </div>
+                    </div>
+                    <div className="flex items-center gap-5 group">
+                       <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400 border border-slate-200 dark:border-white/10 group-hover:bg-brand-500 group-hover:text-white transition-all">
+                          <Phone size={20} />
+                       </div>
+                       <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">WhatsApp Primary</p>
+                          <p className="font-bold text-slate-800 dark:text-slate-200">{member?.phone || 'N/A'}</p>
                        </div>
                     </div>
                  </div>
@@ -257,7 +325,16 @@ const TeamMemberProfilePage = () => {
                        </div>
                        <div>
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Production Position</p>
-                          <p className="font-bold text-slate-800 dark:text-slate-200">{member.teamMemberInfo?.position || 'Creative Specialist'}</p>
+                          <p className="font-bold text-slate-800 dark:text-slate-200">{member?.position || 'Creative Specialist'}</p>
+                       </div>
+                    </div>
+                    <div className="flex items-center gap-5 group">
+                       <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-slate-400 border border-slate-200 dark:border-white/10 group-hover:bg-brand-500 group-hover:text-white transition-all">
+                          <Building2 size={20} />
+                       </div>
+                       <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Company / Entity</p>
+                          <p className="font-bold text-slate-800 dark:text-slate-200">{member?.company || 'Internal Team'}</p>
                        </div>
                     </div>
                     <div className="flex items-center gap-5 group">
@@ -266,27 +343,21 @@ const TeamMemberProfilePage = () => {
                        </div>
                        <div>
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Onboarding Date</p>
-                          <p className="font-bold text-slate-800 dark:text-slate-200">{new Date(member.createdAt).toLocaleDateString()}</p>
+                          <p className="font-bold text-slate-800 dark:text-slate-200">{member?.createdAt ? new Date(member.createdAt).toLocaleDateString() : 'N/A'}</p>
                        </div>
                     </div>
                  </div>
               </div>
 
-              {/* Security Status Box */}
+              {/* Status Note Box */}
               <div className="mt-12 p-8 bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-[2rem] relative z-10">
                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Portal Access Privileges</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Internal Associate Notes</p>
                     <Star size={14} className="text-amber-500 fill-amber-500" />
                  </div>
-                 <div className="flex flex-wrap gap-3">
-                    {member.permissions?.length > 0 ? member.permissions.map(p => (
-                      <span key={p} className="px-4 py-2 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-[10px] font-black uppercase text-slate-600 dark:text-slate-400 tracking-wider">
-                        {p} ACCESS
-                      </span>
-                    )) : (
-                      <span className="text-sm font-bold text-slate-400 italic">Standard Team Entry Level</span>
-                    )}
-                 </div>
+                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
+                   {member?.internalNotes || 'No internal notes documented for this partner.'}
+                 </p>
               </div>
            </div>
 
@@ -295,15 +366,17 @@ const TeamMemberProfilePage = () => {
              <div className="flex items-center justify-between mb-10">
                <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-3">
                  <Activity size={24} className="text-indigo-500" />
-                 Active Project Involvements
+                 Managed Channels & Projects
                </h3>
-               <span className="px-3 py-1 bg-indigo-500/10 text-indigo-500 text-[10px] font-black rounded-full border border-indigo-500/20">{projects.length} PROJECTS</span>
+               <span className="px-3 py-1 bg-indigo-500/10 text-indigo-500 text-[10px] font-black rounded-full border border-indigo-500/20">
+                 {member?.managedChannels || 0} CHANNELS
+               </span>
              </div>
              
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                {projects.length === 0 ? (
                  <div className="col-span-full py-16 text-center border-2 border-dashed border-slate-100 dark:border-white/5 rounded-[2rem]">
-                   <Building2 className="text-slate-200 mx-auto mb-4" size={40} />
+                   <FolderKanban className="text-slate-200 mx-auto mb-4" size={40} />
                    <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">No project assignments active</p>
                  </div>
                ) : (
@@ -311,7 +384,7 @@ const TeamMemberProfilePage = () => {
                    <div key={proj.id} className="p-6 bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-3xl flex items-center justify-between group hover:border-brand-500/30 transition-all cursor-pointer">
                      <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10 group-hover:bg-brand-500 group-hover:text-white transition-all">
-                           <FolderKanban size={20} />
+                           <Layout size={20} />
                         </div>
                         <div>
                            <p className="font-bold text-slate-800 dark:text-white group-hover:text-brand-500 transition-colors uppercase tracking-tight">{proj.name}</p>
@@ -333,7 +406,7 @@ const TeamMemberProfilePage = () => {
               
               <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-wider mb-8 flex items-center gap-3">
                 <Activity size={20} className="text-brand-500 animate-pulse" />
-                Session History
+                Audit Trail History
               </h3>
               
               <div className="flex-1 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
@@ -346,7 +419,7 @@ const TeamMemberProfilePage = () => {
                    <div key={log.id} className="relative pl-6 border-l-2 border-slate-100 dark:border-white/5 pb-8 last:pb-0 group">
                      <div className="absolute left-[-5.5px] top-1 w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-white/10 group-hover:bg-brand-500 transition-all border-2 border-white dark:border-[#0a0a0c] shadow-[0_0_10px_rgba(255,255,255,0.1)]" />
                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">
-                        {new Date(log.createdAt).toLocaleString()}
+                        {log.createdAt ? new Date(log.createdAt).toLocaleString() : 'N/A'}
                      </p>
                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300 leading-tight">
                        {log.action} {log.entityType}
@@ -357,7 +430,19 @@ const TeamMemberProfilePage = () => {
               </div>
               
               <div className="mt-8 pt-6 border-t border-slate-100 dark:border-white/5">
-                 <p className="text-[10px] text-center font-black text-slate-400 uppercase tracking-widest leading-relaxed">System Audit Trail v1.6.0 Reboot</p>
+                 <div className="flex items-center justify-between mb-4">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Portal Access Privileges</p>
+                    <Shield size={14} className="text-brand-500" />
+                 </div>
+                 <div className="flex flex-wrap gap-2">
+                    {(member?.permissions || []).length > 0 ? member.permissions.map(p => (
+                      <span key={p} className="px-3 py-1.5 bg-brand-500/5 border border-brand-500/10 rounded-lg text-[9px] font-black uppercase text-brand-500 tracking-wider">
+                        {p}
+                      </span>
+                    )) : (
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Standard Associate Access</span>
+                    )}
+                 </div>
               </div>
            </div>
         </div>
