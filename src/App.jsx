@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import useAuthStore from './store/authStore';
 import useThemeStore from './store/themeStore';
 import { Toaster } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -66,6 +67,27 @@ const ThemeInitializer = () => {
   );
 };
 
+const LanguageInitializer = () => {
+  const { i18n } = useTranslation();
+
+  useEffect(() => {
+    const lang = i18n.language || 'en';
+    const dir = lang === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.dir = dir;
+    document.documentElement.lang = lang;
+    
+    if (lang === 'ar') {
+      document.body.classList.add('rtl-active');
+      document.body.classList.remove('ltr-active');
+    } else {
+      document.body.classList.add('ltr-active');
+      document.body.classList.remove('rtl-active');
+    }
+  }, [i18n.language]);
+
+  return null;
+};
+
 function App() {
   const { token, fetchProfile } = useAuthStore();
 
@@ -79,6 +101,7 @@ function App() {
   return (
     <>
       <ThemeInitializer />
+      <LanguageInitializer />
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
