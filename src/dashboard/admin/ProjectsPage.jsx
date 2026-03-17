@@ -136,7 +136,7 @@ const ProjectsPage = () => {
   });
 
   return (
-    <div className="space-y-8 md:space-y-12 pb-10">
+    <div className="space-y-8 md:space-y-10 pb-10">
       {/* Supreme Header with Versioning */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-8">
         <div>
@@ -154,22 +154,22 @@ const ProjectsPage = () => {
           <p className="text-slate-400 dark:text-slate-500 font-bold mt-2 text-sm uppercase tracking-widest">{t('projects_management_desc')}</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-5">
-          <div className="relative group min-w-[350px]">
-            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-all duration-300" size={22} />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+          <div className="relative group flex-1 md:flex-none">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={18} />
             <input 
               type="text"
               placeholder={t('search_projects')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-16 pr-8 py-5 bg-white dark:bg-white/5 border-2 border-slate-100 dark:border-white/10 rounded-[2rem] text-sm focus:outline-none focus:ring-8 focus:ring-brand-500/10 focus:border-brand-500 transition-all w-full shadow-2xl shadow-slate-200/50 dark:shadow-none font-black placeholder:text-slate-300"
+              className="pl-11 pr-6 py-3.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-[1.25rem] text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all w-full sm:w-72 md:w-80 shadow-sm font-bold"
             />
           </div>
           <button 
             onClick={() => setShowModal(true)} 
-            className="flex items-center justify-center gap-3 px-10 py-5 bg-brand-600 hover:bg-brand-500 text-white rounded-[2rem] font-black shadow-2xl shadow-brand-600/40 hover:-translate-y-1.5 active:scale-95 transition-all duration-500 uppercase tracking-[0.2em] text-xs border-b-4 border-brand-800 active:border-b-0"
+            className="flex items-center justify-center gap-2 px-7 py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-[1.25rem] font-bold shadow-xl shadow-brand-600/20 hover:-translate-y-1 active:scale-95 transition-all duration-300"
           >
-            <Plus size={22} className="stroke-[3px]" />
+            <Plus size={20} />
             <span>{t('new_project')}</span>
           </button>
         </div>
@@ -206,7 +206,7 @@ const ProjectsPage = () => {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-48">
           <Loader2 size={48} className="animate-spin text-brand-500 mb-8" />
-          <p className="font-black tracking-[0.4em] uppercase text-[10px] text-slate-400 animate-pulse">{t('Syncing Workspace Portal...')}</p>
+          <p className="font-black tracking-[0.2em] uppercase text-[10px] text-slate-400 animate-pulse">{t('syncing_workspaces')}</p>
         </div>
       ) : filteredProjects.length === 0 ? (
         <div className="bg-white dark:bg-[#0a0a0c]/60 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-[4rem] py-40 text-center shadow-2xl relative overflow-hidden group">
@@ -218,72 +218,67 @@ const ProjectsPage = () => {
            <p className="text-slate-400 font-bold max-w-sm mx-auto uppercase text-[11px] tracking-[0.3em] leading-relaxed">{t('projects_empty')}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-10 md:gap-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
           {filteredProjects.map(p => (
-            <div key={p.id} className="group bg-white dark:bg-[#0a0a0c] border-2 border-slate-50 dark:border-white/5 rounded-[4rem] overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] dark:shadow-none hover:border-brand-500 transition-all duration-700 transform hover:-translate-y-5">
-              {/* Card Header / Banner */}
-              <div className={`h-32 px-10 pt-10 flex items-start justify-between relative ${statusConfig[p.status].bg} opacity-60 group-hover:opacity-100 transition-all duration-700`}>
-                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white dark:to-[#0a0a0c]"></div>
-                 <div className={`relative z-10 px-5 py-2.5 rounded-2xl bg-white dark:bg-slate-900 shadow-2xl border border-slate-100 dark:border-white/10 flex items-center gap-3 font-black text-[10px] uppercase tracking-[0.2em] ${statusConfig[p.status].color}`}>
-                    <span className="w-3 h-3 rounded-full bg-current animate-pulse shadow-[0_0_10px_rgba(0,0,0,0.2)]"></span>
-                    {p.status.replace('_', ' ')}
-                 </div>
-                 <div className="relative z-10 flex gap-3">
-                    <button 
-                      onClick={() => handleDownloadContract(p.id, p.name)}
-                      className="p-3.5 bg-white/80 hover:bg-white hover:text-brand-600 rounded-2xl border border-white/20 shadow-lg transition-all backdrop-blur-md active:scale-90"
-                    >
-                      <FileText size={20} />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(p.id, p.name)}
-                      className="p-3.5 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded-2xl border border-rose-500/20 shadow-lg transition-all backdrop-blur-md active:scale-90"
-                    >
-                      <Trash2 size={20} />
-                    </button>
-                 </div>
-              </div>
+            <div key={p.id} className={`group relative bg-white dark:bg-[#0a0a0c]/40 border rounded-[2.5rem] p-8 shadow-xl transition-all duration-500 hover:-translate-y-2 border-slate-100 dark:border-white/5 hover:border-brand-500/30`}>
+              <div className="flex flex-col gap-6">
+                <div className="flex items-start justify-between">
+                   <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${statusConfig[p.status].bg} ${statusConfig[p.status].color} ${statusConfig[p.status].border}`}>
+                      {p.status.replace('_', ' ')}
+                   </div>
+                   <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleDownloadContract(p.id, p.name)}
+                        className="p-2 bg-slate-50 dark:bg-white/5 text-slate-400 hover:text-brand-500 rounded-xl transition-all"
+                      >
+                        <FileText size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(p.id, p.name)}
+                        className="p-2 bg-slate-50 dark:bg-white/5 text-slate-400 hover:text-rose-500 rounded-xl transition-all"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                   </div>
+                </div>
 
-              {/* Card Content */}
-              <div className="p-10 md:p-12 -mt-8 bg-white dark:bg-[#0a0a0c] rounded-t-[4rem] relative z-10 space-y-10">
-                 <div className="space-y-4">
-                    <Link to={`/admin/projects/${p.id}`}>
-                      <h3 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white leading-none group-hover:text-brand-600 transition-colors uppercase tracking-tighter line-clamp-1">{p.name}</h3>
-                    </Link>
-                    <div className="flex items-center gap-4">
-                       <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center border-2 border-slate-200 dark:border-white/10 shadow-inner">
-                          <span className="text-xs font-black text-slate-500">{p.client?.user?.firstName?.[0]}</span>
-                       </div>
-                       <p className="text-[11px] font-black text-slate-500 dark:text-slate-400 tracking-[0.2em] uppercase">
-                         {p.client?.user?.firstName} {p.client?.user?.lastName}
-                       </p>
-                    </div>
-                 </div>
+                <div className="space-y-4">
+                   <Link to={`/admin/projects/${p.id}`}>
+                     <h3 className="text-2xl font-black text-slate-800 dark:text-white leading-tight group-hover:text-brand-600 transition-colors uppercase tracking-tight line-clamp-1">{p.name}</h3>
+                   </Link>
+                   <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center border border-slate-200 dark:border-white/10 shadow-inner">
+                         <span className="text-[10px] font-black text-slate-500 uppercase">{p.client?.user?.firstName?.[0]}</span>
+                      </div>
+                      <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 tracking-wider uppercase">
+                        {p.client?.user?.firstName} {p.client?.user?.lastName}
+                      </p>
+                   </div>
+                </div>
 
-                 <div className="relative">
-                    <p className="text-sm font-bold text-slate-400 dark:text-slate-500 line-clamp-2 min-h-[48px] leading-relaxed italic pr-6 pl-4 border-l-4 border-brand-500/20">
-                       "{p.description || t('projects_empty')}"
-                    </p>
-                 </div>
+                <div className="relative">
+                   <p className="text-xs font-medium text-slate-400 dark:text-slate-500 line-clamp-2 min-h-[40px] leading-relaxed italic pr-6 pl-4 border-l-2 border-brand-500/20">
+                      "{p.description || t('projects_empty')}"
+                   </p>
+                </div>
 
-                 {/* Action Panel */}
-                 <div className="pt-10 border-t-2 border-slate-50 dark:border-white/5 flex flex-col gap-5">
-                    <Link 
-                      to={`/admin/projects/${p.id}`}
-                      className="w-full py-4.5 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-2xl transition-all flex items-center justify-center gap-3 text-xs shadow-lg hover:-translate-y-1 uppercase tracking-widest group/btn"
-                    >
-                      <Layout size={18} className="group-hover/btn:rotate-12 transition-transform" />
-                      {t('open_project')}
-                    </Link>
-                    
-                    <div className="flex items-center justify-between text-[9px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest px-2">
-                       <div className="flex items-center gap-1.5">
-                          <Calendar size={12} className="text-slate-300" />
-                          {new Date(p.createdAt).toLocaleDateString()}
-                       </div>
-                       <span className="font-mono">PRJ_{p.id.split('-')[0]}</span>
-                    </div>
-                 </div>
+                <div className="pt-6 border-t border-slate-100 dark:border-white/5 flex flex-col gap-4">
+                   <Link 
+                     to={`/admin/projects/${p.id}`}
+                     className="w-full py-3.5 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-2xl transition-all flex items-center justify-center gap-2 text-sm shadow-xl shadow-brand-600/20 active:scale-95 group-hover:-translate-y-1"
+                   >
+                     <Layout size={18} />
+                     {t('open_project')}
+                   </Link>
+                   
+                   <div className="flex items-center justify-between text-[9px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest px-1">
+                      <div className="flex items-center gap-1.5">
+                         <Calendar size={12} className="opacity-50" />
+                         {new Date(p.createdAt).toLocaleDateString()}
+                      </div>
+                      <span className="font-mono opacity-50">PRJ_{p.id.split('-')[0]}</span>
+                   </div>
+                </div>
               </div>
             </div>
           ))}
@@ -298,7 +293,7 @@ const ProjectsPage = () => {
           <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-2xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-400">
             
             {/* Modal Header */}
-            <div className="px-8 py-8 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
+            <div className="px-8 md:px-10 py-8 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 shadow-inner">
                    <Plus size={24} />
@@ -307,15 +302,15 @@ const ProjectsPage = () => {
                   <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight uppercase">
                     {t('new_project')}
                   </h2>
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-[0.2em]">{t('new_project_desc')}</p>
+                  <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-[0.2em]">{t('new_project_desc')}</p>
                 </div>
               </div>
-              <button onClick={() => setShowModal(false)} className="p-3 text-slate-400 hover:text-rose-500 bg-slate-50 dark:bg-white/5 rounded-xl transition-all">
+              <button onClick={() => setShowModal(false)} className="p-4 text-slate-400 hover:text-rose-500 bg-slate-100 dark:bg-white/5 rounded-2xl transition-all">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleCreate} className="p-8 space-y-10">
+            <form onSubmit={handleCreate} className="p-8 md:p-10 space-y-10">
               {error && (
                 <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 text-rose-500 text-xs font-bold border border-rose-100 dark:border-rose-500/20 animate-in shake duration-300">
                   {error}
@@ -323,35 +318,37 @@ const ProjectsPage = () => {
               )}
 
               {/* Section 1: Basic Information */}
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10">
-                    <Briefcase size={14} />
+                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10">
+                    <Briefcase size={16} />
                   </div>
-                  <h3 className="text-[10px] font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">{t('basic_info')}</h3>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">{t('basic_info')}</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className={`text-[10px] font-black uppercase tracking-widest ml-1 transition-colors ${!form.name && error ? 'text-rose-500' : 'text-slate-400'}`}>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                       {t('label_project_name')}
                     </label>
                     <input 
                       value={form.name} 
                       onChange={e => {setForm({...form, name: e.target.value}); if(error) setError(null);}} 
-                      className={`w-full h-14 px-6 bg-slate-50 dark:bg-white/5 border-2 rounded-2xl text-slate-800 dark:text-white font-bold text-sm focus:outline-none transition-all ${!form.name && error ? 'border-rose-500/50 bg-rose-500/5' : 'border-slate-100 dark:border-white/5 focus:border-brand-500'}`} 
+                      required
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all" 
                       placeholder="E.g. Summer Campaign" 
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className={`text-[10px] font-black uppercase tracking-widest ml-1 transition-colors ${!form.clientId && error ? 'text-rose-500' : 'text-slate-400'}`}>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                       {t('label_client')}
                     </label>
                     <select 
                       value={form.clientId} 
                       onChange={e => {setForm({...form, clientId: e.target.value}); if(error) setError(null);}} 
-                      className={`w-full h-14 px-6 bg-slate-50 dark:bg-white/5 border-2 rounded-2xl text-slate-800 dark:text-white font-bold text-sm focus:outline-none transition-all appearance-none cursor-pointer ${!form.clientId && error ? 'border-rose-500/50 bg-rose-500/5' : 'border-slate-100 dark:border-white/5 focus:border-brand-500'}`}
+                      required
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all cursor-pointer"
                     >
                       <option value="">{t('select_client')}</option>
                       {clients.map(c => <option key={c.id} value={c.id}>{c.user?.firstName} {c.user?.lastName}</option>)}
@@ -361,12 +358,12 @@ const ProjectsPage = () => {
               </div>
 
               {/* Section 2: Project Details */}
-              <div className="space-y-6">
+              <div className="space-y-8 pt-10 border-t border-slate-100 dark:border-white/5">
                 <div className="flex items-center gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10">
-                    <Layout size={14} />
+                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10">
+                    <Layout size={16} />
                   </div>
-                  <h3 className="text-[10px] font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">{t('project_details')}</h3>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">{t('project_details')}</h3>
                 </div>
 
                 <div className="space-y-2">
@@ -375,25 +372,25 @@ const ProjectsPage = () => {
                     value={form.description} 
                     onChange={e => setForm({...form, description: e.target.value})} 
                     rows={4} 
-                    className="w-full px-6 py-4 bg-slate-50 dark:bg-white/5 border-2 border-slate-100 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white font-bold text-sm focus:outline-none focus:border-brand-500 transition-all resize-none" 
+                    className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all resize-none" 
                     placeholder={t('brief_description')} 
                   />
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-6 flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 pt-8">
                 <button 
                   type="submit" 
                   disabled={submitting} 
-                  className="flex-[2] h-14 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-2xl shadow-xl shadow-brand-600/20 transition-all flex items-center justify-center gap-3 text-xs uppercase tracking-widest hover:-translate-y-1 active:scale-95 disabled:opacity-50"
+                  className="flex-[3] py-5 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-[1.5rem] shadow-2xl shadow-brand-600/30 hover:-translate-y-1 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3 disabled:opacity-50"
                 >
                   {submitting ? <Loader2 size={18} className="animate-spin" /> : t('launch_workspace')}
                 </button>
                 <button 
                   type="button" 
                   onClick={() => setShowModal(false)} 
-                  className="flex-1 h-14 bg-slate-100 dark:bg-white/5 text-slate-500 font-bold rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all text-[10px] uppercase tracking-widest"
+                  className="flex-1 py-5 bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 font-black rounded-[1.5rem] hover:bg-slate-200 dark:hover:bg-white/10 transition-all text-xs uppercase tracking-[0.2em]"
                 >
                   {t('cancel')}
                 </button>
