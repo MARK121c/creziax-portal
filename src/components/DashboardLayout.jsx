@@ -59,13 +59,6 @@ const DashboardLayout = () => {
     }
   };
 
-  const toggleLanguage = () => {
-    const nextLang = i18n.language === 'en' ? 'ar' : 'en';
-    i18n.changeLanguage(nextLang);
-    document.documentElement.dir = nextLang === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = nextLang;
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0a0a0c] text-slate-900 dark:text-slate-100 transition-colors duration-500" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Dynamic Background Texture */}

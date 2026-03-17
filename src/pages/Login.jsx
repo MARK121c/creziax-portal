@@ -35,17 +35,17 @@ const Login = () => {
   };
   
   return (
-    <div className={`min-h-screen flex items-center justify-center relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#0a0a0c]' : 'bg-slate-50'}`} dir={i18n.language.startsWith('ar') ? 'rtl' : 'ltr'}>
+    <div className={`min-h-screen flex items-center justify-center relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#0a0a0c]' : 'bg-slate-50'}`}>
       
       {/* Top right / left controls for Theme & Language */}
-      <div className={`absolute top-6 ${i18n.language.startsWith('ar') ? 'left-6' : 'right-6'} flex items-center gap-3 z-50`}>
+      <div className={`absolute top-6 ${i18n.language === 'ar' ? 'left-6' : 'right-6'} flex items-center gap-3 z-50`}>
         <button 
           type="button"
           onClick={toggleLanguage}
           className={`p-3 rounded-2xl transition-all shadow-sm flex items-center gap-2 font-bold text-xs uppercase tracking-widest ${theme === 'dark' ? 'bg-white/5 text-slate-300 hover:text-white hover:bg-white/10' : 'bg-white border border-slate-200 text-slate-600 hover:text-brand-600'}`}
         >
           <Globe size={18} />
-          {i18n.language.startsWith('ar') ? 'English' : 'العربية'}
+          {i18n.language === 'ar' ? 'English' : 'العربية'}
         </button>
         <button 
           type="button"
@@ -112,7 +112,7 @@ const Login = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full ${i18n.language.startsWith('ar') ? 'pr-6 pl-14' : 'pl-6 pr-14'} py-4 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/50 transition-all duration-300 font-bold ${
+                  className={`w-full ${i18n.language === 'ar' ? 'pr-6 pl-14' : 'pl-6 pr-14'} py-4 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500/50 transition-all duration-300 font-bold ${
                     theme === 'dark' 
                       ? 'bg-white/[0.03] border-white/5 text-white placeholder-slate-600' 
                       : 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
@@ -123,7 +123,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className={`absolute ${i18n.language.startsWith('ar') ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 p-1.5 rounded-xl transition-colors ${
+                  className={`absolute ${i18n.language === 'ar' ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 p-1.5 rounded-xl transition-colors ${
                     theme === 'dark' 
                       ? 'text-slate-400 hover:text-white hover:bg-white/10' 
                       : 'text-slate-500 hover:text-brand-600 hover:bg-slate-200/50'
