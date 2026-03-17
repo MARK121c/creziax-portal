@@ -193,8 +193,8 @@ const WorkspaceDetail = () => {
                   {workspace.name}
                 </h1>
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
-                  <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-500/20">
-                    V2.1 Premium Active
+                  <div className="flex items-center gap-2 px-3 py-1 bg-amber-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest border-2 border-amber-600 shadow-lg animate-bounce">
+                    V2.2 PREMIUM PROVOCATIVE
                   </div>
                   <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-white/10 rounded-2xl border border-slate-200 dark:border-white/5">
                     <Users size={14} className="text-slate-500" />
