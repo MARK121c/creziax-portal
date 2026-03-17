@@ -56,6 +56,7 @@ const getClientCompany = (c) => c?.clientInfo?.company || c?.company || '';
 const getClientLogo = (c) => c?.clientInfo?.logoUrl || c?.logoUrl || '';
 const getClientTier = (c) => c?.clientInfo?.tier || c?.tier || 'REGULAR';
 const getClientId = (c) => c?.clientInfo?.id || c?.id;
+const getClientEmail = (c) => c?.email || c?.clientInfo?.email || '';
 
 const ClientProfilePage = () => {
   const { id } = useParams();
@@ -326,7 +327,7 @@ const ClientProfilePage = () => {
                 )}
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-widest text-[10px]">
-                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.4.0
+                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.4.1
               </p>
             </div>
           </div>
@@ -366,8 +367,13 @@ const ClientProfilePage = () => {
            </button>
 
             <a 
-             href={client?.email ? `mailto:${client.email}` : '#'}
-             onClick={(e) => { if(!client?.email) { e.preventDefault(); toast.error(t('missing_email')); } }}
+             href={getClientEmail(client) ? `mailto:${getClientEmail(client)}` : '#'}
+             onClick={(e) => { 
+               if(!getClientEmail(client)) { 
+                 e.preventDefault(); 
+                 toast.error(t('missing_email')); 
+               } 
+             }}
              className="px-6 py-4 bg-amber-600 text-white rounded-2xl font-bold shadow-lg shadow-amber-600/20 hover:-translate-y-1 transition-all flex items-center gap-2 active:scale-95"
             >
               <Mail size={18} />
