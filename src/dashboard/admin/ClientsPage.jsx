@@ -35,7 +35,7 @@ const COUNTRY_FLAGS = {
 };
 
 const getFormattedLogoUrl = (url) => {
-  if (!url) return null;
+  if (!url || typeof url !== 'string') return null;
   if (url.startsWith('http') || url.startsWith('blob:')) return url;
   const baseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api$/, '');
   return `${baseUrl.replace(/\/$/, '')}/${url.replace(/^\//, '')}`;

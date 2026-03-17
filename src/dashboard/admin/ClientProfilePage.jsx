@@ -33,7 +33,7 @@ const COUNTRY_FLAGS = {
 };
 
 const getFormattedLogoUrl = (url) => {
-  if (!url) return null;
+  if (!url || typeof url !== 'string') return null;
   if (url.startsWith('http') || url.startsWith('blob:')) return url;
   const baseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api$/, '');
   return `${baseUrl.replace(/\/$/, '')}/${url.replace(/^\//, '')}`;
@@ -142,7 +142,7 @@ const ClientProfilePage = () => {
         break;
       case 'EMAIL':
         if (email) {
-          window.open(`mailto:${email}`, '_blank');
+          window.location.href = `mailto:${email}`;
         } else {
           toast.error(t('missing_email'));
         }
@@ -274,7 +274,7 @@ const ClientProfilePage = () => {
                 )}
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-widest text-[10px]">
-                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.3.4
+                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.3.5
               </p>
             </div>
           </div>
@@ -286,13 +286,12 @@ const ClientProfilePage = () => {
                href={getClientNotion(client)} 
                target="_blank" 
                rel="noopener noreferrer"
-               className="px-6 py-4 bg-white dark:bg-[#0a0a0c] text-slate-800 dark:text-white rounded-2xl font-bold flex items-center gap-2 hover:bg-brand-600 hover:text-white transition-all border border-slate-200 dark:border-white/10 shadow-lg group/notion"
+               className="w-14 h-14 bg-white dark:bg-[#0a0a0c] text-slate-800 dark:text-white rounded-2xl flex items-center justify-center hover:bg-brand-600 hover:text-white transition-all border border-slate-200 dark:border-white/10 shadow-lg group/notion"
+               title="Open Notion Page"
               >
-                <div className="w-6 h-6 flex items-center justify-center bg-slate-100 dark:bg-white/10 rounded-lg group-hover/notion:bg-white/20">
-                  <FileText size={14} className="text-slate-600 dark:text-slate-400 group-hover/notion:text-white" />
-                </div>
-                <span>Notion</span>
-                <ArrowUpRight size={14} className="opacity-40 group-hover/notion:opacity-100" />
+                <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current">
+                   <path d="M4.459 4.212c.192-.158.53-.332.883-.342.35-.011.834.137 1.096.22l11.05 4.095c.264.097.464.305.545.568l2.094 10.134c.08.388-.137.765-.515.894-.377.13-.778-.046-.954-.42l-2.015-4.275-9.358-3.465-1.932 4.103c-.176.374-.577.55-1.07.417-.492-.132-.71-.564-.63-1.077l.806-10.886zm2.25 10.32L16.2 18.23l-.22-10.37-9.531-3.328.26 10.0zm11.233-7.51L7.25 4.3l.08 10.2L17.7 18.0l.243-11.0zM8.3 6.0L15.3 8.3l-.06 7.4-7.0-2.3L8.3 6.0z"/>
+                </svg>
               </a>
             )}
            
