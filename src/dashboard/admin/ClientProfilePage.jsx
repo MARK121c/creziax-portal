@@ -5,7 +5,7 @@ import {
   Building2, Mail, Phone, Calendar, Star, ExternalLink, 
   ChevronLeft, FileText, Receipt, Briefcase, Activity,
   Download, Plus, Search, Filter, ArrowUpRight, Wallet, Shield,
-  FolderKanban, FileBadge, Building, Send, MessageCircle, SendHorizontal, MoreVertical, Loader2, StarHalf
+  FolderKanban, FileBadge, Building, Send, MessageCircle, SendHorizontal, MoreVertical, Loader2, StarHalf, Trash2, X
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
@@ -142,7 +142,7 @@ const ClientProfilePage = () => {
         break;
       case 'EMAIL':
         if (email) {
-          window.location.href = `mailto:${email}`;
+          window.location.assign(`mailto:${email}`);
         } else {
           toast.error(t('missing_email'));
         }
@@ -163,7 +163,11 @@ const ClientProfilePage = () => {
   };
 
   const handleConfirmLogo = async () => {
-    if (!selectedFile) return;
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      toast.error(i18n.language === 'ar' ? "الصورة كبيرة جداً (الحد الأقصى 5 ميجا)" : "Image too large (Max 5MB)");
+      return;
+    }
+
     setUploadingLogo(true);
     try {
       const fd = new FormData();
@@ -187,8 +191,24 @@ const ClientProfilePage = () => {
         setSelectedFile(null);
         setPreviewUrl(null);
       }
-    } catch (err) { toast.error('Upload failed'); }
+    } catch (err) { toast.error(i18n.language === 'ar' ? 'فشل التحميل' : 'Upload failed'); }
     finally { setUploadingLogo(false); }
+  };
+
+  const handleDeleteLogo = async () => {
+    if (!confirm(i18n.language === 'ar' ? 'هل أنت متأكد من حذف اللوجو؟' : 'Are you sure you want to delete the logo?')) return;
+    setUploadingLogo(true);
+    try {
+      const updateId = getClientId(client);
+      await updateClientAPI(updateId, { clientInfo: { ...client.clientInfo, logoUrl: '' } });
+      setClient(prev => ({ 
+        ...prev, 
+        clientInfo: { ...(prev.clientInfo || {}), logoUrl: '' },
+        logoUrl: '' 
+      }));
+      toast.success(t('saved_successfully'));
+    } catch (err) { toast.error('Action failed'); }
+    finally { setUploadingLogo(true); setTimeout(() => setUploadingLogo(false), 500); }
   };
 
   return (
@@ -211,7 +231,10 @@ const ClientProfilePage = () => {
                 ) : previewUrl || getClientLogo(client) ? (
                   <img src={previewUrl || getFormattedLogoUrl(getClientLogo(client))} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  getClientCompany(client)?.charAt(0) || <Building size={32} />
+                  <div className="flex flex-col items-center gap-1">
+                    <Building size={32} className="text-slate-300" />
+                    <span className="text-[10px] font-black uppercase text-slate-400">{getClientCompany(client)?.charAt(0)}</span>
+                  </div>
                 )}
                 
                 {/* View/Zoom Button */}
@@ -227,7 +250,11 @@ const ClientProfilePage = () => {
 
               {/* Advanced Controls */}
               <div className="absolute -bottom-2 -right-2 flex flex-col gap-2 z-30">
-                {selectedFile ? (
+                {uploadingLogo ? (
+                   <div className="p-3 bg-white dark:bg-white/10 rounded-2xl shadow-xl border border-slate-200 dark:border-white/10">
+                      <Loader2 size={18} className="animate-spin text-brand-500" />
+                   </div>
+                ) : selectedFile ? (
                   <div className="flex flex-col gap-2 scale-90 md:scale-100 origin-bottom-right">
                     <button 
                       onClick={handleConfirmLogo}
@@ -245,16 +272,33 @@ const ClientProfilePage = () => {
                     </button>
                   </div>
                 ) : (
-                  <label className="p-3 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl shadow-lg cursor-pointer transition-all hover:scale-110 active:scale-95 border-4 border-white dark:border-[#0a0a0c]">
-                    <Plus size={18} />
-                    <input type="file" className="hidden" accept="image/*" onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (!file) return;
-                      setSelectedFile(file);
-                      setPreviewUrl(URL.createObjectURL(file));
-                      toast.success(t('saved_successfully')); // Using generic success for selection
-                    }} />
-                  </label>
+                  <div className="flex flex-col gap-2">
+                    {getClientLogo(client) && (
+                      <button 
+                        onClick={handleDeleteLogo}
+                        className="p-3 bg-rose-600/10 text-rose-600 rounded-2xl shadow-sm cursor-pointer transition-all hover:bg-rose-500 hover:text-white border-4 border-white dark:border-[#0a0a0c]"
+                        title="Delete Logo"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
+                    <label className="p-3 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl shadow-lg cursor-pointer transition-all hover:scale-110 active:scale-95 border-4 border-white dark:border-[#0a0a0c] flex items-center gap-2 pr-4">
+                      <Plus size={18} />
+                      <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
+                        {i18n.language === 'ar' ? 'ارفع الصورة' : 'UPLOAD LOGO'}
+                      </span>
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        if (file.size > 5 * 1024 * 1024) {
+                          toast.error(i18n.language === 'ar' ? "الصورة كبيرة جداً" : "File too large");
+                          return;
+                        }
+                        setSelectedFile(file);
+                        setPreviewUrl(URL.createObjectURL(file));
+                      }} />
+                    </label>
+                  </div>
                 )}
               </div>
             </div>
@@ -274,7 +318,7 @@ const ClientProfilePage = () => {
                 )}
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-widest text-[10px]">
-                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.3.6
+                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.3.7
               </p>
             </div>
           </div>
@@ -286,11 +330,13 @@ const ClientProfilePage = () => {
                href={getClientNotion(client)} 
                target="_blank" 
                rel="noopener noreferrer"
-               className="px-6 py-4 bg-slate-900 dark:bg-black text-white rounded-2xl font-bold shadow-lg shadow-black/20 hover:-translate-y-1 transition-all flex items-center gap-2 border border-white/5"
+               className="px-6 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-bold shadow-lg shadow-black/20 hover:-translate-y-1 transition-all flex items-center gap-2 border border-white/5 active:scale-95"
               >
-                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
-                   <path d="M4.459 4.212c.192-.158.53-.332.883-.342.35-.011.834.137 1.096.22l11.05 4.095c.264.097.464.305.545.568l2.094 10.134c.08.388-.137.765-.515.894-.377.13-.778-.046-.954-.42l-2.015-4.275-9.358-3.465-1.932 4.103c-.176.374-.577.55-1.07.417-.492-.132-.71-.564-.63-1.077l.806-10.886zm2.25 10.32L16.2 18.23l-.22-10.37-9.531-3.328.26 10.0zm11.233-7.51L7.25 4.3l.08 10.2L17.7 18.0l.243-11.0zM8.3 6.0L15.3 8.3l-.06 7.4-7.0-2.3L8.3 6.0z"/>
-                </svg>
+                <div className="w-5 h-5 flex items-center justify-center bg-white/10 dark:bg-black/10 rounded-lg">
+                   <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current">
+                      <path d="M4.459 4.212c.192-.158.53-.332.883-.342.35-.011.834.137 1.096.22l11.05 4.095c.264.097.464.305.545.568l2.094 10.134c.08.388-.137.765-.515.894-.377.13-.778-.046-.954-.42l-2.015-4.275-9.358-3.465-1.932 4.103c-.176.374-.577.55-1.07.417-.492-.132-.71-.564-.63-1.077l.806-10.886zm2.25 10.32L16.2 18.23l-.22-10.37-9.531-3.328.26 10.0zm11.233-7.51L7.25 4.3l.08 10.2L17.7 18.0l.243-11.0zM8.3 6.0L15.3 8.3l-.06 7.4-7.0-2.3L8.3 6.0z"/>
+                   </svg>
+                </div>
                 Notion
               </a>
             )}
