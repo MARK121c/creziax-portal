@@ -1,18 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { getProjectsAPI, createProjectAPI, updateProjectAPI, deleteProjectAPI, getClientsAPI, downloadContractPDFAPI } from '../../store/api';
-import { Plus, X, Trash2, Layout, Search, Briefcase, Calendar, Loader2, CheckCircle2, Clock, PlayCircle, FileText } from 'lucide-react';
+import { Plus, X, Trash2, Layout, Search, Briefcase, Calendar, Loader2, CheckCircle2, Clock, PlayCircle, FileText, ExternalLink, Filter, ChevronRight, Activity } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
 
 const statusConfig = {
-  CHANNEL_SETUP: { color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10', border: 'border-blue-100 dark:border-blue-500/20', icon: Layout },
-  EDITING: { color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10', border: 'border-amber-100 dark:border-amber-500/20', icon: PlayCircle },
-  THUMBNAIL: { color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-500/10', border: 'border-purple-100 dark:border-purple-500/20', icon: Layout },
-  SCRIPT: { color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-500/10', border: 'border-cyan-100 dark:border-cyan-500/20', icon: Layout },
-  PUBLISHING: { color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-500/10', border: 'border-orange-100 dark:border-orange-500/20', icon: Clock },
-  COMPLETED: { color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10', border: 'border-emerald-100 dark:border-emerald-500/20', icon: CheckCircle2 },
+  CHANNEL_SETUP: { label: 'Setup', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100', icon: Layout },
+  EDITING: { label: 'Editing', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100', icon: PlayCircle },
+  THUMBNAIL: { label: 'Design', color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100', icon: Layout },
+  SCRIPT: { label: 'Script', color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-100', icon: Layout },
+  PUBLISHING: { label: 'Publish', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100', icon: Clock },
+  COMPLETED: { label: 'Done', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100', icon: CheckCircle2 },
 };
 
 const ProjectsPage = () => {
@@ -23,8 +23,10 @@ const ProjectsPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('ALL');
   const [error, setError] = useState(null);
   const addNotification = useNotificationStore(state => state.addNotification);
+  
   const [form, setForm] = useState({ 
     name: '', 
     description: '', 
@@ -36,7 +38,7 @@ const ProjectsPage = () => {
     annualContractDate: ''
   });
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [pRes, cRes] = await Promise.all([getProjectsAPI(), getClientsAPI()]);
@@ -47,9 +49,11 @@ const ProjectsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -117,190 +121,217 @@ const ProjectsPage = () => {
     }
   };
 
-  const filteredProjects = projects.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.client?.user?.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.client?.user?.lastName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProjects = projects.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.client?.user?.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.client?.user?.lastName.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesFilter = activeFilter === 'ALL' || p.status === activeFilter;
+    
+    return matchesSearch && matchesFilter;
+  });
 
   return (
-    <div className="space-y-8 md:space-y-10">
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 md:gap-6">
+    <div className="space-y-8 md:space-y-12 pb-10">
+      {/* Supreme Header with Versioning */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-8">
         <div>
-          <h1 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white tracking-tight">{t('projects_management')}</h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium mt-2 text-base md:text-lg">{t('track_delivery')}</p>
+          <div className="flex items-center gap-3 mb-3">
+             <div className="p-2.5 bg-brand-500 text-white rounded-2xl shadow-lg shadow-brand-500/20">
+               <Briefcase size={24} />
+             </div>
+             <div className="px-4 py-1.5 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-xl animate-pulse">
+               V2.3 SUPREME BUILD
+             </div>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black text-slate-800 dark:text-white tracking-tight uppercase">
+             {t('projects_management')}
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 font-bold mt-2 text-lg uppercase tracking-wide">Production Pipeline Control Hub</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={18} />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+          <div className="relative group min-w-[300px]">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={20} />
             <input 
               type="text"
               placeholder={t('search_projects')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-11 pr-6 py-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all w-full sm:w-72 md:w-80 shadow-sm font-bold"
+              className="pl-14 pr-6 py-4 bg-white dark:bg-white/5 border-2 border-slate-100 dark:border-white/10 rounded-[1.5rem] text-sm focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all w-full shadow-xl font-black"
             />
           </div>
           <button 
             onClick={() => setShowModal(true)} 
-            className="flex items-center justify-center gap-2 px-6 py-3.5 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-bold shadow-lg shadow-brand-600/20 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
+            className="flex items-center justify-center gap-3 px-8 py-4.5 bg-brand-600 hover:bg-brand-500 text-white rounded-[1.5rem] font-black shadow-2xl shadow-brand-600/30 hover:-translate-y-1 active:scale-95 transition-all duration-300 uppercase tracking-widest text-sm"
           >
-            <Plus size={18} />
+            <Plus size={20} />
             <span>{t('new_project')}</span>
           </button>
         </div>
       </div>
 
+      {/* Radical Filtering Hub */}
+      <div className="flex items-center gap-3 overflow-x-auto pb-4 custom-scrollbar scroll-smooth">
+        <button 
+          onClick={() => setActiveFilter('ALL')}
+          className={`px-8 py-3.5 rounded-[1.25rem] text-xs font-black uppercase tracking-widest transition-all border-2 whitespace-nowrap ${
+            activeFilter === 'ALL' 
+            ? 'bg-slate-800 dark:bg-white text-white dark:text-slate-900 border-slate-800 dark:border-white shadow-xl translate-y-[-2px]' 
+            : 'bg-white dark:bg-white/5 text-slate-400 border-slate-100 dark:border-white/5 hover:border-brand-500/30'
+          }`}
+        >
+          All Projects
+        </button>
+        {Object.keys(statusConfig).map(status => (
+          <button 
+            key={status}
+            onClick={() => setActiveFilter(status)}
+            className={`flex items-center gap-3 px-6 py-3.5 rounded-[1.25rem] text-xs font-black uppercase tracking-widest transition-all border-2 whitespace-nowrap ${
+              activeFilter === status 
+              ? `${statusConfig[status].bg} ${statusConfig[status].color} ${statusConfig[status].border} shadow-lg translate-y-[-2px]` 
+              : 'bg-white dark:bg-white/5 text-slate-400 border-slate-100 dark:border-white/5 hover:border-brand-500/30'
+            }`}
+          >
+            <span className={`w-2 h-2 rounded-full ${activeFilter === status ? 'bg-current animate-ping' : 'bg-slate-300'}`}></span>
+            {status.replace('_', ' ')}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-32">
-          <Loader2 size={44} className="animate-spin text-brand-500 mb-6" />
-          <p className="font-bold tracking-widest uppercase text-xs text-slate-400">{t('syncing_workspaces')}</p>
+        <div className="flex flex-col items-center justify-center py-40">
+          <div className="relative">
+             <Loader2 size={60} className="animate-spin text-brand-500" />
+             <Activity className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-brand-500/50" size={24} />
+          </div>
+          <p className="font-black tracking-[0.3em] uppercase text-[10px] text-slate-400 mt-8">Establishing Neural Workspace Link</p>
         </div>
       ) : filteredProjects.length === 0 ? (
-        <div className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] py-24 md:py-32 text-center shadow-xl shadow-slate-200/40 dark:shadow-none">
-          <div className="w-20 h-20 md:w-24 md:h-24 bg-slate-50 dark:bg-white/5 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 border border-slate-100 dark:border-white/5">
-            <Briefcase size={36} className="text-slate-300 dark:text-slate-600" />
-          </div>
-          <h3 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white mb-3">{t('no_projects')}</h3>
-          <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto font-medium px-6">{t('projects_empty')}</p>
+        <div className="bg-white dark:bg-[#0a0a0c]/40 border-2 border-dashed border-slate-200 dark:border-white/10 rounded-[3rem] py-32 text-center shadow-inner">
+           <div className="w-24 h-24 bg-slate-50 dark:bg-white/5 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 border-2 border-slate-100 dark:border-white/5">
+             <Briefcase size={40} className="text-slate-200 dark:text-slate-700" />
+           </div>
+           <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-3 uppercase tracking-tight">No Strategic Operations Found</h3>
+           <p className="text-slate-400 font-bold max-w-sm mx-auto uppercase text-xs tracking-widest">Adjust filters or launch new strategic workspace</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8 md:gap-10">
           {filteredProjects.map(p => (
-            <div key={p.id} className="group bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-6 md:p-8 shadow-xl shadow-slate-200/30 dark:shadow-none hover:border-brand-500/30 transition-all duration-500 flex flex-col">
-              <div className="flex items-start justify-between mb-6">
-                <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20 flex items-center justify-center text-brand-600 dark:text-brand-400">
-                  <Briefcase size={22} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => handleDownloadContract(p.id, p.name)}
-                    className="p-3 text-slate-300 hover:text-brand-500 hover:bg-brand-500/10 rounded-2xl transition-all border border-transparent hover:border-brand-500/20"
-                    title="تحميل العقد PDF"
-                  >
-                    <FileText size={18} />
-                  </button>
-                  <button onClick={() => handleDelete(p.id, p.name)} className="p-3 text-slate-300 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all opacity-0 group-hover:opacity-100 border border-transparent hover:border-rose-500/20">
-                    <Trash2 size={18} />
-                  </button>
-                  {p.client?.clientInfo?.notionLink && (
-                    <a href={p.client.clientInfo.notionLink} target="_blank" rel="noopener noreferrer" className="p-3 text-slate-300 hover:text-brand-500 hover:bg-brand-500/10 rounded-2xl transition-all border border-transparent hover:border-brand-500/20" title="Notion">
-                      <ExternalLink size={18} />
-                    </a>
-                  )}
-                </div>
+            <div key={p.id} className="group bg-white dark:bg-[#0a0a0c] border-2 border-slate-50 dark:border-white/5 rounded-[3rem] overflow-hidden shadow-2xl shadow-slate-200/40 dark:shadow-none hover:border-brand-500 transition-all duration-500 transform hover:-translate-y-3">
+              {/* Card Header / Banner */}
+              <div className={`h-24 px-8 pt-8 flex items-start justify-between relative ${statusConfig[p.status].bg} opacity-80 group-hover:opacity-100 transition-opacity`}>
+                 <div className={`px-4 py-2 rounded-2xl bg-white dark:bg-slate-900 shadow-xl border border-slate-100 dark:border-white/10 flex items-center gap-3 font-black text-[10px] uppercase tracking-widest ${statusConfig[p.status].color}`}>
+                    <span className="w-2.5 h-2.5 rounded-full bg-current animate-pulse"></span>
+                    {p.status.replace('_', ' ')}
+                 </div>
+                 <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleDownloadContract(p.id, p.name)}
+                      className="p-3 bg-white/50 hover:bg-white hover:text-brand-600 rounded-2xl border border-white/20 transition-all backdrop-blur-md"
+                    >
+                      <FileText size={18} />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(p.id, p.name)}
+                      className="p-3 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white rounded-2xl border border-rose-500/20 transition-all backdrop-blur-md"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                 </div>
               </div>
 
-              <div className="mb-6">
-                <Link to={`/admin/projects/${p.id}`}>
-                  <h3 className="text-lg md:text-xl font-black text-slate-800 dark:text-white leading-tight mb-2 group-hover:text-brand-600 transition-colors uppercase tracking-tight">{p.name}</h3>
-                </Link>
-                <p className="text-sm font-bold text-slate-400 dark:text-slate-500 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand-500 flex-shrink-0"></span>
-                  {p.client?.user?.firstName} {p.client?.user?.lastName}
-                </p>
-              </div>
+              {/* Card Content */}
+              <div className="p-8 md:p-10 -mt-4 bg-white dark:bg-[#0a0a0c] rounded-t-[3rem] relative z-10 space-y-8">
+                 <div>
+                    <Link to={`/admin/projects/${p.id}`}>
+                      <h3 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white leading-tight mb-3 group-hover:text-brand-600 transition-colors uppercase tracking-tight line-clamp-1">{p.name}</h3>
+                    </Link>
+                    <div className="flex items-center gap-3">
+                       <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center border border-slate-200 dark:border-white/10">
+                          <span className="text-[10px] font-black text-slate-500">{p.client?.user?.firstName?.[0]}</span>
+                       </div>
+                       <p className="text-sm font-black text-slate-500 dark:text-slate-400 tracking-wide uppercase">
+                         {p.client?.user?.firstName} {p.client?.user?.lastName}
+                       </p>
+                    </div>
+                 </div>
 
-              {p.description && (
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-8 line-clamp-2 leading-relaxed border-l-2 border-slate-100 dark:border-white/5 pl-4">
-                  {p.description}
-                </p>
-              )}
+                 <p className="text-sm font-bold text-slate-400 dark:text-slate-500 line-clamp-2 min-h-[40px] leading-relaxed italic pr-4">
+                    "{p.description || 'No strategic brief provided for this operation.'}"
+                 </p>
 
-              <div className="mt-auto space-y-5">
-                <div className="flex flex-wrap gap-2">
-                  {Object.keys(statusConfig).map(s => {
-                    const isActive = p.status === s;
-                    const config = statusConfig[s];
-                    return (
-                      <button key={s} onClick={() => handleStatusUpdate(p.id, s)}
-                        className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
-                          isActive ? `${config.bg} ${config.color} ${config.border}` : 'bg-transparent border-slate-100 dark:border-white/5 text-slate-400 hover:border-brand-500/20'
-                        }`}
-                      >
-                        {s.replace('_', ' ')}
-                      </button>
-                    );
-                  })}
-                </div>
-                
-                <div className="pt-5 border-t border-slate-50 dark:border-white/5 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
-                    <Calendar size={14} />
-                    <span className="text-[11px] font-black uppercase tracking-widest">
-                      {new Date(p.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-brand-500 border-2 border-white dark:border-[#0a0a0c] flex items-center justify-center text-[10px] font-black text-white">
-                    {p.client?.user?.firstName?.[0]}
-                  </div>
-                </div>
+                 {/* Action Panel */}
+                 <div className="pt-8 border-t border-slate-100 dark:border-white/5 flex flex-col gap-4">
+                    <Link 
+                      to={`/admin/projects/${p.id}`}
+                      className="w-full py-4.5 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-[1.5rem] transition-all flex items-center justify-center gap-3 text-sm shadow-xl shadow-brand-600/30 hover:-translate-y-1 uppercase tracking-widest"
+                    >
+                      <Layout size={18} />
+                      Enter Command Center
+                      <ChevronRight size={16} />
+                    </Link>
+                    
+                    <div className="flex items-center justify-between text-[10px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.2em] px-2">
+                       <div className="flex items-center gap-2">
+                          <Calendar size={12} />
+                          {new Date(p.createdAt).toLocaleDateString()}
+                       </div>
+                       <span>PROJECT_ID: {p.id.split('-')[0]}</span>
+                    </div>
+                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
+      {/* Simplified Add Operation Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 dark:bg-[#0a0a0c]/80 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowModal(false)}></div>
-          <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 max-h-[90vh] overflow-y-auto">
-            <div className="px-6 md:px-10 py-6 md:py-8 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/30 dark:bg-white/[0.01] sticky top-0 z-10">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-2xl">
+          <div className="absolute inset-0 bg-slate-950/60" onClick={() => setShowModal(false)}></div>
+          <div className="bg-white dark:bg-[#0a0a0c] border-2 border-slate-100 dark:border-white/10 rounded-[3rem] w-full max-w-2xl shadow-3xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="px-10 py-10 bg-slate-50/50 dark:bg-white/[0.02] border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
               <div>
-                <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white tracking-tight">{t('new_project')}</h2>
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">{t('new_project_desc')}</p>
+                <h2 className="text-3xl font-black text-slate-800 dark:text-white uppercase tracking-tight">Deploy Operation</h2>
+                <p className="text-[10px] font-black text-brand-500 uppercase tracking-[0.3em] mt-2">Initialize production workspace</p>
               </div>
-              <button onClick={() => setShowModal(false)} className="p-3 text-slate-400 hover:text-slate-800 dark:hover:text-white bg-slate-100 dark:bg-white/5 rounded-2xl transition-all">
-                <X size={20} />
+              <button onClick={() => setShowModal(false)} className="p-4 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-2xl transition-all">
+                <X size={24} />
               </button>
             </div>
 
-            <form onSubmit={handleCreate} className="p-6 md:p-10 space-y-6 md:space-y-7">
+            <form onSubmit={handleCreate} className="p-10 space-y-10">
               {error && (
-                <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-sm font-bold">{error}</div>
+                <div className="p-5 rounded-3xl bg-rose-500/10 border-2 border-rose-500/20 text-rose-500 text-xs font-black uppercase tracking-widest leading-loose">{error}</div>
               )}
 
-              <div className="space-y-2.5">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('label_project_name')}</label>
-                <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder={t('label_project_name')} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Operation Title</label>
+                  <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} required className="w-full px-6 py-5 bg-slate-50 dark:bg-white/[0.03] border-2 border-slate-100 dark:border-white/5 rounded-3xl text-slate-800 dark:text-white font-black text-lg focus:outline-none focus:border-brand-500 transition-all shadow-inner" placeholder="E.g. Summer Campaign" />
+                </div>
+
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Client Partner</label>
+                  <select value={form.clientId} onChange={e => setForm({...form, clientId: e.target.value})} required className="w-full px-6 py-5 bg-slate-50 dark:bg-white/[0.03] border-2 border-slate-100 dark:border-white/5 rounded-3xl text-slate-800 dark:text-white font-bold text-sm focus:outline-none focus:border-brand-500 transition-all shadow-inner">
+                    <option value="">Select Partner</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.user?.firstName} {c.user?.lastName}</option>)}
+                  </select>
+                </div>
               </div>
 
-              <div className="space-y-2.5">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('label_client')}</label>
-                <select value={form.clientId} onChange={e => setForm({...form, clientId: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all appearance-none font-bold">
-                  <option value="" className="dark:bg-slate-900">{t('select_client')}</option>
-                  {clients.map(c => <option key={c.id} value={c.id} className="dark:bg-slate-900">{c.user?.firstName} {c.user?.lastName}</option>)}
-                </select>
+              <div className="space-y-4">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Strategic Brief</label>
+                <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} rows={3} className="w-full px-6 py-5 bg-slate-50 dark:bg-white/[0.03] border-2 border-slate-100 dark:border-white/5 rounded-3xl text-slate-800 dark:text-white font-bold text-sm focus:outline-none focus:border-brand-500 transition-all shadow-inner resize-none" placeholder="Operation goals and requirements..." />
               </div>
 
-              <div className="space-y-2.5">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">{t('label_description')}</label>
-                <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder={t('brief_description')} rows={2} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all font-bold resize-none" />
-              </div>
-
-              <div className="grid grid-cols-2 gap-5">
-                 <div className="space-y-2.5">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Notion Link</label>
-                    <input value={form.notionUrl} onChange={e => setForm({...form, notionUrl: e.target.value})} placeholder="https://notion.so/..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all font-bold" />
-                 </div>
-                 <div className="space-y-2.5">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Drive Link</label>
-                    <input value={form.driveUrl} onChange={e => setForm({...form, driveUrl: e.target.value})} placeholder="https://drive.google.com/..." className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all font-bold" />
-                 </div>
-              </div>
-
-              <div className="space-y-2.5">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Annual Contract Renewal</label>
-                <input type="date" value={form.annualContractDate} onChange={e => setForm({...form, annualContractDate: e.target.value})} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all font-bold" />
-              </div>
-
-              <div className="pt-6 flex gap-5 border-t border-slate-100 dark:border-white/5">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-4 px-6 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all">
-                  {t('cancel')}
+              <div className="pt-6 border-t border-slate-100 dark:border-white/5 flex gap-6">
+                <button type="submit" disabled={submitting} className="flex-[2] py-5 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-[2rem] shadow-2xl shadow-brand-600/30 transition-all hover:-translate-y-1 active:scale-95 text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-3">
+                  {submitting ? <Loader2 className="animate-spin" /> : 'Launch Operation'}
                 </button>
-                <button type="submit" disabled={submitting} className="flex-1 py-4 px-6 bg-brand-600 hover:bg-brand-500 disabled:bg-slate-300 text-white font-bold rounded-2xl shadow-lg shadow-brand-600/20 transition-all active:scale-95">
-                  {submitting ? <Loader2 className="animate-spin mx-auto" size={24} /> : t('launch_workspace')}
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-5 bg-slate-100 dark:bg-white/5 text-slate-400 font-black rounded-[2rem] hover:bg-slate-200 transition-all text-[10px] uppercase tracking-widest">
+                  Abort
                 </button>
               </div>
             </form>
