@@ -56,6 +56,7 @@ const getClientCompany = (c) => c?.clientInfo?.company || c?.company || '';
 const getClientLogo = (c) => c?.clientInfo?.logoUrl || c?.logoUrl || '';
 const getClientTier = (c) => c?.clientInfo?.tier || c?.tier || 'REGULAR';
 const getClientId = (c) => c?.clientInfo?.id || c?.id;
+// Prioritize root email (flattened) for 100% guarantee
 const getClientEmail = (c) => c?.email || c?.user?.email || c?.clientInfo?.email || '';
 
 const ClientProfilePage = () => {
@@ -83,10 +84,19 @@ const ClientProfilePage = () => {
           getRecentActivityAPI(10)
         ]);
         
-        setClient(clientRes.data);
-        setInvoices(invoicesRes.data.filter(inv => inv.clientId === parseInt(id)));
-        setProjects(projectsRes.data.filter(proj => proj.clientId === parseInt(id)));
-        setActivities(activityRes.data.filter(log => log.entityId === parseInt(id) || log.userId === (clientRes.data?.userId)));
+        const clientData = clientRes.data;
+        // Flatten critical fields to root for 100% reliable prop access
+        setClient({
+          ...clientData,
+          email: clientData?.user?.email,
+          firstName: clientData?.user?.firstName,
+          lastName: clientData?.user?.lastName
+        });
+
+        // Use string comparison for UUIDs (parseInt was a bug)
+        setInvoices(invoicesRes.data.filter(inv => String(inv.clientId) === String(id)));
+        setProjects(projectsRes.data.filter(proj => String(proj.clientId) === String(id)));
+        setActivities(activityRes.data.filter(log => String(log.entityId) === String(id) || log.userId === (clientData?.userId)));
       } catch (err) {
         toast.error(t('error_general'));
         console.error(err);
@@ -326,7 +336,7 @@ const ClientProfilePage = () => {
                 )}
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-widest text-[10px]">
-                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.4.3
+                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.5.0
               </p>
             </div>
           </div>
