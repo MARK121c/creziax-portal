@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getClientAPI, getInvoicesAPI, getProjectsAPI, getRecentActivityAPI } from '../../store/api';
+import { getClientAPI, getInvoicesAPI, getProjectsAPI, getRecentActivityAPI, updateClientAPI, uploadImageAPI } from '../../store/api';
 import { 
   Building2, Mail, Phone, Calendar, Star, ExternalLink, 
   ChevronLeft, FileText, Receipt, Briefcase, Activity,
@@ -11,31 +11,38 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 
 const COUNTRY_FLAGS = {
-  '+20': '🇪🇬',
-  '+966': '🇸🇦',
-  '+971': '🇦🇪',
-  '+974': '🇶🇦',
-  '+965': '🇰🇼',
-  '+968': '🇴🇲',
-  '+973': '🇧🇭',
-  '+961': '🇱🇧',
-  '+962': '🇯🇴',
-  '+1': '🇺🇸',
-  '+39': '🇮🇹',
-  '+7': '🇷🇺',
-  '+33': '🇫🇷',
-  '+49': '🇩🇪',
-  '+90': '🇹🇷',
-  '+212': '🇲🇦',
-  '+213': '🇩🇿',
-  '+216': '🇹🇳',
-  '+249': '🇸🇩',
+  '+20': 'eg',
+  '+966': 'sa',
+  '+971': 'ae',
+  '+974': 'qa',
+  '+965': 'kw',
+  '+968': 'om',
+  '+973': 'bh',
+  '+961': 'lb',
+  '+962': 'jo',
+  '+1': 'us',
+  '+39': 'it',
+  '+7': 'ru',
+  '+33': 'fr',
+  '+49': 'de',
+  '+90': 'tr',
+  '+212': 'ma',
+  '+213': 'dz',
+  '+216': 'tn',
+  '+249': 'sd',
 };
 
-const getCountryFlag = (phone) => {
+const getFormattedLogoUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http') || url.startsWith('blob:')) return url;
+  const baseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api$/, '');
+  return `${baseUrl.replace(/\/$/, '')}/${url.replace(/^\//, '')}`;
+};
+
+const getCountryFlagUrl = (phone) => {
   if (!phone) return null;
   const match = Object.keys(COUNTRY_FLAGS).find(code => phone.startsWith(code));
-  return match ? COUNTRY_FLAGS[match] : null;
+  return match ? `https://flagcdn.com/w40/${COUNTRY_FLAGS[match]}.png` : null;
 };
 
 const ClientProfilePage = () => {
@@ -48,6 +55,9 @@ const ClientProfilePage = () => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const uploadRef = useRef(null);
 
   useEffect(() => {
     const fetchClientData = async () => {
@@ -73,8 +83,6 @@ const ClientProfilePage = () => {
     };
     fetchClientData();
   }, [id, t]);
-
-
 
   if (loading) {
     return (
@@ -104,13 +112,13 @@ const ClientProfilePage = () => {
   ];
 
   const handleContactAction = (type) => {
-    setShowContactDropdown(false);
     switch (type) {
       case 'INTERNAL':
         navigate(`/admin/messages?clientId=${client.id}`);
         break;
       case 'WHATSAPP':
         if (client.clientInfo?.phone) {
+          // Robust cleaning: remove everything except numbers, but keep leading + if exists (though wa.me prefers no + usually)
           const cleanPhone = client.clientInfo.phone.replace(/\D/g, '');
           window.open(`https://wa.me/${cleanPhone}`, '_blank');
         } else {
@@ -126,16 +134,41 @@ const ClientProfilePage = () => {
         break;
       case 'TELEGRAM':
         if (client.clientInfo?.telegram) {
-          const url = client.clientInfo.telegram.startsWith('http') 
-            ? client.clientInfo.telegram 
-            : `https://t.me/${client.clientInfo.telegram.replace('@', '')}`;
-          window.open(url, '_blank');
+          const raw = client.clientInfo.telegram.trim();
+          const username = raw.startsWith('http') 
+            ? raw.split('/').pop().replace('@', '') 
+            : raw.replace('@', '').replace('t.me/', '');
+          window.open(`https://t.me/${username}`, '_blank');
         } else {
           toast.error(t('missing_telegram'));
         }
         break;
       default: break;
     }
+  };
+
+  const handleConfirmLogo = async () => {
+    if (!selectedFile) return;
+    setUploadingLogo(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', selectedFile);
+      const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+      const r = await fetch(`${apiBase}/upload/image`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        body: fd,
+      });
+      const d = await r.json();
+      if (d.url) {
+        await updateClientAPI(client.id, { clientInfo: { ...client.clientInfo, logoUrl: d.url } });
+        setClient(prev => ({ ...prev, clientInfo: { ...prev.clientInfo, logoUrl: d.url } }));
+        toast.success(t('saved_successfully'));
+        setSelectedFile(null);
+        setPreviewUrl(null);
+      }
+    } catch (err) { toast.error('Upload failed'); }
+    finally { setUploadingLogo(false); }
   };
 
   return (
@@ -151,24 +184,65 @@ const ClientProfilePage = () => {
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-5">
-            <div className="relative group">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2rem] bg-white dark:bg-white/10 flex items-center justify-center text-3xl font-black text-slate-400 border-4 border-white dark:border-[#0a0a0c] shadow-2xl overflow-hidden">
+             <div className="relative group">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2rem] bg-white dark:bg-white/10 flex items-center justify-center text-3xl font-black text-slate-400 border-4 border-white dark:border-[#0a0a0c] shadow-2xl overflow-hidden relative">
                 {uploadingLogo ? (
                   <Loader2 size={32} className="animate-spin text-brand-500" />
-                ) : client.clientInfo?.logoUrl ? (
-                  <img src={client.clientInfo.logoUrl} alt="" className="w-full h-full object-cover" />
+                ) : previewUrl || client.clientInfo?.logoUrl ? (
+                  <img src={previewUrl || getFormattedLogoUrl(client.clientInfo.logoUrl)} alt="" className="w-full h-full object-cover" />
                 ) : (
                   client.clientInfo?.company?.charAt(0) || <Building size={32} />
                 )}
+                
+                {/* View/Zoom Button */}
+                {(previewUrl || client.clientInfo?.logoUrl) && (
+                  <button 
+                    onClick={() => window.open(previewUrl || getFormattedLogoUrl(client.clientInfo.logoUrl), '_blank')}
+                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
+                  >
+                    <Search size={28} />
+                  </button>
+                )}
               </div>
-              <label className="absolute -bottom-2 -right-2 p-3 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl shadow-lg cursor-pointer transition-all hover:scale-110 active:scale-95 border-4 border-white dark:border-[#0a0a0c]">
-                <Plus size={18} />
-                <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
-              </label>
+
+              {/* Advanced Controls */}
+              <div className="absolute -bottom-2 -right-2 flex flex-col gap-2">
+                {selectedFile ? (
+                  <div className="flex flex-col gap-2 scale-90 md:scale-100 origin-bottom-right">
+                    <button 
+                      onClick={handleConfirmLogo}
+                      className="p-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl shadow-xl transition-all border-4 border-white dark:border-[#0a0a0c]"
+                      title="Confirm Upload"
+                    >
+                      <Shield size={18} />
+                    </button>
+                    <button 
+                      onClick={() => { setSelectedFile(null); setPreviewUrl(null); }}
+                      className="p-3 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl shadow-xl transition-all border-4 border-white dark:border-[#0a0a0c]"
+                      title="Cancel"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="p-3 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl shadow-lg cursor-pointer transition-all hover:scale-110 active:scale-95 border-4 border-white dark:border-[#0a0a0c]">
+                    <Plus size={18} />
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      setSelectedFile(file);
+                      setPreviewUrl(URL.createObjectURL(file));
+                      toast.success('Logo selected. Click confirm to save.');
+                    }} />
+                  </label>
+                )}
+              </div>
             </div>
             <div>
               <div className="flex items-center gap-3">
-                <span className="text-3xl" title="Country Flag">{getCountryFlag(client.clientInfo?.phone)}</span>
+                {getCountryFlagUrl(client.clientInfo?.phone) && (
+                  <img src={getCountryFlagUrl(client.clientInfo?.phone)} alt="flag" className="w-8 h-auto rounded-sm shadow-md" />
+                )}
                 <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">
                   {client.firstName} {client.lastName}
                 </h1>
@@ -187,17 +261,20 @@ const ClientProfilePage = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-           {client.clientInfo?.notionLink && (
-             <a 
-              href={client.clientInfo.notionLink} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="px-6 py-4 bg-[#0a0a0c] text-white rounded-2xl font-bold flex items-center gap-2 hover:bg-brand-600 transition-all border border-white/10 shadow-lg"
-             >
-               <img src="https://www.notion.so/images/favicon.ico" className="w-[18px] h-[18px]" alt="Notion" />
-               Notion
-             </a>
-           )}
+            {client.clientInfo?.notionLink && (
+              <a 
+               href={client.clientInfo.notionLink} 
+               target="_blank" 
+               rel="noopener noreferrer"
+               className="px-6 py-4 bg-white dark:bg-[#0a0a0c] text-slate-800 dark:text-white rounded-2xl font-bold flex items-center gap-2 hover:bg-brand-600 hover:text-white transition-all border border-slate-200 dark:border-white/10 shadow-lg group/notion"
+              >
+                <div className="w-6 h-6 flex items-center justify-center bg-slate-100 dark:bg-white/10 rounded-lg group-hover/notion:bg-white/20">
+                  <FileText size={14} className="text-slate-600 dark:text-slate-400 group-hover/notion:text-white" />
+                </div>
+                <span>Notion</span>
+                <ArrowUpRight size={14} className="opacity-40 group-hover/notion:opacity-100" />
+              </a>
+            )}
            
            <button 
             onClick={() => handleContactAction('WHATSAPP')}

@@ -13,31 +13,38 @@ const healthScores = [
 ];
 
 const COUNTRY_FLAGS = {
-  '+20': '🇪🇬',
-  '+966': '🇸🇦',
-  '+971': '🇦🇪',
-  '+974': '🇶🇦',
-  '+965': '🇰🇼',
-  '+968': '🇴🇲',
-  '+973': '🇧🇭',
-  '+961': '🇱🇧',
-  '+962': '🇯🇴',
-  '+1': '🇺🇸',
-  '+39': '🇮🇹',
-  '+7': '🇷🇺',
-  '+33': '🇫🇷',
-  '+49': '🇩🇪',
-  '+90': '🇹🇷',
-  '+212': '🇲🇦',
-  '+213': '🇩🇿',
-  '+216': '🇹🇳',
-  '+249': '🇸🇩',
+  '+20': 'eg',
+  '+966': 'sa',
+  '+971': 'ae',
+  '+974': 'qa',
+  '+965': 'kw',
+  '+968': 'om',
+  '+973': 'bh',
+  '+961': 'lb',
+  '+962': 'jo',
+  '+1': 'us',
+  '+39': 'it',
+  '+7': 'ru',
+  '+33': 'fr',
+  '+49': 'de',
+  '+90': 'tr',
+  '+212': 'ma',
+  '+213': 'dz',
+  '+216': 'tn',
+  '+249': 'sd',
 };
 
-const getCountryFlag = (phone) => {
+const getFormattedLogoUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http') || url.startsWith('blob:')) return url;
+  const baseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api$/, '');
+  return `${baseUrl.replace(/\/$/, '')}/${url.replace(/^\//, '')}`;
+};
+
+const getCountryFlagUrl = (phone) => {
   if (!phone) return null;
   const match = Object.keys(COUNTRY_FLAGS).find(code => phone.startsWith(code));
-  return match ? COUNTRY_FLAGS[match] : null;
+  return match ? `https://flagcdn.com/w40/${COUNTRY_FLAGS[match]}.png` : null;
 };
 
 const ClientsPage = () => {
@@ -400,7 +407,7 @@ const ClientsPage = () => {
                         <Link to={`/admin/clients/${c.clientInfo?.id || c.id}`} className="flex items-center gap-4 group/item">
                           <div className="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400 text-sm font-black shadow-sm border border-brand-100 dark:border-brand-500/20 flex-shrink-0 overflow-hidden relative group/logo">
                             {c.clientInfo?.logoUrl ? (
-                              <img src={c.clientInfo.logoUrl} alt={c.clientInfo.company} className="w-full h-full object-cover" />
+                              <img src={getFormattedLogoUrl(c.clientInfo.logoUrl)} alt={c.clientInfo.company} className="w-full h-full object-cover" />
                             ) : (
                               <Building2 size={20} className="opacity-40" />
                             )}
@@ -411,7 +418,9 @@ const ClientsPage = () => {
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="text-xl" title="Country Flag">{getCountryFlag(c.clientInfo?.phone)}</span>
+                              {getCountryFlagUrl(c.clientInfo?.phone) && (
+                                <img src={getCountryFlagUrl(c.clientInfo?.phone)} alt="flag" className="w-5 h-auto rounded-sm" />
+                              )}
                               <p className="text-sm md:text-base font-bold text-slate-800 dark:text-white leading-tight group-hover/item:text-brand-500 transition-colors">{c.firstName} {c.lastName}</p>
                               {c.clientInfo?.isVip && (
                                 <div className="flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
@@ -588,13 +597,33 @@ const ClientsPage = () => {
                         <option value="+216">🇹🇳 +216</option>
                         <option value="+249">🇸🇩 +249</option>
                       </select>
-                      <input 
-                        name="phone" 
-                        value={form.phone} 
-                        onChange={handleChange} 
-                        placeholder="012xxxxxxx"
-                        className="flex-1 px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" 
-                      />
+                      <div className="flex-1 relative group">
+                        <input 
+                          name="phone" 
+                          value={form.phone} 
+                          onChange={(e) => {
+                            handleChange(e);
+                            // Visual feedback: If user pastes + code, update countryCode select
+                            if (e.target.value.startsWith('+')) {
+                              const match = Object.keys(COUNTRY_FLAGS).find(code => e.target.value.startsWith(code));
+                              if (match) setCountryCode(match);
+                            }
+                          }} 
+                          placeholder="012xxxxxxx"
+                          className="w-full pl-12 pr-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" 
+                        />
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                          {getCountryFlagUrl(form.phone.startsWith('+') ? form.phone : `${countryCode}${form.phone}`) ? (
+                            <img 
+                              src={getCountryFlagUrl(form.phone.startsWith('+') ? form.phone : `${countryCode}${form.phone}`)} 
+                              alt="flag" 
+                              className="w-5 h-auto rounded-sm shadow-sm" 
+                            />
+                          ) : (
+                            <Phone size={14} className="text-slate-400" />
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
