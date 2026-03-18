@@ -246,10 +246,8 @@ const WorkspaceDetail = () => {
                    className="flex items-center gap-3 px-6 py-4 bg-white dark:bg-white/5 text-slate-500 dark:text-slate-400 hover:text-brand-500 hover:bg-brand-500/5 rounded-[1.5rem] transition-all border border-slate-200 dark:border-white/10 hover:border-brand-500/30 shadow-sm active:scale-95 group"
                    title="Notion Workspace"
                  >
-                   <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-white/5 flex items-center justify-center group-hover:bg-brand-500/10 transition-colors">
-                     <FileText size={18} />
-                   </div>
-                   <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">مستندات المشروع</span>
+                   <FileText size={18} className="group-hover:scale-110 transition-transform" />
+                   <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">نـوشـن</span>
                  </a>
                )}
                <a 
@@ -310,7 +308,7 @@ const WorkspaceDetail = () => {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 opacity-0 group-hover:opacity-100 transition-all">
+                <div className="flex items-center gap-4 transition-all">
                    <button onClick={(e) => { e.stopPropagation(); setShowAddTask(p.id); }} className="p-4 bg-emerald-500/10 text-emerald-500 rounded-[1.25rem] hover:bg-emerald-500 hover:text-white transition-all"><Plus size={22} /></button>
                    <button onClick={(e) => { e.stopPropagation(); handleDeletePhase(p.id); }} className="p-4 bg-rose-500/10 text-rose-500 rounded-[1.25rem] hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={22} /></button>
                 </div>
@@ -366,7 +364,7 @@ const WorkspaceDetail = () => {
                                {task.deadline ? new Date(task.deadline).toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase() : '--'}
                             </td>
                             <td className="px-4 py-6 text-right">
-                               <button onClick={() => handleDeleteTask(task.id, p.id)} className="p-2 text-slate-200 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={16} /></button>
+                               <button onClick={() => handleDeleteTask(task.id, p.id)} className="p-2 text-slate-300 hover:text-rose-500 transition-all"><Trash2 size={16} /></button>
                             </td>
                           </tr>
                         );

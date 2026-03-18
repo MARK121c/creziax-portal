@@ -206,35 +206,7 @@ const ProjectsPage = () => {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 overflow-x-auto pb-4 custom-scrollbar scroll-smooth">
-        <button 
-          onClick={() => setActiveFilter('ALL')}
-          className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
-            activeFilter === 'ALL' 
-            ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-lg' 
-            : 'bg-white dark:bg-white/5 text-slate-400 border-slate-200 dark:border-white/10 hover:border-brand-500/30'
-          }`}
-        >
-          الكل
-        </button>
-        {Object.keys(statusConfig).map(status => {
-          const config = getStatusStyle(status);
-          return (
-            <button 
-              key={status}
-              onClick={() => setActiveFilter(status)}
-              className={`flex items-center gap-3 px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap ${
-                activeFilter === status 
-                ? `${config.bg} ${config.color} ${config.border} shadow-md` 
-                : 'bg-white dark:bg-white/5 text-slate-400 border-slate-200 dark:border-white/10 hover:border-brand-500/30'
-              }`}
-            >
-              <div className={`w-2 h-2 rounded-full ${activeFilter === status ? 'bg-current animate-pulse' : 'bg-slate-300'}`}></div>
-              {status.replace('_', ' ')}
-            </button>
-          );
-        })}
-      </div>
+      <div className="h-px w-full bg-slate-100 dark:bg-white/5 my-4"></div>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-48">
@@ -255,10 +227,10 @@ const ProjectsPage = () => {
             const statusConfig = getStatusStyle(p.status);
             return (
               <div key={p.id} className="group relative bg-white dark:bg-[#0a0a0c]/60 border border-slate-100 dark:border-white/5 rounded-[2rem] p-8 shadow-xl transition-all duration-500 hover:-translate-y-2 hover:border-brand-500/30">
-                <div className="absolute top-6 left-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                <div className="absolute top-6 left-6 flex gap-2">
                   <button 
                     onClick={() => handleDelete(p.id, p.name)}
-                    className="p-3 bg-white dark:bg-white/5 text-slate-400 hover:text-rose-500 rounded-xl transition-all border border-slate-100 dark:border-white/10 shadow-sm"
+                    className="p-3 bg-white dark:bg-white/5 text-slate-400 hover:text-rose-500 rounded-xl transition-all border border-slate-100 dark:border-white/10 shadow-sm active:scale-90"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -279,15 +251,7 @@ const ProjectsPage = () => {
                     </div>
                   </div>
 
-                  <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tight line-clamp-1">{p.name}</h3>
-                  <div className="flex items-center gap-2 mb-6">
-                    <div className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.15em] border ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
-                      {statusConfig.label}
-                    </div>
-                    <div className="px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.15em] border bg-slate-50 dark:bg-white/5 text-slate-400 border-slate-100 dark:border-white/5">
-                      {p.client?.user?.firstName} {p.client?.user?.lastName}
-                    </div>
-                  </div>
+                  <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-6 uppercase tracking-tight line-clamp-1">{p.name}</h3>
 
                   <div className="w-full p-4 bg-slate-50 dark:bg-black/20 border border-slate-100 dark:border-white/5 rounded-2xl mb-8 flex items-center justify-between">
                     <div className="flex -space-x-3">
