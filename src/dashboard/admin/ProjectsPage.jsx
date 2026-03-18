@@ -80,8 +80,8 @@ const ProjectsPage = () => {
         getClientsAPI(),
         getUsersAPI()
       ]);
-      setProjects(pRes.data);
-      setClients(cRes.data);
+      setProjects(pRes.data.data || pRes.data || []);
+      setClients(cRes.data.data || cRes.data || []);
       setTeamMembers((uRes.data.data || uRes.data || []).filter(u => u.role === 'TEAM'));
     } catch (err) {
       toast.error(t('loading'));
@@ -107,7 +107,19 @@ const ProjectsPage = () => {
       toast.success(t('launch_workspace'), { id: loadingToast });
       addNotification(`${t('launch_workspace')}: ${form.name}`, 'success');
       setShowModal(false); 
-      setForm({ name: '', description: '', clientId: '', status: 'CHANNEL_SETUP', clientChannelLink: '', notionUrl: '', logoUrl: '', teamMemberIds: [] }); 
+      setForm({ 
+        name: '', 
+        description: '', 
+        clientId: '', 
+        status: 'CHANNEL_SETUP', 
+        clientChannelLink: '', 
+        notionUrl: '', 
+        logoUrl: '', 
+        driveUrl: '',
+        brandColors: '',
+        brandFonts: '',
+        teamMemberIds: [] 
+      }); 
       fetchData(); 
     } catch (err) {
       const msg = err.response?.data?.message || t('loading');

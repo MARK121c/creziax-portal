@@ -32,7 +32,8 @@ const FilesPage = () => {
   const [editForm, setEditForm] = useState({
     driveUrl: '',
     brandColors: '',
-    brandFonts: ''
+    brandFonts: '',
+    description: ''
   });
 
   const fetchData = useCallback(async () => {
@@ -56,7 +57,8 @@ const FilesPage = () => {
     setEditForm({
       driveUrl: project.driveUrl || '',
       brandColors: project.brandColors || '',
-      brandFonts: project.brandFonts || ''
+      brandFonts: project.brandFonts || '',
+      description: project.description || ''
     });
   };
 
@@ -269,6 +271,17 @@ const FilesPage = () => {
                     className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" 
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 italic opacity-70">ملاحظات إدارية (Internal Notes)</label>
+                <textarea 
+                  rows="3"
+                  value={editForm.description} 
+                  onChange={e => setEditForm({...editForm, description: e.target.value})} 
+                  placeholder="أضف ملاحظات إدارية للمشروع هنا..." 
+                  className="w-full px-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-brand-500/20 outline-none transition-all resize-none" 
+                />
               </div>
 
               <button 
