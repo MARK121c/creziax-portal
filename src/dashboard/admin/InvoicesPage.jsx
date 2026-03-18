@@ -27,7 +27,7 @@ const InvoicesPage = () => {
   const addNotification = useNotificationStore(state => state.addNotification);
   
   const [invoiceForm, setInvoiceForm] = useState({ 
-    invoiceNumber: '', clientId: '', service: '', amount: '', paymentMethod: '', dueDate: '' 
+    invoiceNumber: '', clientId: '', service: '', amount: '', paymentMethod: '', paymentDetails: '', dueDate: '' 
   });
 
   const [dueForm, setDueForm] = useState({
@@ -71,7 +71,7 @@ const InvoicesPage = () => {
       toast.success(t('confirm_issue') || 'Created successfully!', { id: loadingToast });
       addNotification(`${t('confirm_issue')}: ${invoiceForm.invoiceNumber}`, 'success');
       setShowInvoiceModal(false);
-      setInvoiceForm({ invoiceNumber: '', clientId: '', service: '', amount: '', paymentMethod: '', dueDate: '' });
+      setInvoiceForm({ invoiceNumber: '', clientId: '', service: '', amount: '', paymentMethod: '', paymentDetails: '', dueDate: '' });
       fetchData();
     } catch (err) {
       const msg = err.response?.data?.message || t('loading');
@@ -465,6 +465,22 @@ const InvoicesPage = () => {
                   </select>
                 </div>
               </div>
+              {/* Dynamic payment details field */}
+              {invoiceForm.paymentMethod && (
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">
+                    تفاصيل التحويل لـ {invoiceForm.paymentMethod} — <span className="text-brand-400">اختياري (بيظهر في الـ PDF)</span>
+                  </label>
+                  <textarea
+                    value={invoiceForm.paymentDetails}
+                    onChange={e => setInvoiceForm({...invoiceForm, paymentDetails: e.target.value})}
+                    rows={2}
+                    className="w-full px-5 py-4 bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 font-bold resize-none placeholder:text-slate-400"
+                    placeholder={`مثال: ${invoiceForm.paymentMethod === 'PayPal' ? 'PayPal: ahmed@gmail.com' : invoiceForm.paymentMethod === 'Vodafone Cash' || invoiceForm.paymentMethod === 'InstaPay' || invoiceForm.paymentMethod === 'Barq' ? `${invoiceForm.paymentMethod}: 010XXXXXXXX (اسم الحساب)` : invoiceForm.paymentMethod === 'Bank Transfer' ? 'بنك QNB | حساب: 12345 | IBAN: EG...' : `${invoiceForm.paymentMethod}: ادخل التفاصيل`}`}
+                  />
+                  <p className="text-[10px] text-slate-400 mt-2 font-medium">💡 لو خليته فاضي، مش هيظهر أي تعليمات دفع في الـ PDF</p>
+                </div>
+              )}
               <div className="pt-4 flex gap-4 border-t border-slate-100 dark:border-white/5">
                 <button type="button" onClick={() => setShowInvoiceModal(false)} className="flex-1 py-4 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all">إلغاء</button>
                 <button type="submit" disabled={submittingInvoice} className="flex-1 py-4 bg-brand-600 hover:bg-brand-500 disabled:bg-slate-300 text-white font-bold rounded-2xl shadow-lg shadow-brand-600/20 transition-all active:scale-95">
