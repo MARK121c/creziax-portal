@@ -66,6 +66,9 @@ const ProjectsPage = () => {
     clientChannelLink: '', 
     notionUrl: '',
     logoUrl: '',
+    driveUrl: '',
+    brandColors: '',
+    brandFonts: '',
     teamMemberIds: []
   });
 
@@ -93,7 +96,7 @@ const ProjectsPage = () => {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.clientId || !form.clientChannelLink) {
+    if (!form.name || !form.clientId || !form.clientChannelLink || !form.driveUrl || !form.brandColors || !form.brandFonts) {
       setError(t('please_fill_all_fields'));
       return;
     }
@@ -365,6 +368,32 @@ const ProjectsPage = () => {
                     <FileText size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" />
                     <input type="url" value={form.notionUrl} onChange={e => setForm({...form, notionUrl: e.target.value})} placeholder="https://notion.so/..." className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" />
                   </div>
+                </div>
+              </div>
+
+              {/* Zero-Upload Assets (V3.5) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 leading-relaxed italic opacity-70 text-brand-500">رابط الدرايف الشامل (Master Drive) - إلزامي</label>
+                  <div className="relative">
+                    <Briefcase size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" />
+                    <input type="url" value={form.driveUrl} onChange={e => setForm({...form, driveUrl: e.target.value})} placeholder="https://drive.google.com/..." required className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-brand-500/20 outline-none transition-all border-brand-500/20" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 leading-relaxed italic opacity-70 text-brand-500">ألوان البراند (Brand Colors) - إلزامي</label>
+                  <div className="relative">
+                    <ImageIcon size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" />
+                    <input type="text" value={form.brandColors} onChange={e => setForm({...form, brandColors: e.target.value})} placeholder="#FF0000, #00FF00" required className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-brand-500/20 outline-none transition-all border-brand-500/20" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 leading-relaxed italic opacity-70 text-brand-500">خطوط البراند (Brand Fonts) - إلزامي</label>
+                <div className="relative">
+                  <Layout size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" />
+                  <input type="text" value={form.brandFonts} onChange={e => setForm({...form, brandFonts: e.target.value})} placeholder="Inter, Montserrat" required className="w-full pl-14 pr-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-brand-500/20 outline-none transition-all border-brand-500/20" />
                 </div>
               </div>
 
