@@ -76,6 +76,7 @@ export const sendMessageAPI = (data) => api.post('/messages', data);
 export const getThreadsAPI = () => api.get('/messages/threads');
 export const createTeamGroupAPI = (data) => api.post('/messages/groups', data);
 export const getTeamGroupsAPI = () => api.get('/messages/groups');
+export const clearMessagesAPI = (threadId) => api.delete(threadId ? `/messages/clear?threadId=${threadId}` : '/messages/clear');
 
 // Invoices
 export const getInvoicesAPI = () => api.get('/invoices');
@@ -98,6 +99,7 @@ export const deleteBroadcastAPI = (id) => api.delete(`/broadcasts/${id}`);
 
 // Uploads
 export const uploadImageAPI = (formData) => api.post('/upload/image', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+export const uploadAttachmentAPI = (formData) => api.post('/upload/file', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
 
 // Tickets
 export const getTicketsAPI = () => api.get('/tickets');

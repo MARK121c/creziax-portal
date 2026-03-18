@@ -7,7 +7,9 @@ import {
   getUsersAPI,
   grantChatAccessAPI,
   createTeamGroupAPI,
-  getTeamGroupsAPI
+  getTeamGroupsAPI,
+  clearMessagesAPI,
+  uploadAttachmentAPI
 } from '../../store/api';
 import useAuthStore from '../../store/authStore';
 import { io } from 'socket.io-client';
@@ -17,8 +19,9 @@ import {
   Send, MessageSquare, Search, MoreHorizontal, Smile, Paperclip, 
   Loader2, UserCircle, Plus, Filter, Clock, CheckCircle2, AlertCircle,
   Tag, ChevronRight, Briefcase, Calendar, ExternalLink, ShieldAlert,
-  UserPlus, X, Users, Check
+  UserPlus, X, Users, Check, Trash2
 } from 'lucide-react';
+import EmojiPicker from 'emoji-picker-react';
 
 const MessagesPage = () => {
   const { t } = useTranslation();
@@ -34,13 +37,16 @@ const MessagesPage = () => {
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
-  const [selectedTeamMember, setSelectedTeamMember] = useState(null);
+  const [selectedTeamMembers, setSelectedTeamMembers] = useState([]);
   const [grantingAccess, setGrantingAccess] = useState(false);
   const [bookingData, setBookingData] = useState({ topic: '', dates: '' });
   const [sendingBooking, setSendingBooking] = useState(false);
   const [loadingSidebar, setLoadingSidebar] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const fileInputRef = useRef(null);
   const [expandedSections, setExpandedSections] = useState({
     projects: true,
     groups: true,
@@ -100,7 +106,12 @@ const MessagesPage = () => {
 
     socketRef.current.on('receive_message', (msg) => {
       if (msg.threadId === activeThread?.id) {
-        setMessages(prev => [...prev, msg]);
+        if (msg.senderId !== user?.id) {
+          setMessages(prev => {
+            if (prev.find(m => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
+        }
       }
     });
 
@@ -150,6 +161,53 @@ const MessagesPage = () => {
     }
   };
 
+  const handleClearChat = async () => {
+    if (!activeThread) return;
+    if (!window.confirm("تحذير: هل أنت متأكد من مسح جميع رسائل هذه المحادثة؟ سيتم حذفها نهائياً ولن يمكن استرجاعها.")) return;
+    try {
+      await clearMessagesAPI(activeThread.id);
+      setMessages([]);
+      toast.success("تم مسح المحادثة بنجاح من قاعدة البيانات");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "فشل مسح المحادثة");
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeThread) return;
+
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error('حجم الملف كبير جداً، الحد الأقصى هو 100 ميجا بايت');
+      e.target.value = '';
+      return;
+    }
+
+    setUploadingFile(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const { data } = await uploadAttachmentAPI(formData);
+      
+      const msgData = {
+        content: `[FILE]${data.url}`,
+        threadId: activeThread.id,
+        receiverId: activeThread.type === 'DM' || activeThread.type === 'TEAM' ? activeThread.userId : null
+      };
+
+      const res = await sendMessageAPI(msgData);
+      setMessages(prev => [...prev, { ...res.data, sender: user }]);
+      socketRef.current.emit('send_message', { ...res.data, threadId: activeThread.id });
+      toast.success('تم إرسال المرفق بنجاح');
+    } catch (err) {
+      toast.error('فشل رفع الملف، يرجى المحاولة مرة أخرى');
+    } finally {
+      setUploadingFile(false);
+      e.target.value = '';
+    }
+  };
+
   const toggleSection = (section) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
@@ -181,13 +239,14 @@ const MessagesPage = () => {
   );
 
   const grantAccess = async () => {
-    if (!selectedTeamMember || !activeThread) return;
+    if (selectedTeamMembers.length === 0 || !activeThread) return;
     setGrantingAccess(true);
     try {
-      // Use activeThread.id as the identifier (works for projects and clients now)
-      await grantChatAccessAPI(selectedTeamMember, activeThread.id);
-      toast.success(`تم منح ${teamMembers.find(t => t.id === selectedTeamMember)?.firstName} صلاحية الدخول للشات`);
+      // Execute concurrently for all selected members
+      await Promise.all(selectedTeamMembers.map(id => grantChatAccessAPI(id, activeThread.id)));
+      toast.success(`تم منح صلاحية الوصول بنجاح`);
       setIsAddMemberModalOpen(false);
+      setSelectedTeamMembers([]);
     } catch (err) {
       toast.error(err.response?.data?.message || "فشل منح الصلاحية");
     } finally {
@@ -473,6 +532,15 @@ Availability: ${bookingData.dates}`;
                          إضافة عضو فريق
                        </button>
                      )}
+                     {(user.role === 'ADMIN' || user.role === 'OWNER') && (
+                        <button 
+                          onClick={handleClearChat}
+                          className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 transition-all hover:bg-rose-500/20 active:scale-95 flex items-center justify-center border border-rose-500/20"
+                          title="مسح جميع بيانات المحادثة نهائياً"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                     )}
                      {activeThread.driveUrl && (
                        <a 
                          href={activeThread.driveUrl} 
@@ -505,27 +573,39 @@ Availability: ${bookingData.dates}`;
                      </div>
                   ) : messages.map((m, i) => {
                       const isBookingCard = m.content?.startsWith('[MEETING_BOOKING]');
+                      const isFileCard = m.content?.startsWith('[FILE]');
                       let bookingDetails = null;
+                      let fileDetails = null;
+                      
                       if (isBookingCard) {
                         const lines = m.content.split('\n');
                         bookingDetails = {
                           topic: lines[1]?.replace('Topic: ', ''),
                           dates: lines[2]?.replace('Availability: ', '')
                         };
+                      } else if (isFileCard) {
+                        const fileUrl = m.content.replace('[FILE]', '');
+                        const isImage = fileUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i) != null;
+                        fileDetails = { url: fileUrl, isImage };
                       }
+
+                      // Enhance avatar rendering using fresh store data
+                      const msgAvatar = m.sender?.avatarUrl || 
+                                        clients.find(c => c.user?.id === m.senderId)?.logoUrl || 
+                                        teamMembers.find(t => t.id === m.senderId)?.avatarUrl;
 
                       return (
                         <div key={m.id || i} className={`flex ${m.senderId === user?.id ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-500`}>
                           <div className={`flex flex-col ${m.senderId === user?.id ? 'items-end' : 'items-start'} max-w-[85%] md:max-w-[70%]`}>
                              <div className={`flex items-center gap-3 mb-2 px-1 ${m.senderId === user?.id ? 'flex-row-reverse' : ''}`}>
                                 <div className="w-6 h-6 rounded-lg bg-slate-200 dark:bg-white/5 flex items-center justify-center text-[10px] font-bold text-slate-500 border border-slate-300 dark:border-white/10 overflow-hidden shadow-sm">
-                                   {m.sender?.avatarUrl ? <img src={m.sender.avatarUrl} className="w-full h-full object-cover" /> : (m.sender?.firstName?.[0] || 'U')}
+                                   {msgAvatar ? <img src={msgAvatar} className="w-full h-full object-cover" /> : (m.sender?.firstName?.[0] || 'U')}
                                 </div>
                                 <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                                   {m.sender?.firstName} {m.sender?.lastName} {m.senderId === user?.id && '(أنت)'}
                                 </span>
                              </div>
-                            <div className={`px-6 py-4 rounded-[1rem] md:rounded-[1.5rem] text-sm font-bold leading-relaxed shadow-xl ${m.senderId === user?.id ? 'bg-brand-600 text-white rounded-tr-none shadow-brand-600/10' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-none border border-slate-100 dark:border-white/5'} ${isBookingCard ? 'border-2 border-brand-500/30 ring-4 ring-brand-500/10' : ''}`}>
+                            <div className={`px-6 py-4 rounded-[1rem] md:rounded-[1.5rem] text-sm font-bold leading-relaxed shadow-xl ${m.senderId === user?.id ? 'bg-brand-600 text-white rounded-tr-none shadow-brand-600/10' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-none border border-slate-100 dark:border-white/5'} ${isBookingCard ? 'border-2 border-brand-500/30 ring-4 ring-brand-500/10' : ''} ${isFileCard && fileDetails.isImage ? 'p-2' : ''}`}>
                               {isBookingCard ? (
                                 <div className="space-y-4 min-w-[200px] text-right" dir="rtl">
                                    <div className="flex items-center gap-3 pb-3 border-b border-white/20">
@@ -547,6 +627,24 @@ Availability: ${bookingData.dates}`;
                                       انتظار التأكيد من الإدارة
                                    </div>
                                 </div>
+                              ) : isFileCard ? (
+                                <div className="flex flex-col gap-2">
+                                  {fileDetails.isImage ? (
+                                    <a href={fileDetails.url} target="_blank" rel="noopener noreferrer">
+                                      <img src={fileDetails.url} className="max-w-full sm:max-w-[300px] h-auto rounded-xl border border-white/10" />
+                                    </a>
+                                  ) : (
+                                    <a href={fileDetails.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between gap-4 p-2 rounded-xl border border-white/10 hover:bg-white/10 transition-all font-black text-xs min-w-[150px]" dir="rtl">
+                                      <div className="flex flex-col items-start gap-1">
+                                         <span className="text-[10px] uppercase tracking-widest opacity-80">تحميل المرفق</span>
+                                         <span className="truncate max-w-[150px] opacity-100 underline underline-offset-4">انقر هنا للفتح</span>
+                                      </div>
+                                      <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
+                                        <Paperclip size={18} />
+                                      </div>
+                                    </a>
+                                  )}
+                                </div>
                               ) : (
                                 <p>{m.content}</p>
                               )}
@@ -563,25 +661,45 @@ Availability: ${bookingData.dates}`;
 
                 <div className="p-4 md:p-8 bg-white dark:bg-[#0a0a0c] border-t border-slate-100 dark:border-white/5">
                   <form onSubmit={handleSend} className="relative flex items-center gap-3">
-                    <div className="flex-1 relative group">
+                    <div className="flex-1 relative transition-all">
+                      {showEmojiPicker && (
+                        <div className="absolute bottom-20 left-6 z-50 shadow-2xl rounded-2xl overflow-hidden border border-slate-100 dark:border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                          <EmojiPicker 
+                            onEmojiClick={(emojiData) => setContent(prev => prev + emojiData.emoji)}
+                            theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                          />
+                        </div>
+                      )}
+                      
                       <input 
                         value={content} 
                         onChange={e => setContent(e.target.value)} 
-                        placeholder="اكتب رسالتك داخل بيئة العمل الآمنة..." 
-                        className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/10 rounded-[1.5rem] px-6 py-5 text-sm text-slate-800 dark:text-white font-black focus:outline-none focus:ring-4 focus:ring-brand-500/10 transition-all font-bold placeholder:opacity-50 text-right" 
+                        onClick={() => setShowEmojiPicker(false)}
+                        placeholder={uploadingFile ? "جاري رفع المرفق..." : "اكتب رسالتك داخل بيئة العمل الآمنة..."} 
+                        disabled={uploadingFile}
+                        className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/10 rounded-[1.5rem] px-6 py-5 text-sm text-slate-800 dark:text-white font-black focus:outline-none focus:ring-4 focus:ring-brand-500/10 transition-all font-bold placeholder:opacity-50 text-right disabled:opacity-50" 
                         dir="rtl"
                       />
-                      <div className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center gap-4 opacity-40">
-                        <Paperclip size={20} className="cursor-pointer hover:text-brand-500 transition-colors" />
-                        <Smile size={20} className="cursor-pointer hover:text-brand-500 transition-colors" />
+                      <div className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center gap-4 opacity-50">
+                        <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+                        <Paperclip 
+                          size={20} 
+                          onClick={() => fileInputRef.current?.click()}
+                          className={`cursor-pointer transition-all active:scale-95 ${uploadingFile ? 'animate-pulse text-brand-500 opacity-100 rotate-12 scale-110' : 'hover:text-brand-500 hover:opacity-100'}`} 
+                        />
+                        <Smile 
+                          size={20} 
+                          onClick={() => setShowEmojiPicker(prev => !prev)}
+                          className={`cursor-pointer transition-all active:scale-95 ${showEmojiPicker ? 'text-brand-500 opacity-100' : 'hover:text-brand-500 hover:opacity-100'}`} 
+                        />
                       </div>
                     </div>
                     <button 
                       type="submit" 
-                      disabled={!content.trim()}
-                      className="bg-brand-600 text-white w-14 h-14 rounded-2xl hover:bg-brand-500 flex items-center justify-center transition-all shadow-xl shadow-brand-600/30 disabled:opacity-50 active:scale-90"
+                      disabled={!content.trim() || uploadingFile}
+                      className="bg-brand-600 text-white w-14 h-14 rounded-2xl hover:bg-brand-500 flex items-center justify-center transition-all shadow-xl shadow-brand-600/30 disabled:opacity-50 active:scale-90 flex-shrink-0 relative overflow-hidden"
                     >
-                      <Send size={22} />
+                      <Send size={22} className={`${content.trim() ? 'translate-x-0 opacity-100' : '-translate-x-4 opacity-50'} transition-all duration-300`} />
                     </button>
                   </form>
                 </div>
@@ -617,14 +735,23 @@ Availability: ${bookingData.dates}`;
                   {teamMembers.map(tm => (
                     <button 
                       key={tm.id}
-                      onClick={() => setSelectedTeamMember(tm.id)}
-                      className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${selectedTeamMember === tm.id ? 'bg-brand-500/5 border-brand-500/30 ring-2 ring-brand-500/20' : 'bg-slate-50 dark:bg-white/[0.02] border-slate-100 dark:border-white/5 hover:border-brand-500/20'}`}
+                      onClick={() => {
+                        if (selectedTeamMembers.includes(tm.id)) {
+                          setSelectedTeamMembers(prev => prev.filter(id => id !== tm.id));
+                        } else {
+                          setSelectedTeamMembers(prev => [...prev, tm.id]);
+                        }
+                      }}
+                      className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${selectedTeamMembers.includes(tm.id) ? 'bg-brand-500/5 border-brand-500/30' : 'bg-slate-50 dark:bg-white/[0.02] border-slate-100 dark:border-white/5 hover:border-brand-500/20'}`}
                     >
-                      <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-white/5 flex items-center justify-center text-xs font-black text-slate-400 overflow-hidden">
+                      <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${selectedTeamMembers.includes(tm.id) ? 'bg-brand-500 border-brand-500 text-white' : 'border-slate-300 dark:border-white/10'}`}>
+                        {selectedTeamMembers.includes(tm.id) && <Check size={12} strokeWidth={4} />}
+                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-white/5 flex items-center justify-center text-xs font-black text-slate-400 overflow-hidden shadow-sm">
                         {tm.avatarUrl ? <img src={tm.avatarUrl} className="w-full h-full object-cover" /> : (tm.firstName?.[0] || 'T')}
                       </div>
                       <div className="flex-1 text-right">
-                        <h4 className="text-xs font-black text-slate-700 dark:text-white">{tm.firstName} {tm.lastName}</h4>
+                        <h4 className="text-[11px] font-black text-slate-700 dark:text-white uppercase tracking-widest">{tm.firstName} {tm.lastName}</h4>
                         <p className="text-[9px] font-bold text-slate-400">{tm.position || 'فريق العمل'}</p>
                       </div>
                     </button>
@@ -635,7 +762,7 @@ Availability: ${bookingData.dates}`;
 
               <div className="flex items-center gap-4 pt-4">
                 <button 
-                  disabled={!selectedTeamMember || grantingAccess}
+                  disabled={selectedTeamMembers.length === 0 || grantingAccess}
                   onClick={grantAccess}
                   className="flex-1 h-14 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-[0_10px_30px_rgba(79,70,229,0.3)] disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-3"
                 >
