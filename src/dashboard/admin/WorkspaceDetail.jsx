@@ -21,9 +21,8 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 
 const taskStatusConfig = {
-  NOT_STARTED: { label: 'Pending', color: 'text-slate-300', bg: 'bg-slate-50 dark:bg-white/5', icon: Clock },
-  IN_PROGRESS: { label: 'In Progress', color: 'text-amber-500', bg: 'bg-amber-500/10', icon: PlayCircle },
-  DONE: { label: 'Completed', color: 'text-emerald-500', bg: 'bg-emerald-500/10', icon: CheckCircle2 },
+  NOT_STARTED: { label: 'انتظار', color: 'text-slate-300', bg: 'bg-slate-50 dark:bg-white/5', icon: Clock },
+  DONE: { label: 'تم', color: 'text-emerald-500', bg: 'bg-emerald-500/10', icon: CheckCircle2 },
 };
 
 const getFormattedUrl = (url) => {
@@ -93,6 +92,19 @@ const WorkspaceDetail = () => {
     });
   };
 
+  const handleAddPhase = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await createPhaseAPI(id, phaseForm);
+      toast.success(t('saved_successfully'));
+      setShowAddPhase(false);
+      setPhaseForm({ name: '', startDate: '', endDate: '' });
+      fetchData();
+    } catch (err) { toast.error(t('error_general')); }
+    finally { setSubmitting(false); }
+  };
+
   const handleDeletePhase = async (phaseId) => {
     if (!confirm('هل أنت متأكد من حذف هذا الشهر؟ سيتم حذف جميع المهام بداخله.')) return;
     try {
@@ -130,24 +142,23 @@ const WorkspaceDetail = () => {
     }
   };
 
-  const handleAddPhase = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
+  const toggleSubStatus = async (task, phaseId, field) => {
+    const meta = parseTaskMeta(task.description);
+    const newVal = meta[field] === 'DONE' ? 'NOT_STARTED' : 'DONE';
+    const newMeta = { ...meta, [field]: newVal };
+    
     try {
-      await createPhaseAPI(id, phaseForm);
-      toast.success(t('saved_successfully'));
-      setShowAddPhase(false);
-      setPhaseForm({ name: '', startDate: '', endDate: '' });
-      fetchData();
-    } catch (err) { toast.error(t('error_general')); }
-    finally { setSubmitting(false); }
+      await handleTaskUpdate(task.id, phaseId, { description: JSON.stringify(newMeta) });
+    } catch (err) {
+      toast.error('فشل تحديث الحالة');
+    }
   };
 
   const handleAddTask = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const initialMeta = JSON.stringify({ script: 'NOT_STARTED', edit: 'NOT_STARTED', thumb: 'NOT_STARTED' });
+      const initialMeta = JSON.stringify({ script: 'NOT_STARTED', shoot: 'NOT_STARTED', edit: 'NOT_STARTED', publish: 'NOT_STARTED' });
       await createWorkspaceTaskAPI(showAddTask, { ...taskForm, description: initialMeta });
       toast.success(t('saved_successfully'));
       loadPhaseTasks(showAddTask);
@@ -167,16 +178,17 @@ const WorkspaceDetail = () => {
   };
 
   const parseTaskMeta = (desc) => {
-    try { return JSON.parse(desc); } catch (e) { return { script: 'NOT_STARTED', edit: 'NOT_STARTED', thumb: 'NOT_STARTED' }; }
-  };
-
-  const toggleSubStatus = async (task, phaseId, field) => {
-    const meta = parseTaskMeta(task.description);
-    const cycle = ['NOT_STARTED', 'IN_PROGRESS', 'DONE'];
-    const currentIdx = cycle.indexOf(meta[field] || 'NOT_STARTED');
-    const nextIdx = (currentIdx + 1) % cycle.length;
-    meta[field] = cycle[nextIdx];
-    await handleTaskUpdate(task.id, phaseId, { description: JSON.stringify(meta) });
+    try { 
+      const parsed = JSON.parse(desc); 
+      return {
+        script: parsed.script || 'NOT_STARTED',
+        shoot: parsed.shoot || 'NOT_STARTED',
+        edit: parsed.edit || 'NOT_STARTED',
+        publish: parsed.publish || 'NOT_STARTED'
+      };
+    } catch (e) { 
+      return { script: 'NOT_STARTED', shoot: 'NOT_STARTED', edit: 'NOT_STARTED', publish: 'NOT_STARTED' }; 
+    }
   };
 
   if (loading) {
@@ -207,17 +219,7 @@ const WorkspaceDetail = () => {
               <ChevronRight className="rotate-180" size={24} />
             </Link>
             <div className="flex items-center gap-5">
-              <div className="w-16 h-16 rounded-[1.75rem] bg-white dark:bg-[#0a0a0c] border-2 border-slate-100 dark:border-white/10 overflow-hidden shadow-2xl flex-shrink-0 transition-all hover:scale-105 group ring-offset-4 ring-offset-white dark:ring-offset-[#050505] hover:ring-2 hover:ring-brand-500/30">
-                {workspace.logoUrl ? (
-                  <img src={getFormattedUrl(workspace.logoUrl)} alt="" className="w-full h-full object-cover" />
-                ) : workspace.client?.logoUrl ? (
-                  <img src={getFormattedUrl(workspace.client.logoUrl)} alt="" className="w-full h-full object-cover opacity-60" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-white/5 dark:to-white/10 text-slate-300 dark:text-slate-700 uppercase font-black text-2xl tracking-tighter">
-                    {workspace.name?.[0]}
-                  </div>
-                )}
-              </div>
+              {/* Logo Removed as per V3.2 Clean UI Request */}
               <div className="space-y-1">
                 <h1 className="text-2xl font-black tracking-tighter text-slate-800 dark:text-white uppercase leading-none">{workspace.name}</h1>
                 <div className="flex items-center gap-2">
@@ -257,7 +259,7 @@ const WorkspaceDetail = () => {
                  className="flex items-center gap-3 px-8 py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-brand-600/20 active:scale-95 whitespace-nowrap"
                >
                  <PlayCircle size={18} />
-                 افتح قناة اليوتيوب
+                 قناة التواصل
                </a>
              </div>
           </div>
@@ -320,20 +322,24 @@ const WorkspaceDetail = () => {
                     <thead>
                       <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-black/20">
                         <th className="px-8 py-6">عنوان الفيديو</th>
-                        <th className="px-4 py-6 text-center w-24"><FileCode size={16} className="mx-auto" /></th>
-                        <th className="px-4 py-6 text-center w-24"><Scissors size={16} className="mx-auto" /></th>
-                        <th className="px-4 py-6 text-center w-24"><Palette size={16} className="mx-auto" /></th>
+                        <th className="px-4 py-6 text-center w-24">الاسكربت</th>
+                        <th className="px-4 py-6 text-center w-24">التصوير</th>
+                        <th className="px-4 py-6 text-center w-24">المونتاج</th>
+                        <th className="px-4 py-6 text-center w-24">النشر</th>
                         <th className="px-8 py-6 text-center w-40">تاريخ النشر</th>
+                        <th className="px-8 py-6 text-center w-40">الحالة النهائية</th>
                         <th className="px-4 py-6 text-right w-16"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50 dark:divide-white/5">
                       {loadingTasks[p.id] ? (
-                        <tr><td colSpan="6" className="py-20 text-center"><Loader2 size={32} className="animate-spin mx-auto text-brand-500 opacity-20" /></td></tr>
+                        <tr><td colSpan="8" className="py-20 text-center"><Loader2 size={32} className="animate-spin mx-auto text-brand-500 opacity-20" /></td></tr>
                       ) : (phaseTasks[p.id] || []).length === 0 ? (
-                        <tr><td colSpan="6" className="py-20 text-center text-[10px] font-black text-slate-300 uppercase tracking-widest italic opacity-50">قائمة المهام فارغة حالياً</td></tr>
+                        <tr><td colSpan="8" className="py-20 text-center text-[10px] font-black text-slate-300 uppercase tracking-widest italic opacity-50">قائمة المهام فارغة حالياً</td></tr>
                       ) : phaseTasks[p.id].map(task => {
                         const meta = parseTaskMeta(task.description);
+                        const isFullyDone = meta.script === 'DONE' && meta.shoot === 'DONE' && meta.edit === 'DONE' && meta.publish === 'DONE';
+                        
                         return (
                           <tr key={task.id} className="group hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-all">
                             <td className="px-8 py-6">
@@ -347,21 +353,34 @@ const WorkspaceDetail = () => {
                                   <button onClick={() => setShowNotes(task.id)} className="p-2 ml-4 text-slate-300 hover:text-brand-500 transition-all opacity-0 group-hover:opacity-100 bg-slate-50 dark:bg-white/5 rounded-lg"><MessageSquare size={14} /></button>
                                </div>
                             </td>
-                            {['script', 'edit', 'thumb'].map(field => (
-                              <td key={field} className="px-4 py-6">
-                                <button 
-                                  onClick={() => toggleSubStatus(task, p.id, field)}
-                                  className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto transition-all shadow-sm active:scale-90 border-2 ${taskStatusConfig[meta[field] || 'NOT_STARTED'].bg} ${taskStatusConfig[meta[field] || 'NOT_STARTED'].color} border-transparent hover:border-current/20`}
-                                >
-                                  {(() => {
-                                    const Icon = taskStatusConfig[meta[field] || 'NOT_STARTED'].icon;
-                                    return <Icon size={18} strokeWidth={3} />;
-                                  })()}
-                                </button>
-                              </td>
+                            {['script', 'shoot', 'edit', 'publish'].map(field => (
+                               <td key={field} className="px-4 py-6">
+                                 <button 
+                                   onClick={() => toggleSubStatus(task, p.id, field)}
+                                   className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto transition-all shadow-sm active:scale-90 border-2 ${taskStatusConfig[meta[field] || 'NOT_STARTED'].bg} ${taskStatusConfig[meta[field] || 'NOT_STARTED'].color} border-transparent hover:border-current/20`}
+                                   title={taskStatusConfig[meta[field] || 'NOT_STARTED'].label}
+                                 >
+                                   {(() => {
+                                     const Icon = taskStatusConfig[meta[field] || 'NOT_STARTED'].icon;
+                                     return <Icon size={18} strokeWidth={3} />;
+                                   })()}
+                                 </button>
+                               </td>
                             ))}
-                            <td className="px-8 py-6 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                            <td className="px-8 py-6 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
                                {task.deadline ? new Date(task.deadline).toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase() : '--'}
+                            </td>
+                            <td className="px-8 py-6 text-center">
+                               {isFullyDone ? (
+                                 <div className="inline-flex items-center gap-2 px-6 py-2 bg-emerald-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20">
+                                   <CheckCircle2 size={12} strokeWidth={3} />
+                                   تم الانتهاء
+                                 </div>
+                               ) : (
+                                 <div className="inline-flex items-center gap-2 px-6 py-2 bg-slate-100 dark:bg-white/5 text-slate-400 border border-slate-200 dark:border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest opacity-40 italic">
+                                   تحت العمل
+                                 </div>
+                               )}
                             </td>
                             <td className="px-4 py-6 text-right">
                                <button onClick={() => handleDeleteTask(task.id, p.id)} className="p-2 text-slate-300 hover:text-rose-500 transition-all"><Trash2 size={16} /></button>
@@ -439,15 +458,24 @@ const WorkspaceDetail = () => {
                     المسودة الإبداعية للمحتوى
                   </label>
                   <textarea 
+                    id="notes-textarea"
                     className="w-full flex-1 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-[2rem] p-8 text-sm font-medium focus:outline-none focus:ring-4 focus:ring-brand-500/10 resize-none leading-relaxed"
                     placeholder="اكتب ملاحظاتك هنا (سكريبت، تعديلات، تعليمات للمصمم...)"
                     defaultValue={(workspace.phases || []).flatMap(p => phaseTasks[p.id] || []).find(t => t.id === showNotes)?.privateNotes || ''}
-                    onBlur={(e) => {
-                      const phaseId = (workspace.phases || []).find(p => (phaseTasks[p.id] || []).some(t => t.id === showNotes))?.id;
-                      handleTaskUpdate(showNotes, phaseId, { privateNotes: e.target.value });
-                      toast.success('تم الحفظ تلقائياً');
-                    }}
                   />
+                  <div className="mt-4 flex justify-end">
+                    <button 
+                      onClick={() => {
+                        const val = document.getElementById('notes-textarea').value;
+                        const phaseId = (workspace.phases || []).find(p => (phaseTasks[p.id] || []).some(t => t.id === showNotes))?.id;
+                        handleTaskUpdate(showNotes, phaseId, { privateNotes: val });
+                        toast.success('تم نشر الملاحظات بنجاح');
+                      }}
+                      className="px-10 py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest shadow-2xl active:scale-95 transition-all"
+                    >
+                      نشر الملاحظات
+                    </button>
+                  </div>
                 </div>
                 <div className="p-8 bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 rounded-[1.5rem] flex items-start gap-4">
                    <ShieldCheck size={20} className="text-emerald-500 mt-1" />
