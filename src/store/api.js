@@ -113,6 +113,7 @@ export const getDashboardStatsAPI = () => api.get('/stats/dashboard');
 // Expenses
 export const getExpensesAPI = () => api.get('/expenses');
 export const createExpenseAPI = (data) => api.post('/expenses', data);
+export const updateExpenseAPI = (id, data) => api.put(`/expenses/${id}`, data);
 export const deleteExpenseAPI = (id) => api.delete(`/expenses/${id}`);
 
 // Bonuses
