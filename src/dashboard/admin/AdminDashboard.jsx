@@ -277,14 +277,14 @@ const AdminDashboard = () => {
               amount={fin?.grossRevenue ?? 0}
               loading={loading}
               variant="revenue"
-              sub={`من ${stats?.invoices?.total ?? 0} فاتورة`}
+              sub={`${stats?.invoices?.paid ?? 0} فاتورة مدفوعة · متأخر: $${(fin?.pendingRevenue ?? 0).toLocaleString()}`}
             />
             <FinCard
               label={t('total_expenses')}
               amount={fin?.totalExpenses ?? 0}
               loading={loading}
               variant="expenses"
-              sub={t('total_salaries') + " + " + t('operational_expenses') + " + " + t('total_bonuses')}
+              sub={`رواتب + مستحقات فريق + نفقات + مكافآت`}
             />
             <FinCard
               label={t('stat_net_profit')}
@@ -295,8 +295,8 @@ const AdminDashboard = () => {
             />
           </div>
 
-          {/* Bottom Row: 3 Breakdown Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Bottom Row: 4 Breakdown Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <BreakdownCard
               icon={Briefcase}
               label={t('total_salaries')}
@@ -304,6 +304,14 @@ const AdminDashboard = () => {
               loading={loading}
               iconColor="bg-gradient-to-tr from-violet-500 to-purple-600"
               borderColor="border-violet-500/15 dark:border-violet-500/10"
+            />
+            <BreakdownCard
+              icon={Gift}
+              label="مستحقات الفريق"
+              amount={fin?.teamDues ?? 0}
+              loading={loading}
+              iconColor="bg-gradient-to-tr from-amber-500 to-orange-500"
+              borderColor="border-amber-500/15 dark:border-amber-500/10"
             />
             <BreakdownCard
               icon={TrendingDown}
@@ -314,12 +322,12 @@ const AdminDashboard = () => {
               borderColor="border-rose-500/15 dark:border-rose-500/10"
             />
             <BreakdownCard
-              icon={Gift}
+              icon={TrendingUp}
               label={t('total_bonuses')}
               amount={fin?.bonuses ?? 0}
               loading={loading}
-              iconColor="bg-gradient-to-tr from-amber-500 to-orange-600"
-              borderColor="border-amber-500/15 dark:border-amber-500/10"
+              iconColor="bg-gradient-to-tr from-sky-500 to-blue-600"
+              borderColor="border-sky-500/15 dark:border-sky-500/10"
             />
           </div>
         </div>
