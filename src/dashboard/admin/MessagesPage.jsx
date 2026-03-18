@@ -45,7 +45,9 @@ const MessagesPage = () => {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const emojiRef = useRef(null);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
   const [expandedSections, setExpandedSections] = useState({
     projects: true,
@@ -119,6 +121,16 @@ const MessagesPage = () => {
   }, [fetchData, activeThread?.id]);
 
   useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (emojiRef.current && !emojiRef.current.contains(event.target)) {
+        setShowEmojiPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -139,9 +151,39 @@ const MessagesPage = () => {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!content.trim() || !activeThread) return;
+    if ((!content.trim() && !selectedFile) || !activeThread || uploadingFile) return;
     
-    if (!validateMessage(content)) return;
+    if (content.trim() && !validateMessage(content)) return;
+
+    if (selectedFile) {
+      setUploadingFile(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        
+        const { data } = await uploadAttachmentAPI(formData);
+        
+        const msgContent = content.trim() ? `[FILE]${data.url}\n${content.trim()}` : `[FILE]${data.url}`;
+        const msgData = {
+          content: msgContent,
+          threadId: activeThread.id,
+          receiverId: activeThread.type === 'DM' || activeThread.type === 'TEAM' ? activeThread.userId : null
+        };
+
+        const res = await sendMessageAPI(msgData);
+        setMessages(prev => [...prev, { ...res.data, sender: user }]);
+        socketRef.current.emit('send_message', { ...res.data, threadId: activeThread.id });
+        toast.success('تم إرسال المرفق بنجاح');
+      } catch (err) {
+        toast.error('فشل رفع الملف، يرجى المحاولة مرة أخرى');
+        setUploadingFile(false);
+        return;
+      }
+      setUploadingFile(false);
+      setSelectedFile(null);
+      setContent('');
+      return;
+    }
 
     try {
       const { data } = await sendMessageAPI({ 
@@ -173,7 +215,7 @@ const MessagesPage = () => {
     }
   };
 
-  const handleFileUpload = async (e) => {
+  const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file || !activeThread) return;
 
@@ -183,29 +225,8 @@ const MessagesPage = () => {
       return;
     }
 
-    setUploadingFile(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const { data } = await uploadAttachmentAPI(formData);
-      
-      const msgData = {
-        content: `[FILE]${data.url}`,
-        threadId: activeThread.id,
-        receiverId: activeThread.type === 'DM' || activeThread.type === 'TEAM' ? activeThread.userId : null
-      };
-
-      const res = await sendMessageAPI(msgData);
-      setMessages(prev => [...prev, { ...res.data, sender: user }]);
-      socketRef.current.emit('send_message', { ...res.data, threadId: activeThread.id });
-      toast.success('تم إرسال المرفق بنجاح');
-    } catch (err) {
-      toast.error('فشل رفع الملف، يرجى المحاولة مرة أخرى');
-    } finally {
-      setUploadingFile(false);
-      e.target.value = '';
-    }
+    setSelectedFile(file);
+    e.target.value = '';
   };
 
   const toggleSection = (section) => {
@@ -584,9 +605,12 @@ Availability: ${bookingData.dates}`;
                           dates: lines[2]?.replace('Availability: ', '')
                         };
                       } else if (isFileCard) {
-                        const fileUrl = m.content.replace('[FILE]', '');
+                        const fileLines = m.content.split('\n');
+                        const fileUrlItem = fileLines[0].replace('[FILE]', '');
+                        const fileUrl = fileUrlItem;
                         const isImage = fileUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i) != null;
-                        fileDetails = { url: fileUrl, isImage };
+                        const caption = fileLines.slice(1).join('\n');
+                        fileDetails = { url: fileUrl, isImage, caption };
                       }
 
                       // Enhance avatar rendering using fresh store data
@@ -628,25 +652,26 @@ Availability: ${bookingData.dates}`;
                                    </div>
                                 </div>
                               ) : isFileCard ? (
-                                <div className="flex flex-col gap-2">
+                                <div className="flex flex-col gap-3">
                                   {fileDetails.isImage ? (
                                     <a href={fileDetails.url} target="_blank" rel="noopener noreferrer">
                                       <img src={fileDetails.url} className="max-w-full sm:max-w-[300px] h-auto rounded-xl border border-white/10" />
                                     </a>
                                   ) : (
-                                    <a href={fileDetails.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between gap-4 p-2 rounded-xl border border-white/10 hover:bg-white/10 transition-all font-black text-xs min-w-[150px]" dir="rtl">
+                                    <a href={fileDetails.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between gap-4 p-3 rounded-xl border border-white/10 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-all font-black text-xs min-w-[200px]" dir="rtl">
                                       <div className="flex flex-col items-start gap-1">
-                                         <span className="text-[10px] uppercase tracking-widest opacity-80">تحميل المرفق</span>
-                                         <span className="truncate max-w-[150px] opacity-100 underline underline-offset-4">انقر هنا للفتح</span>
+                                         <span className="text-[10px] uppercase tracking-widest opacity-80">مرفق</span>
+                                         <span className="truncate max-w-[150px] opacity-100 underline underline-offset-4" style={{direction: 'ltr'}}>{fileDetails.url.split('/').pop()}</span>
                                       </div>
-                                      <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
+                                      <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
                                         <Paperclip size={18} />
                                       </div>
                                     </a>
                                   )}
+                                  {fileDetails.caption && <p className="text-sm font-bold border-t border-black/5 dark:border-white/10 pt-2 break-all">{fileDetails.caption}</p>}
                                 </div>
                               ) : (
-                                <p>{m.content}</p>
+                                <p className="whitespace-pre-wrap break-words">{m.content}</p>
                               )}
                             </div>
                             <span className="text-[8px] font-black text-slate-400 mt-2 px-2 uppercase tracking-[0.2em]">
@@ -659,11 +684,36 @@ Availability: ${bookingData.dates}`;
                   <div ref={scrollRef} />
                 </div>
 
-                <div className="p-4 md:p-8 bg-white dark:bg-[#0a0a0c] border-t border-slate-100 dark:border-white/5">
+                <div className="p-4 md:p-8 bg-white dark:bg-[#0a0a0c] border-t border-slate-100 dark:border-white/5 relative">
+                  {/* Upload Preview Widget */}
+                  {selectedFile && (
+                    <div className="absolute bottom-full mb-4 left-0 w-full animate-in fade-in slide-in-from-bottom-4 duration-300">
+                      <div className="bg-slate-800 dark:bg-white/10 text-white rounded-2xl p-4 flex items-center justify-between shadow-2xl backdrop-blur-md border border-white/5 mx-4 md:mx-8">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                            <Paperclip size={20} />
+                          </div>
+                          <div className="text-right">
+                            <h4 className="text-sm font-black truncate max-w-[200px]" dir="ltr">{selectedFile.name}</h4>
+                            <p className="text-[10px] uppercase tracking-widest opacity-60 mt-1">سيتم إرسال هذا المرفق</p>
+                          </div>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => setSelectedFile(null)} 
+                          className="w-10 h-10 rounded-xl hover:bg-rose-500/20 text-rose-500 flex items-center justify-center transition-all bg-white/5"
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <form onSubmit={handleSend} className="relative flex items-center gap-3">
                     <div className="flex-1 relative transition-all">
                       {showEmojiPicker && (
-                        <div className="absolute bottom-20 left-6 z-50 shadow-2xl rounded-2xl overflow-hidden border border-slate-100 dark:border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                        <div ref={emojiRef} className="absolute bottom-20 left-6 z-50 shadow-2xl rounded-2xl overflow-hidden border border-slate-100 dark:border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-300">
+
                           <EmojiPicker 
                             onEmojiClick={(emojiData) => setContent(prev => prev + emojiData.emoji)}
                             theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
@@ -696,10 +746,14 @@ Availability: ${bookingData.dates}`;
                     </div>
                     <button 
                       type="submit" 
-                      disabled={!content.trim() || uploadingFile}
-                      className="bg-brand-600 text-white w-14 h-14 rounded-2xl hover:bg-brand-500 flex items-center justify-center transition-all shadow-xl shadow-brand-600/30 disabled:opacity-50 active:scale-90 flex-shrink-0 relative overflow-hidden"
+                      disabled={(!content.trim() && !selectedFile) || uploadingFile}
+                      className="bg-brand-600 text-white w-[60px] h-[60px] rounded-2xl hover:bg-brand-500 flex items-center justify-center transition-all shadow-xl shadow-brand-600/30 disabled:opacity-50 active:scale-90 flex-shrink-0"
                     >
-                      <Send size={22} className={`${content.trim() ? 'translate-x-0 opacity-100' : '-translate-x-4 opacity-50'} transition-all duration-300`} />
+                      {uploadingFile ? (
+                        <Loader2 size={24} className="animate-spin" />
+                      ) : (
+                        <Send size={24} className="transform rotate-180 mr-1" />
+                      )}
                     </button>
                   </form>
                 </div>
