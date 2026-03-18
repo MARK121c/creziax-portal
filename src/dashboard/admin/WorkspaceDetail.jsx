@@ -366,6 +366,9 @@ const WorkspaceDetail = () => {
           </div>
         </div>
       </div>
+      {showAddPhase && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md">
+           <div className="absolute inset-0 bg-slate-950/40" onClick={() => setShowAddPhase(false)}></div>
            <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-md shadow-2xl relative z-10 p-10 animate-in zoom-in-95 duration-300">
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">{t('new_month')}</h3>
