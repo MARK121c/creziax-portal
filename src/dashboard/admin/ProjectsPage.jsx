@@ -49,10 +49,8 @@ const ProjectsPage = () => {
     description: '', 
     clientId: '', 
     status: 'CHANNEL_SETUP',
-    notionUrl: '',
-    driveUrl: '',
-    brandUrl: '',
-    annualContractDate: ''
+    communicationUrl: '', 
+    logoUrl: ''
   });
 
   const fetchData = useCallback(async () => {
@@ -79,14 +77,17 @@ const ProjectsPage = () => {
       return;
     }
     setSubmitting(true);
-    // ... rest of use existing code
     const loadingToast = toast.loading(t('syncing'));
     try { 
-      await createProjectAPI(form); 
+      // Map communicationUrl to notionUrl for backend storage
+      await createProjectAPI({
+        ...form,
+        notionUrl: form.communicationUrl 
+      }); 
       toast.success(t('launch_workspace'), { id: loadingToast });
       addNotification(`${t('launch_workspace')}: ${form.name}`, 'success');
       setShowModal(false); 
-      setForm({ name: '', description: '', clientId: '', status: 'CHANNEL_SETUP' }); 
+      setForm({ name: '', description: '', clientId: '', status: 'CHANNEL_SETUP', communicationUrl: '', logoUrl: '' }); 
       fetchData(); 
     } catch (err) {
       const msg = err.response?.data?.message || t('loading');
@@ -328,112 +329,45 @@ const ProjectsPage = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 dark:bg-[#0a0a0c]/80 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setShowModal(false)}></div>
           
-          <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-4xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-400 max-h-[95vh] overflow-y-auto custom-scrollbar">
+          <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-2xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-400 max-h-[90vh] overflow-y-auto">
             
-            {/* Modal Header */}
-            <div className="px-8 md:px-10 py-8 border-b border-slate-100 dark:border-white/5 bg-white/80 dark:bg-[#0a0a0c]/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-20">
+            <div className="px-8 py-8 border-b border-slate-100 dark:border-white/5 bg-white/80 dark:bg-[#0a0a0c]/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-20">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 shadow-inner">
-                   <Plus size={28} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight uppercase">
-                    {t('new_project')}
-                  </h2>
-                  <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-[0.2em]">{t('new_project_desc')}</p>
-                </div>
+                <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">{t('new_project')}</h2>
               </div>
-              <button onClick={() => setShowModal(false)} className="p-4 text-slate-400 hover:text-rose-500 bg-slate-100 dark:bg-white/5 rounded-2xl transition-all">
-                <X size={20} />
-              </button>
+              <button onClick={() => setShowModal(false)} className="p-3 text-slate-400 hover:text-rose-500 bg-slate-100 dark:bg-white/5 rounded-xl transition-all"><X size={20} /></button>
             </div>
 
-            <form onSubmit={handleCreate} className="p-8 md:p-10 space-y-12">
-              {error && (
-                <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 text-rose-500 text-xs font-bold border border-rose-100 dark:border-rose-500/20 animate-in shake duration-300">
-                  {error}
-                </div>
-              )}
+            <form onSubmit={handleCreate} className="p-8 space-y-8">
+              {error && <div className="p-4 rounded-xl bg-rose-50 text-rose-500 text-xs font-bold border border-rose-100">{error}</div>}
 
-              {/* Section 1: Basic Information */}
-              <div className="space-y-8">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10">
-                    <Briefcase size={16} />
-                  </div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">{t('basic_info')}</h3>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-2.5">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">
-                      {t('label_project_name')}
-                    </label>
-                    <input 
-                      value={form.name} 
-                      onChange={e => {setForm({...form, name: e.target.value}); if(error) setError(null);}} 
-                      required
-                      className="w-full h-[56px] px-6 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500/30 transition-all outline-none text-sm placeholder:text-slate-400/50" 
-                      placeholder="E.g. Brand Identity 2026" 
-                    />
-                  </div>
-
-                  <div className="space-y-2.5">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">
-                      {t('label_client')}
-                    </label>
-                    <div className="relative group">
-                      <select 
-                        value={form.clientId} 
-                        onChange={e => {setForm({...form, clientId: e.target.value}); if(error) setError(null);}} 
-                        required
-                        className="w-full h-[56px] px-6 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500/30 transition-all outline-none appearance-none cursor-pointer text-sm"
-                      >
-                        <option value="" className="dark:bg-slate-900">{t('select_client')}</option>
-                        {clients.map(c => <option key={c.id} value={c.id} className="dark:bg-slate-900">{c.user?.firstName} {c.user?.lastName}</option>)}
-                      </select>
-                      <ChevronRight className="absolute right-6 top-1/2 -translate-y-1/2 rotate-90 text-slate-400 pointer-events-none group-focus-within:text-brand-500 transition-colors" size={16} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 2: Project Details */}
-              <div className="space-y-8 pt-10 border-t border-slate-100 dark:border-white/5">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10">
-                    <Layout size={16} />
-                  </div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">{t('project_details')}</h3>
-                </div>
-
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('label_description')}</label>
-                  <textarea 
-                    value={form.description} 
-                    onChange={e => setForm({...form, description: e.target.value})} 
-                    rows={4} 
-                    className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all resize-none" 
-                    placeholder={t('brief_description')} 
-                  />
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('label_project_name')}</label>
+                  <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('label_client')}</label>
+                  <select value={form.clientId} onChange={e => setForm({...form, clientId: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-brand-500/20 outline-none transition-all appearance-none cursor-pointer">
+                    <option value="">{t('select_client')}</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.user?.firstName} {c.user?.lastName}</option>)}
+                  </select>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-8">
-                <button 
-                  type="submit" 
-                  disabled={submitting} 
-                  className="flex-[3] py-5 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-[1.5rem] shadow-2xl shadow-brand-600/30 hover:-translate-y-1 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3 disabled:opacity-50"
-                >
-                  {submitting ? <Loader2 size={18} className="animate-spin" /> : t('launch_workspace')}
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => setShowModal(false)} 
-                  className="flex-1 py-5 bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 font-black rounded-[1.5rem] hover:bg-slate-200 dark:hover:bg-white/10 transition-all text-xs uppercase tracking-[0.2em]"
-                >
-                  {t('cancel')}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('open_client_channel')} (URL)</label>
+                <input value={form.communicationUrl} onChange={e => setForm({...form, communicationUrl: e.target.value})} placeholder="WhatsApp/Discord Link" className="w-full px-5 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Project Image (URL)</label>
+                <input value={form.logoUrl} onChange={e => setForm({...form, logoUrl: e.target.value})} placeholder="Optional: Override client logo" className="w-full px-5 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-brand-500/20 outline-none transition-all" />
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button type="submit" disabled={submitting} className="flex-1 py-4 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-2xl shadow-xl transition-all active:scale-95 text-xs uppercase tracking-widest">
+                  {submitting ? <Loader2 size={18} className="animate-spin mx-auto" /> : t('launch_workspace')}
                 </button>
               </div>
             </form>
