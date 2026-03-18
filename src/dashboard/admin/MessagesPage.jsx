@@ -37,6 +37,12 @@ const MessagesPage = () => {
   const [selectedTeamMember, setSelectedTeamMember] = useState(null);
   const [bookingData, setBookingData] = useState({ topic: '', dates: '' });
   const [sendingBooking, setSendingBooking] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    projects: true,
+    global: true,
+    team: true,
+    clients: false
+  });
   
   const socketRef = useRef();
   const scrollRef = useRef();
@@ -137,6 +143,10 @@ const MessagesPage = () => {
     }
   };
 
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
   const selectThread = (item, type) => {
     const thread = {
       id: type === 'DM' || type === 'TEAM' ? item.user?.id || item.id : item.id,
@@ -234,83 +244,134 @@ Availability: ${bookingData.dates}`;
                 <div className="py-20 text-center"><Loader2 size={32} className="animate-spin text-brand-500 mx-auto" /></div>
               ) : (
                 <>
+                  {/* 1. Project Groups (Teams) */}
                   <div className="space-y-3">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4">شات العملاء (DMs)</h3>
-                    <div className="space-y-1">
-                      {filteredClients.map(c => (
-                        <button 
-                          key={c.id} 
-                          onClick={() => selectThread(c, 'DM')}
-                          className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === c.user?.id ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/20' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
-                        >
-                          <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center overflow-hidden border border-white/10 shadow-inner">
-                            {c.logoUrl ? <img src={c.logoUrl} className="w-full h-full object-cover" /> : <UserCircle size={24} />}
-                          </div>
-                          <div className="flex-1 text-right overflow-hidden">
-                            <h4 className="text-xs font-black truncate">{c.user?.firstName} {c.user?.lastName}</h4>
-                            <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === c.user?.id ? 'text-white' : 'text-slate-400'}`}>{c.company || 'Private Conversation'}</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-white/5">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4">جروبات المشاريع (Teams)</h3>
-                    <div className="space-y-1">
-                      {filteredProjects.map(p => (
-                        <button 
-                          key={p.id} 
-                          onClick={() => selectThread(p, 'GROUP')}
-                          className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === p.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
-                        >
-                          <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center overflow-hidden border border-white/10 shadow-inner">
-                            {p.logoUrl ? <img src={p.logoUrl} className="w-full h-full object-cover" /> : <Briefcase size={20} />}
-                          </div>
-                          <div className="flex-1 text-right overflow-hidden">
-                            <h4 className="text-xs font-black truncate">{p.name}</h4>
-                            <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === p.id ? 'text-white' : 'text-slate-400'}`}>Project Command Center</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {user?.role !== 'CLIENT' && (
-                    <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-white/5">
-                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4">فريق العمل (Internal)</h3>
-                      <div className="space-y-1">
-                        <button 
-                          onClick={() => selectThread({ id: 'TEAM_GLOBAL', name: 'قروب الفريق (العام)' }, 'GROUP')}
-                          className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === 'TEAM_GLOBAL' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
-                        >
-                          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20 shadow-inner">
-                            <ShieldAlert size={20} />
-                          </div>
-                          <div className="flex-1 text-right overflow-hidden">
-                            <h4 className="text-xs font-black truncate">قروب الفريق (العام)</h4>
-                            <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === 'TEAM_GLOBAL' ? 'text-white' : 'text-emerald-500'}`}>المركز الرئيسي للنقاش</p>
-                          </div>
-                        </button>
-
-                        {teamMembers.filter(tm => tm.id !== user?.id).map(tm => (
+                    <button 
+                      onClick={() => toggleSection('projects')}
+                      className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all group"
+                    >
+                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">جروبات المشاريع (Teams)</h3>
+                      <div className={`text-slate-400 transition-transform duration-300 ${expandedSections.projects ? 'rotate-180' : ''}`}>
+                        <ChevronRight size={14} />
+                      </div>
+                    </button>
+                    {expandedSections.projects && (
+                      <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                        {filteredProjects.map(p => (
                           <button 
-                            key={tm.id} 
-                            onClick={() => selectThread(tm, 'TEAM')}
-                            className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === tm.id ? 'bg-slate-800 text-white shadow-lg' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
+                            key={p.id} 
+                            onClick={() => selectThread(p, 'GROUP')}
+                            className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === p.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
                           >
                             <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center overflow-hidden border border-white/10 shadow-inner">
-                              {tm.avatarUrl ? <img src={tm.avatarUrl} className="w-full h-full object-cover" /> : <UserCircle size={24} />}
+                              {p.logoUrl ? <img src={p.logoUrl} className="w-full h-full object-cover" /> : <Briefcase size={20} />}
                             </div>
                             <div className="flex-1 text-right overflow-hidden">
-                              <h4 className="text-xs font-black truncate">{tm.firstName} {tm.lastName}</h4>
-                              <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === tm.id ? 'text-white' : 'text-slate-400'}`}>{tm.position || 'Team Member'}</p>
+                              <h4 className="text-xs font-black truncate">{p.name}</h4>
+                              <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === p.id ? 'text-white' : 'text-slate-400'}`}>Project Command Center</p>
                             </div>
                           </button>
                         ))}
                       </div>
+                    )}
+                  </div>
+
+                  {/* 2. Global Team Channel */}
+                  {user?.role !== 'CLIENT' && (
+                    <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-white/5">
+                      <button 
+                        onClick={() => toggleSection('global')}
+                        className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all group"
+                      >
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">قناة الفريق العامة</h3>
+                        <div className={`text-slate-400 transition-transform duration-300 ${expandedSections.global ? 'rotate-180' : ''}`}>
+                          <ChevronRight size={14} />
+                        </div>
+                      </button>
+                      {expandedSections.global && (
+                        <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                          <button 
+                            onClick={() => selectThread({ id: 'TEAM_GLOBAL', name: 'قروب الفريق (العام)' }, 'GROUP')}
+                            className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === 'TEAM_GLOBAL' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
+                          >
+                            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20 shadow-inner">
+                              <ShieldAlert size={20} />
+                            </div>
+                            <div className="flex-1 text-right overflow-hidden">
+                              <h4 className="text-xs font-black truncate">قروب الفريق (العام)</h4>
+                              <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === 'TEAM_GLOBAL' ? 'text-white' : 'text-emerald-500'}`}>المركز الرئيسي للنقاش</p>
+                            </div>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
+
+                  {/* 3. Team Members (1:1) */}
+                  {user?.role !== 'CLIENT' && (
+                    <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-white/5">
+                      <button 
+                        onClick={() => toggleSection('team')}
+                        className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all group"
+                      >
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">أعضاء الفريق (Internal)</h3>
+                        <div className={`text-slate-400 transition-transform duration-300 ${expandedSections.team ? 'rotate-180' : ''}`}>
+                          <ChevronRight size={14} />
+                        </div>
+                      </button>
+                      {expandedSections.team && (
+                        <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                          {teamMembers.filter(tm => tm.id !== user?.id).map(tm => (
+                            <button 
+                              key={tm.id} 
+                              onClick={() => selectThread(tm, 'TEAM')}
+                              className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === tm.id ? 'bg-slate-800 text-white shadow-lg' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
+                            >
+                              <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center overflow-hidden border border-white/10 shadow-inner">
+                                {tm.avatarUrl ? <img src={tm.avatarUrl} className="w-full h-full object-cover" /> : <UserCircle size={24} />}
+                              </div>
+                              <div className="flex-1 text-right overflow-hidden">
+                                <h4 className="text-xs font-black truncate">{tm.firstName} {tm.lastName}</h4>
+                                <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === tm.id ? 'text-white' : 'text-slate-400'}`}>{tm.position || 'Team Member'}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 4. Client DMs */}
+                  <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-white/5">
+                    <button 
+                      onClick={() => toggleSection('clients')}
+                      className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all group"
+                    >
+                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">شات العملاء (DMs)</h3>
+                      <div className={`text-slate-400 transition-transform duration-300 ${expandedSections.clients ? 'rotate-180' : ''}`}>
+                        <ChevronRight size={14} />
+                      </div>
+                    </button>
+                    {expandedSections.clients && (
+                      <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                        {filteredClients.map(c => (
+                          <button 
+                            key={c.id} 
+                            onClick={() => selectThread(c, 'DM')}
+                            className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === c.user?.id ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/20' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
+                          >
+                            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center overflow-hidden border border-white/10 shadow-inner">
+                              {c.logoUrl ? <img src={c.logoUrl} className="w-full h-full object-cover" /> : <UserCircle size={24} />}
+                            </div>
+                            <div className="flex-1 text-right overflow-hidden">
+                              <h4 className="text-xs font-black truncate">{c.user?.firstName} {c.user?.lastName}</h4>
+                              <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === c.user?.id ? 'text-white' : 'text-slate-400'}`}>{c.company || 'Private Conversation'}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </div>
