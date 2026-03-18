@@ -14,7 +14,7 @@ import {
   PlayCircle, FileText, ChevronDown, ChevronRight, ExternalLink, 
   DollarSign, Users, AlertCircle, Edit2, Layout, BookOpen, 
   HardDrive, Palette, Globe, ShieldCheck, ArrowUpRight, Wallet,
-  Search, Filter, MoreVertical, Trash2
+  Search, Filter, MoreVertical, Trash2, Activity
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
@@ -27,6 +27,15 @@ const taskStatusConfig = {
   EDITING: { color: 'text-blue-500', bg: 'bg-blue-500/10', label: 'مونتاج', dot: 'bg-blue-500' },
   REVIEW: { color: 'text-purple-500', bg: 'bg-purple-500/10', label: 'مراجعة', dot: 'bg-purple-500' },
   DELIVERED: { color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'تم التسليم', dot: 'bg-emerald-500' },
+};
+
+const getTaskStatusStyle = (status) => {
+  return taskStatusConfig[status] || { 
+    color: 'text-slate-400', 
+    bg: 'bg-slate-400/10', 
+    label: status?.replace('_', ' ') || 'TASK', 
+    dot: 'bg-slate-400' 
+  };
 };
 
 const getFormattedLogoUrl = (url) => {
@@ -61,13 +70,15 @@ const WorkspaceDetail = () => {
         getUsersAPI()
       ]);
       setWorkspace(wRes.data);
-      setTeamMembers(uRes.data.filter(u => u.role === 'TEAM'));
+      setTeamMembers((uRes.data || []).filter(u => u.role === 'TEAM'));
       
       // Auto-expand latest phase
-      if (wRes.data.phases?.length > 0) {
-        const latestPhaseId = wRes.data.phases[0].id;
-        setExpandedPhases({ [latestPhaseId]: true });
-        loadPhaseTasks(latestPhaseId);
+      if (wRes.data?.phases && wRes.data.phases.length > 0) {
+        const latestPhaseId = wRes.data.phases[0]?.id;
+        if (latestPhaseId) {
+          setExpandedPhases({ [latestPhaseId]: true });
+          loadPhaseTasks(latestPhaseId);
+        }
       }
     } catch (err) {
       toast.error(t('failed_load_workspace'));
@@ -151,7 +162,7 @@ const WorkspaceDetail = () => {
            <Loader2 size={80} className="animate-spin text-brand-500 relative z-10" />
            <Activity className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-brand-500/30" size={32} />
         </div>
-        <p className="font-black tracking-[0.4em] uppercase text-[10px] text-slate-400 animate-pulse">Synchronizing Workspace...</p>
+        <p className="font-black tracking-[0.2em] uppercase text-[10px] text-slate-400 animate-pulse">{t('syncing_workspace')}</p>
       </div>
     );
   }
@@ -161,19 +172,22 @@ const WorkspaceDetail = () => {
        <div className="w-24 h-24 bg-rose-500/10 rounded-[2rem] flex items-center justify-center text-rose-500 mb-8">
           <AlertCircle size={48} />
        </div>
-       <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight mb-4">Project Not Found</h2>
-       <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest mb-10">The requested project coordinates could not be found.</p>
-       <Link to="/admin/projects" className="px-10 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl">Back to Directory</Link>
+       <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight mb-4">{t('no_projects')}</h2>
+       <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest mb-10">{t('projects_empty')}</p>
+       <Link to="/admin/projects" className="px-10 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl">{t('back_to_directory')}</Link>
     </div>
   );
 
-  const currentPhase = workspace.phases?.[0]; 
+
+
+  const currentPhase = workspace?.phases?.[0]; 
   const financialStatus = currentPhase?.invoice;
   const isOverdue = financialStatus?.status === 'PENDING' && 
                     new Date(financialStatus.dueDate) < new Date();
 
-  return (
-    <div className="max-w-[1600px] mx-auto space-y-10 pb-20">
+  try {
+    return (
+      <div className="max-w-[1600px] mx-auto space-y-10 pb-20">
       
       {/* Premium Hero Header */}
       <div className="relative group">
@@ -206,13 +220,13 @@ const WorkspaceDetail = () => {
                   {workspace.name}
                 </h1>
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
-                  <div className="flex items-center gap-2 px-5 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10 shadow-lg">
+                  <div className="flex items-center gap-2 px-5 py-2 bg-brand-500/10 text-brand-500 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border border-brand-500/20">
                     V2.5 STABLE
                   </div>
                   <div className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-white/5 rounded-[1.5rem] border-2 border-slate-100 dark:border-white/10 shadow-xl">
                     <Users size={16} className="text-brand-500" />
                     <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-tight">
-                      {workspace.client?.user?.firstName || 'Strategic'} {workspace.client?.user?.lastName || 'Partner'}
+                      {workspace.client?.user?.firstName} {workspace.client?.user?.lastName}
                     </span>
                   </div>
                   {workspace.annualContractDate && (
@@ -231,12 +245,12 @@ const WorkspaceDetail = () => {
             {financialStatus && (
               <div className={`xl:w-80 p-8 rounded-[2.5rem] border-2 transition-all duration-500 ${isOverdue ? 'bg-rose-50 dark:bg-rose-500/5 border-rose-500/20' : 'bg-emerald-50 dark:bg-emerald-500/5 border-emerald-500/20'}`}>
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current Phase Ops</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('overview')}</p>
                   <DollarSign size={16} className={isOverdue ? 'text-rose-500' : 'text-emerald-500'} />
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-end justify-between">
-                    <p className="text-3xl font-black text-slate-800 dark:text-white tracking-tighter">${financialStatus.amount.toLocaleString()}</p>
+                    <p className="text-3xl font-black text-slate-800 dark:text-white tracking-tighter">${(financialStatus.amount || 0).toLocaleString()}</p>
                     <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${financialStatus.status === 'PAID' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'}`}>
                       {financialStatus.status}
                     </div>
@@ -297,11 +311,11 @@ const WorkspaceDetail = () => {
                 className="flex items-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-brand-600/20 transition-all active:scale-95"
               >
                 <Plus size={16} />
-                New Month
+                  {t('new_month') || 'New Month'}
               </button>
             </div>
 
-            {workspace.phases?.length === 0 ? (
+            { (workspace.phases || []).length === 0 ? (
               <div className="bg-white dark:bg-[#0a0a0c]/40 border-2 border-dashed border-slate-200 dark:border-white/5 rounded-[3rem] py-24 text-center">
                 <div className="w-20 h-20 bg-slate-50 dark:bg-white/5 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
                   <Calendar size={32} className="text-slate-300" />
@@ -311,7 +325,7 @@ const WorkspaceDetail = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {workspace.phases.map(p => (
+                {(workspace.phases || []).map(p => (
                   <div key={p.id} className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] overflow-hidden transition-all shadow-sm">
                     {/* Phase Header */}
                     <div 
@@ -344,7 +358,7 @@ const WorkspaceDetail = () => {
                           onClick={(e) => { e.stopPropagation(); setShowAddTask(p.id); }}
                           className="px-6 py-2.5 bg-slate-900 dark:bg-white/10 hover:bg-black dark:hover:bg-white/20 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-lg active:scale-95"
                         >
-                          + Add Video
+                          + {t('add_video') || 'Add Video'}
                         </button>
                       </div>
                     </div>
@@ -379,7 +393,7 @@ const WorkspaceDetail = () => {
                                   <tr key={task.id} className="group hover:bg-white dark:hover:bg-white/5 transition-all duration-300">
                                     <td className="py-7 pl-2">
                                       <div className="flex items-center gap-4">
-                                        <div className={`w-3 h-3 rounded-full ${taskStatusConfig[task.status].dot} shadow-[0_0_8px_rgba(var(--status-color),0.4)] transition-all`} />
+                                        <div className={`w-3 h-3 rounded-full ${getTaskStatusStyle(task.status).dot} shadow-[0_0_8px_rgba(var(--status-color),0.4)] transition-all`} />
                                         <div className="flex flex-col flex-1">
                                           <input 
                                             type="text" 
@@ -433,7 +447,7 @@ const WorkspaceDetail = () => {
                                         <select 
                                           defaultValue={task.status}
                                           onChange={(e) => handleTaskUpdate(task.id, p.id, { status: e.target.value })}
-                                          className={`px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] border-none focus:ring-2 focus:ring-brand-500/30 cursor-pointer shadow-sm transition-all text-center min-w-[120px] ${taskStatusConfig[task.status].bg} ${taskStatusConfig[task.status].color}`}
+                                          className={`px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] border-none focus:ring-2 focus:ring-brand-500/30 cursor-pointer shadow-sm transition-all text-center min-w-[120px] ${getTaskStatusStyle(task.status).bg} ${getTaskStatusStyle(task.status).color}`}
                                         >
                                           {Object.keys(taskStatusConfig).map(s => (
                                             <option key={s} value={s}>{taskStatusConfig[s].label}</option>
@@ -535,7 +549,7 @@ const WorkspaceDetail = () => {
                <div className="space-y-8">
                   <div>
                      <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${isOverdue ? 'text-white/40' : 'text-slate-400'}`}>Current Retainer</p>
-                     <p className="text-4xl font-black tracking-tighter">${financialStatus.amount.toLocaleString()}</p>
+                     <p className="text-4xl font-black tracking-tighter">${(financialStatus.amount || 0).toLocaleString()}</p>
                   </div>
                   
                   <div className={`p-5 rounded-3xl flex items-center justify-between border-2 ${isOverdue ? 'bg-white/10 border-white/20' : 'bg-emerald-500/5 border-emerald-500/10'}`}>
@@ -597,21 +611,20 @@ const WorkspaceDetail = () => {
                   Access Master Log
                   <ChevronRight size={14} />
                 </Link>
-             </div>
-             <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-brand-500/20 rounded-full blur-3xl" />
-          </div>
+           </div>
         </div>
       </div>
+    </div>
 
-      {/* Add Phase Modal overhaul */}
+    {/* Add Phase Modal */}
       {showAddPhase && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md transition-all">
            <div className="absolute inset-0 bg-slate-950/40" onClick={() => setShowAddPhase(false)}></div>
            <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[3rem] w-full max-w-xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
               <div className="px-10 py-10 flex items-center justify-between border-b border-slate-50 dark:border-white/5">
                 <div>
-                  <h2 className="text-3xl font-black text-slate-800 dark:text-white uppercase tracking-tight">Phase Initialization</h2>
-                  <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-wide">Prepare project billing & timeline</p>
+                  <h2 className="text-3xl font-black text-slate-800 dark:text-white uppercase tracking-tight">New Phase</h2>
+                  <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-wide">Initialize project billing & timeline</p>
                 </div>
                 <button onClick={() => setShowAddPhase(false)} className="p-4 text-slate-400 hover:text-rose-500 hover:bg-rose-500/5 rounded-2xl transition-all active:scale-90">
                   <X size={24} />
@@ -620,7 +633,7 @@ const WorkspaceDetail = () => {
 
               <form onSubmit={handleAddPhase} className="p-10 space-y-8">
                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1">Phase Identifier (e.g. MARCH 2024 Retainer)</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1">Phase Identifier (e.g. MARCH 2024)</label>
                     <input name="name" value={phaseForm.name} onChange={e => setPhaseForm({...phaseForm, name: e.target.value})} required className="w-full px-6 py-5 bg-slate-50 dark:bg-white/[0.03] border-2 border-slate-100 dark:border-white/5 rounded-3xl text-slate-800 dark:text-white focus:outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all font-black text-lg" />
                  </div>
                  <div className="grid grid-cols-2 gap-6">
@@ -634,30 +647,30 @@ const WorkspaceDetail = () => {
                     </div>
                  </div>
                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1">Auto-Invoice Retainer Amount ($)</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1">Invoiced Amount ($)</label>
                     <div className="relative">
-                       < DollarSign size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-emerald-500" />
+                       <DollarSign size={20} className="absolute left-6 top-1/2 -translate-y-1/2 text-emerald-500" />
                        <input type="number" name="amount" value={phaseForm.amount} onChange={e => setPhaseForm({...phaseForm, amount: e.target.value})} placeholder="0.00" className="w-full pl-14 pr-6 py-5 bg-emerald-500/[0.05] border-2 border-emerald-500/20 rounded-3xl text-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-black text-2xl" />
                     </div>
                  </div>
 
                  <button type="submit" disabled={submitting} className="w-full py-5 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-3xl shadow-2xl shadow-indigo-600/30 transition-all hover:-translate-y-1 active:scale-95 text-sm uppercase tracking-[0.2em]">
-                   {submitting ? <Loader2 className="animate-spin mx-auto" size={28} /> : 'Sync Phase to Database'}
+                   {submitting ? <Loader2 className="animate-spin mx-auto" size={28} /> : 'Save Phase'}
                  </button>
               </form>
            </div>
         </div>
       )}
 
-      {/* Add Video Task Modal overhaul */}
+      {/* Add Video Task Modal */}
       {showAddTask && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md">
            <div className="absolute inset-0 bg-slate-950/40" onClick={() => setShowAddTask(null)}></div>
            <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[3rem] w-full max-w-xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
               <div className="px-10 py-10 flex items-center justify-between border-b border-slate-50 dark:border-white/5">
                 <div>
-                  <h2 className="text-3xl font-black text-slate-800 dark:text-white uppercase tracking-tight">Stage New Video</h2>
-                  <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-wide">Deploy task to production pipeline</p>
+                  <h2 className="text-3xl font-black text-slate-800 dark:text-white uppercase tracking-tight">Add Video</h2>
+                  <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-wide">Add task to production pipeline</p>
                 </div>
                 <button onClick={() => setShowAddTask(null)} className="p-4 text-slate-400 hover:text-rose-500 hover:bg-rose-500/5 rounded-2xl transition-all">
                   <X size={24} />
@@ -686,7 +699,7 @@ const WorkspaceDetail = () => {
                  </div>
 
                  <button type="submit" disabled={submitting} className="w-full py-5 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-3xl shadow-2xl shadow-brand-600/30 transition-all hover:-translate-y-1 active:scale-95 text-sm uppercase tracking-[0.2em]">
-                   {submitting ? <Loader2 className="animate-spin mx-auto" size={28} /> : 'Deploy Asset to Pipeline'}
+                   {submitting ? <Loader2 className="animate-spin mx-auto" size={28} /> : 'Save Task'}
                  </button>
               </form>
            </div>
@@ -694,6 +707,17 @@ const WorkspaceDetail = () => {
       )}
     </div>
   );
+  } catch (err) {
+    return (
+      <div className="p-20 bg-white dark:bg-[#0a0a0c] min-h-screen text-slate-800 dark:text-white">
+        <h1 className="text-4xl font-black mb-4 uppercase tracking-tighter">System Error</h1>
+        <div className="p-8 bg-rose-500/10 border-2 border-rose-500/20 rounded-[2rem] font-mono text-xs overflow-auto">
+          <p className="font-black text-rose-500 mb-2">{err.name}: {err.message}</p>
+          <pre className="opacity-60">{err.stack}</pre>
+        </div>
+      </div>
+    );
+  }
 };
 
 export default WorkspaceDetail;
