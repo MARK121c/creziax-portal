@@ -279,7 +279,7 @@ const TasksPage = () => {
               <ListTodo size={32} className="text-brand-500" />
               مركز المهام الشامل
             </h1>
-            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mt-3 opacity-60">Unified Accountability Engine V3.4</p>
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mt-3 opacity-60">محرك الالتزام الموحد - إصدار 3.4</p>
           </div>
 
           <div className="flex items-center bg-slate-100 dark:bg-white/5 p-1.5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm">
@@ -378,7 +378,7 @@ const TasksPage = () => {
                       </td>
                       <td className="px-4 py-6">
                         <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 overflow-hidden mx-auto shadow-sm">
-                          {t.assignedTo?.avatarUrl ? <img src={getFormattedUrl(t.assignedTo.avatarUrl)} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-slate-400">{t.assignedTo?.firstName?.[0] || <User size={14} />}</div>}
+                          {t.assignedTo?.user?.avatarUrl ? <img src={getFormattedUrl(t.assignedTo.user.avatarUrl)} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-slate-400">{t.assignedTo?.user?.firstName?.[0] || <User size={14} />}</div>}
                         </div>
                       </td>
                       {['script', 'shoot', 'edit', 'publish'].map(f => (
@@ -421,9 +421,9 @@ const TasksPage = () => {
                       <td className="px-8 py-6 text-left">
                         <div className="flex items-center gap-4">
                            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 overflow-hidden shadow-sm">
-                             {t.assignedTo?.avatarUrl ? <img src={getFormattedUrl(t.assignedTo.avatarUrl)} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-xs font-black text-slate-400">{t.assignedTo?.firstName?.[0] || 'U'}</div>}
+                             {t.assignedTo?.user?.avatarUrl ? <img src={getFormattedUrl(t.assignedTo.user.avatarUrl)} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-xs font-black text-slate-400">{t.assignedTo?.user?.firstName?.[0] || 'U'}</div>}
                            </div>
-                           <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">{t.assignedTo?.firstName} {t.assignedTo?.lastName}</span>
+                           <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">{t.assignedTo?.user?.firstName} {t.assignedTo?.user?.lastName}</span>
                         </div>
                       </td>
                       <td className="px-8 py-6">
@@ -433,7 +433,7 @@ const TasksPage = () => {
                       <td className="px-8 py-6 text-center">
                          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${overdue ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-50 dark:bg-white/5 text-slate-400'}`}>
                             <Timer size={12} />
-                            {t.deadline ? new Date(t.deadline).toLocaleString('en-US', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).toUpperCase() : '--'}
+                            {t.deadline ? new Date(t.deadline).toLocaleString('ar-EG', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).toUpperCase() : '--'}
                          </div>
                       </td>
                       <td className="px-8 py-6 text-center">
@@ -445,14 +445,14 @@ const TasksPage = () => {
                          {t.status === 'IDEA' && overdue ? (
                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest animate-pulse shadow-sm">
                               <ShieldAlert size={14} />
-                              ⚠️ Warning: -3% Penalty
+                              ⚠️ تحذير: -3% خصم أداء
                            </div>
                          ) : t.status === 'DELIVERED' ? (
                            <div className="inline-flex items-center gap-2 text-[10px] font-black text-emerald-500 uppercase tracking-widest opacity-60">
-                              <Zap size={14} /> Performance OK
+                              <Zap size={14} /> التزام ممتاز
                            </div>
                          ) : (
-                           <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest italic opacity-40">-- No Penalty --</span>
+                           <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest italic opacity-40">-- لا توجد مخالفات --</span>
                          )}
                       </td>
                       <td className="px-4 py-6 text-right">
@@ -570,7 +570,7 @@ const TasksPage = () => {
               <div className="px-10 py-10 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/50 dark:bg-white/[0.02]">
                 <div>
                   <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">ملاحظات الإنتاج</h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1 opacity-60">Creative Brief & Asset Documentation</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1 opacity-60">توجيهات إبداعية وتوثيق الملفات</p>
                 </div>
                 <button onClick={() => setShowNotes(null)} className="p-4 text-slate-400 hover:text-rose-500 bg-white dark:bg-white/5 shadow-xl rounded-[1.25rem] transition-all"><X size={24} /></button>
               </div>
