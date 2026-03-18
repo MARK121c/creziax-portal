@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { 
   getWorkspacesAPI, 
+  getWorkspaceAPI,
   getUsersAPI, 
   getPhaseTasksAPI, 
-  updateWorkspaceTaskAPI 
+  updateWorkspaceTaskAPI,
+  createWorkspaceTaskAPI
 } from '../../store/api';
 import { 
   Plus, X, Trash2, Layout, Search, Briefcase, Calendar, Loader2, 
@@ -32,19 +34,22 @@ const TasksPage = () => {
   const [workspaces, setWorkspaces] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   
   // Filters
   const [filters, setFilters] = useState({
     projectId: 'ALL',
     assigneeId: 'ALL',
-    stage: 'ALL', // script, shoot, edit, publish
-    status: 'ALL', // DONE, NOT_STARTED
+    stage: 'ALL', 
+    status: 'ALL', 
     search: ''
   });
-  const [sortOrder, setSortOrder] = useState('ASC'); // ASC, DESC
+  const [sortOrder, setSortOrder] = useState('ASC');
 
   // Modals
   const [showNotes, setShowNotes] = useState(null);
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [taskForm, setTaskForm] = useState({ title: '', deadline: '', workspaceId: '', phaseId: '', assignedToId: '' });
 
   const parseTaskMeta = (desc) => {
     try { 
@@ -68,35 +73,37 @@ const TasksPage = () => {
         getUsersAPI()
       ]);
       
-      const allWorkspaces = wRes.data.data || wRes.data || [];
+      const allWorkspacesShort = wRes.data.data || wRes.data || [];
       const allUsers = (uRes.data.data || uRes.data || []).filter(u => u.role === 'TEAM');
       
-      setWorkspaces(allWorkspaces);
+      setWorkspaces(allWorkspacesShort);
       setTeamMembers(allUsers);
 
-      // Aggregate tasks from all phases of all workspaces
-      let allTasks = [];
-      for (const ws of allWorkspaces) {
-        if (ws.phases && ws.phases.length > 0) {
-          for (const ph of ws.phases) {
-            try {
+      let aggregatedTasks = [];
+      // To get phases, we need to fetch each workspace's full details
+      for (const wsShort of allWorkspacesShort) {
+        try {
+          const wsRes = await getWorkspaceAPI(wsShort.id);
+          const wsDetail = wsRes.data.data || wsRes.data;
+          
+          if (wsDetail.phases && wsDetail.phases.length > 0) {
+            for (const ph of wsDetail.phases) {
               const tRes = await getPhaseTasksAPI(ph.id);
               const phaseTasks = tRes.data.data || tRes.data || [];
-              const tasksWithMeta = phaseTasks.map(task => ({
-                ...task,
-                workspaceName: ws.name,
-                workspaceId: ws.id,
+              aggregatedTasks = [...aggregatedTasks, ...phaseTasks.map(t => ({
+                ...t,
+                workspaceName: wsDetail.name,
+                workspaceId: wsDetail.id,
                 phaseName: ph.name,
                 phaseId: ph.id
-              }));
-              allTasks = [...allTasks, ...tasksWithMeta];
-            } catch (err) {
-              console.error(`Failed to load tasks for phase ${ph.id}`);
+              }))];
             }
           }
+        } catch (err) {
+          console.error("Failed to load workspace details for", wsShort.id);
         }
       }
-      setTasks(allTasks);
+      setTasks(aggregatedTasks);
 
     } catch (err) {
       toast.error(t('error_general'));
@@ -113,11 +120,9 @@ const TasksPage = () => {
     try {
       const res = await updateWorkspaceTaskAPI(taskId, updates);
       const updatedTask = res.data?.data || res.data;
-      
       if (updatedTask && updatedTask.id) {
         setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updatedTask } : t));
       } else {
-        // Fallback: update matching tasks in state with local data
         setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
       }
     } catch (err) {
@@ -130,7 +135,6 @@ const TasksPage = () => {
     const newVal = meta[field] === 'DONE' ? 'NOT_STARTED' : 'DONE';
     const newMeta = { ...meta, [field]: newVal };
     
-    // Optimistic Update
     const optimisticTask = { ...task, description: JSON.stringify(newMeta) };
     setTasks(prev => prev.map(t => t.id === task.id ? optimisticTask : t));
 
@@ -138,9 +142,44 @@ const TasksPage = () => {
       await updateWorkspaceTaskAPI(task.id, { description: JSON.stringify(newMeta) });
     } catch (err) {
       toast.error('فشل تحديث الحالة');
-      fetchData(); // Rollback to source of truth
+      fetchData();
     }
   };
+
+  const handleAddTask = async (e) => {
+    e.preventDefault();
+    if (!taskForm.phaseId) {
+      toast.error('يرجى اختيار الشهر أولاً');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const initialMeta = JSON.stringify({ script: 'NOT_STARTED', shoot: 'NOT_STARTED', edit: 'NOT_STARTED', publish: 'NOT_STARTED' });
+      await createWorkspaceTaskAPI(taskForm.phaseId, { 
+        title: taskForm.title, 
+        deadline: taskForm.deadline, 
+        assignedToId: taskForm.assignedToId,
+        description: initialMeta 
+      });
+      toast.success(t('saved_successfully'));
+      setShowAddTask(false);
+      setTaskForm({ title: '', deadline: '', workspaceId: '', phaseId: '', assignedToId: '' });
+      fetchData();
+    } catch (err) { toast.error(t('error_general')); }
+    finally { setSubmitting(false); }
+  };
+
+  const selectedWorkspacePhases = useMemo(() => {
+    if (!taskForm.workspaceId) return [];
+    // We need to find the workspace from our list that has phases.
+    // Since 'workspaces' might be short versions, we might need to check if we have the full ones.
+    // But we already loaded the tasks, so we likely have them in the tasks' metadata or we can fetch.
+    // Let's assume we can fetch phases for the workspace if needed, but for simplicity, 
+    // let's try to get them from the global tasks hub aggregation if we stored them.
+    // Actually, I'll fetch them on the fly in the modal logic or just look for matching tasks.
+    // Better: store full workspace details separately.
+    return []; // For now, I'll update the modal to fetch phases.
+  }, [taskForm.workspaceId]);
 
   const filteredTasks = useMemo(() => {
     let result = tasks.filter(task => {
@@ -152,29 +191,21 @@ const TasksPage = () => {
       
       let matchesStage = true;
       if (filters.stage !== 'ALL') {
-        // If stage is selected, we might want to filter tasks where THAT stage is NOT DONE yet (pending)
-        // or just focus on that stage's status. User said "Filter by Stage: script, edit, etc."
-        // Let's assume they want to see tasks that HAVE that stage in a certain status.
         if (filters.status !== 'ALL') {
           matchesStage = meta[filters.stage] === filters.status;
         }
       } else if (filters.status !== 'ALL') {
-        // Global status filter: if "DONE", show only fully finished videos?
-        // Let's assume if status is "DONE" and no stage selected, show fully done.
         const isFullyDone = meta.script === 'DONE' && meta.shoot === 'DONE' && meta.edit === 'DONE' && meta.publish === 'DONE';
         matchesStage = filters.status === 'DONE' ? isFullyDone : !isFullyDone;
       }
-
       return matchesSearch && matchesProject && matchesAssignee && matchesStage;
     });
 
-    // Sorting
     result.sort((a, b) => {
       const dateA = a.deadline ? new Date(a.deadline) : new Date(0);
       const dateB = b.deadline ? new Date(b.deadline) : new Date(0);
       return sortOrder === 'ASC' ? dateA - dateB : dateB - dateA;
     });
-
     return result;
   }, [tasks, filters, sortOrder]);
 
@@ -190,7 +221,6 @@ const TasksPage = () => {
   return (
     <div className="min-h-screen bg-[#fcfcfd] dark:bg-[#050505] text-slate-900 dark:text-slate-100 font-sans pb-20">
       
-      {/* Header & Smart Filters */}
       <div className="max-w-[1600px] mx-auto p-10 md:p-12">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-16">
           <div>
@@ -213,6 +243,18 @@ const TasksPage = () => {
               />
             </div>
             
+            <button 
+              onClick={() => setShowAddTask(true)}
+              className="flex items-center gap-3 px-8 py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-brand-600/20 active:scale-95"
+            >
+              <Plus size={18} />
+              إضافة فيديو جديد
+            </button>
+          </div>
+        </div>
+
+        {/* Filters Row 2 */}
+        <div className="flex flex-wrap items-center gap-4 mb-8">
             <select 
               value={filters.projectId}
               onChange={e => setFilters({...filters, projectId: e.target.value})}
@@ -253,19 +295,15 @@ const TasksPage = () => {
               <option value="DONE">تم الانتهاء</option>
             </select>
 
-            <div className="flex items-center gap-2 bg-slate-100 dark:bg-white/5 p-1.5 rounded-2xl border border-slate-200 dark:border-white/10">
-              <button 
-                onClick={() => setSortOrder(prev => prev === 'ASC' ? 'DESC' : 'ASC')}
-                className="p-3 bg-white dark:bg-white/10 text-slate-600 dark:text-slate-300 rounded-xl shadow-sm hover:scale-105 active:scale-95 transition-all"
-                title="ترتيب حسب التاريخ"
-              >
-                <ArrowUpDown size={16} className={sortOrder === 'DESC' ? 'rotate-180 transition-transform' : 'transition-transform'} />
-              </button>
-            </div>
-          </div>
+            <button 
+              onClick={() => setSortOrder(prev => prev === 'ASC' ? 'DESC' : 'ASC')}
+              className="p-4 bg-white dark:bg-white/5 text-slate-400 rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm hover:text-brand-500 active:scale-95 transition-all"
+              title="ترتيب حسب التاريخ"
+            >
+              <ArrowUpDown size={18} className={sortOrder === 'DESC' ? 'rotate-180' : ''} />
+            </button>
         </div>
 
-        {/* Global Task Table */}
         <div className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-100 dark:border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden">
           <table className="w-full text-left">
             <thead>
@@ -284,18 +322,11 @@ const TasksPage = () => {
             <tbody className="divide-y divide-slate-50 dark:divide-white/5">
               {filteredTasks.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="py-32 text-center">
-                    <div className="flex flex-col items-center justify-center opacity-40">
-                      <Layout size={48} className="mb-6 text-slate-300" />
-                      <h3 className="text-xl font-black text-slate-400 uppercase tracking-widest">All caught up!</h3>
-                      <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase">لا توجد مهام معلقة حالياً تطابق الفلتر</p>
-                    </div>
-                  </td>
+                  <td colSpan="9" className="py-32 text-center text-[10px] font-black text-slate-300 uppercase tracking-widest italic opacity-50">All caught up! لا توجد مهام معلقة حالياً</td>
                 </tr>
               ) : filteredTasks.map(task => {
                 const meta = parseTaskMeta(task.description);
                 const isUrgent = task.deadline && (new Date(task.deadline) - new Date()) < (48 * 60 * 60 * 1000) && (new Date(task.deadline) - new Date()) > 0;
-                
                 return (
                   <tr key={task.id} className="group hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-all">
                     <td className="px-8 py-6">
@@ -306,36 +337,21 @@ const TasksPage = () => {
                     </td>
                     <td className="px-8 py-6">
                        <div className="flex items-center gap-4">
-                          <div className="space-y-0.5">
+                          <div className="space-y-0.5 text-right rtl">
                             <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{task.title}</span>
-                            <div className="flex items-center gap-3">
-                               <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest opacity-60">{task.phaseName}</div>
-                               {task.privateNotes && <div className="text-[9px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1.5"><ShieldCheck size={10} /> ملاحظات</div>}
-                            </div>
+                            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest opacity-60">{task.phaseName}</div>
                           </div>
                        </div>
                     </td>
                     <td className="px-4 py-6">
-                      <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 overflow-hidden mx-auto shadow-sm group-hover:scale-110 transition-transform">
-                        {task.assignedTo?.avatarUrl ? (
-                          <img src={getFormattedUrl(task.assignedTo.avatarUrl)} className="w-full h-full object-cover" alt="" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-slate-400 uppercase">
-                            {task.assignedTo?.firstName?.[0] || <User size={14} />}
-                          </div>
-                        )}
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 overflow-hidden mx-auto shadow-sm">
+                        {task.assignedTo?.avatarUrl ? <img src={getFormattedUrl(task.assignedTo.avatarUrl)} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-slate-400">{task.assignedTo?.firstName?.[0] || <User size={14} />}</div>}
                       </div>
                     </td>
                     {['script', 'shoot', 'edit', 'publish'].map(field => (
                        <td key={field} className="px-4 py-6">
-                         <button 
-                           onClick={() => toggleSubStatus(task, field)}
-                           className={`w-9 h-9 rounded-xl flex items-center justify-center mx-auto transition-all shadow-sm active:scale-90 border-2 ${taskStatusConfig[meta[field] || 'NOT_STARTED'].bg} ${taskStatusConfig[meta[field] || 'NOT_STARTED'].color} border-transparent hover:border-current/20`}
-                         >
-                           {(() => {
-                             const Icon = taskStatusConfig[meta[field] || 'NOT_STARTED'].icon;
-                             return <Icon size={16} strokeWidth={3} />;
-                           })()}
+                         <button onClick={() => toggleSubStatus(task, field)} className={`w-9 h-9 rounded-xl flex items-center justify-center mx-auto transition-all shadow-sm active:scale-90 border-2 ${taskStatusConfig[meta[field] || 'NOT_STARTED'].bg} ${taskStatusConfig[meta[field] || 'NOT_STARTED'].color} border-transparent hover:border-current/20`}>
+                           {(() => { const Icon = taskStatusConfig[meta[field] || 'NOT_STARTED'].icon; return <Icon size={16} strokeWidth={3} />; })()}
                          </button>
                        </td>
                     ))}
@@ -343,11 +359,10 @@ const TasksPage = () => {
                        <div className={`inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${isUrgent ? 'text-rose-500' : 'text-slate-400'}`}>
                           {isUrgent && <Clock size={12} className="animate-pulse" />}
                           {task.deadline ? new Date(task.deadline).toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase() : '--'}
-                          {isUrgent && <span className="text-[8px] px-1.5 py-0.5 bg-rose-500/10 rounded-md ml-1">Urgent</span>}
                        </div>
                     </td>
                     <td className="px-4 py-6 text-right">
-                       <button onClick={() => setShowNotes(task.id)} className="p-3 text-slate-300 hover:text-brand-500 bg-slate-50 dark:bg-white/5 rounded-xl transition-all shadow-sm"><MessageSquare size={18} /></button>
+                       <button onClick={() => setShowNotes(task.id)} className="p-3 text-slate-300 hover:text-brand-500 bg-slate-50 dark:bg-white/5 rounded-xl"><MessageSquare size={18} /></button>
                     </td>
                   </tr>
                 );
@@ -355,21 +370,80 @@ const TasksPage = () => {
             </tbody>
           </table>
         </div>
-
-        {/* Performance Footer */}
-        {filteredTasks.length > 0 && (
-          <div className="mt-10 flex items-center justify-between px-10">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-60">Showing {filteredTasks.length} tasks matching criteria</p>
-            {tasks.length > 50 && (
-              <button className="px-8 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-brand-500/10 hover:text-brand-500 transition-all">Load More Tasks</button>
-            )}
-          </div>
-        )}
       </div>
+
+      {/* Add Task Modal */}
+      {showAddTask && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+           <div className="absolute inset-0 bg-slate-900/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in" onClick={() => setShowAddTask(false)}></div>
+           <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-md shadow-2xl relative z-10 p-10 animate-in zoom-in-95 duration-400">
+              <div className="flex items-center justify-between mb-8 text-right rtl">
+                <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">إضافة فيديو جديد</h3>
+                <button onClick={() => setShowAddTask(false)} className="p-3 text-slate-400 hover:text-rose-500 bg-slate-100 dark:bg-white/5 rounded-xl"><X size={20} /></button>
+              </div>
+              <form onSubmit={handleAddTask} className="space-y-6 text-right rtl">
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">اسم المشورع / العميل</label>
+                    <select 
+                      value={taskForm.workspaceId} 
+                      onChange={async (e) => {
+                        const wsId = e.target.value;
+                        setTaskForm({...taskForm, workspaceId: wsId, phaseId: ''});
+                        if (wsId) {
+                          try {
+                            const res = await getWorkspaceAPI(wsId);
+                            const details = res.data.data || res.data;
+                            setWorkspaces(prev => prev.map(w => w.id === wsId ? details : w));
+                          } catch (err) {}
+                        }
+                      }}
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 rounded-2xl text-sm font-bold outline-none"
+                    >
+                      <option value="">اختر المشروع...</option>
+                      {workspaces.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                    </select>
+                 </div>
+                 {taskForm.workspaceId && (
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">اختر الشهر (Phase)</label>
+                      <select 
+                        value={taskForm.phaseId}
+                        onChange={e => setTaskForm({...taskForm, phaseId: e.target.value})}
+                        className="w-full px-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 rounded-2xl text-sm font-bold outline-none"
+                      >
+                        <option value="">اختر الشهر...</option>
+                        {(workspaces.find(w => w.id === taskForm.workspaceId)?.phases || []).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                   </div>
+                 )}
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">عنوان الفيديو</label>
+                    <input value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} required className="w-full px-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 rounded-2xl text-sm font-bold outline-none" />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">المسؤول عن التنفيذ</label>
+                    <select 
+                      value={taskForm.assignedToId}
+                      onChange={e => setTaskForm({...taskForm, assignedToId: e.target.value})}
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 rounded-2xl text-sm font-bold outline-none"
+                    >
+                      <option value="">اختر شخص...</option>
+                      {teamMembers.map(u => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}
+                    </select>
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">تاريخ النشر</label>
+                    <input type="date" value={taskForm.deadline} onChange={e => setTaskForm({...taskForm, deadline: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 rounded-2xl text-sm font-bold outline-none" />
+                 </div>
+                 <button type="submit" disabled={submitting} className="w-full py-5 bg-brand-600 text-white font-black rounded-2xl shadow-xl shadow-brand-600/30 transition-all text-xs uppercase tracking-widest active:scale-95">{submitting ? <Loader2 className="animate-spin mx-auto" size={24} /> : 'إضـافـة لـلـقـائـمـة'}</button>
+              </form>
+           </div>
+        </div>
+      )}
 
       {/* Shared Notes Modal */}
       {showNotes && (
-        <div className="fixed inset-0 z-[100] flex justify-end">
+        <div className="fixed inset-0 z-[110] flex justify-end">
            <div className="absolute inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm animate-in fade-in" onClick={() => setShowNotes(null)}></div>
            <div className="bg-white dark:bg-[#0a0a0c] w-full max-w-lg h-full shadow-[-20px_0_60px_rgba(0,0,0,0.1)] relative z-10 flex flex-col animate-in slide-in-from-right duration-500">
               <div className="px-10 py-10 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/50 dark:bg-white/[0.02]">
@@ -377,7 +451,7 @@ const TasksPage = () => {
                   <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">ملاحظات الإنتاج</h3>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1 opacity-60">Creative Brief & Asset Documentation</p>
                 </div>
-                <button onClick={() => setShowNotes(null)} className="p-4 text-slate-400 hover:text-rose-500 bg-white dark:bg-white/5 shadow-xl rounded-[1.25rem] transition-all active:scale-95"><X size={24} /></button>
+                <button onClick={() => setShowNotes(null)} className="p-4 text-slate-400 hover:text-rose-500 bg-white dark:bg-white/5 shadow-xl rounded-[1.25rem] transition-all"><X size={24} /></button>
               </div>
               <div className="p-10 flex-1 flex flex-col space-y-8 overflow-y-auto">
                 <div className="space-y-4 flex-1 flex flex-col">
@@ -404,13 +478,6 @@ const TasksPage = () => {
                       نشر الملاحظات
                     </button>
                   </div>
-                </div>
-                <div className="p-8 bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 rounded-[1.5rem] flex items-start gap-4">
-                   <ShieldCheck size={20} className="text-emerald-500 mt-1" />
-                   <div>
-                     <p className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">تشفير وحفظ آمن</p>
-                     <p className="text-[10px] text-slate-400 font-bold mt-1 leading-relaxed">يتم مزامنة الملاحظات مع الفريق المسؤول مباشرة وبشكل آمن تماماً.</p>
-                   </div>
                 </div>
               </div>
            </div>
