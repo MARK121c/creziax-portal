@@ -239,88 +239,78 @@ const ProjectsPage = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredProjects.map(p => (
-            <div key={p.id} className="group bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-brand-500/20 transition-all duration-300">
-              <div className="flex flex-col h-full gap-5">
-                <div className="flex items-start justify-between">
-                   <div className="relative">
-                     <div className="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 shadow-inner flex items-center justify-center overflow-hidden">
-                       {p.client?.logoUrl ? (
-                         <img src={getFormattedLogoUrl(p.client.logoUrl)} alt="" className="w-full h-full object-cover" />
-                       ) : (
-                         <Briefcase size={24} className="text-slate-300" />
-                       )}
-                     </div>
-                     <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-lg bg-brand-500 flex items-center justify-center text-[8px] text-white border-2 border-white dark:border-slate-900">
-                        <Activity size={10} />
-                     </div>
-                   </div>
-                   <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
-                      <button 
-                        onClick={() => handleDownloadContract(p.id, p.name)}
-                        className="p-2 bg-slate-100 dark:bg-white/5 text-slate-400 hover:text-brand-500 rounded-xl transition-all"
-                      >
-                        <FileText size={14} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(p.id, p.name)}
-                        className="p-2 bg-slate-100 dark:bg-white/5 text-slate-400 hover:text-rose-500 rounded-xl transition-all"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                   </div>
+          {filteredProjects.map(p => {
+            const statusConfig = getStatusStyle(p.status);
+            return (
+              <div key={p.id} className="group relative bg-white dark:bg-[#0a0a0c]/40 border border-slate-100 dark:border-white/5 rounded-[2.5rem] p-8 shadow-xl transition-all duration-500 hover:-translate-y-2 hover:border-brand-500/30">
+                {/* Actions Layer */}
+                <div className="absolute top-6 left-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                  <button 
+                    onClick={() => handleDownloadContract(p.id, p.name)}
+                    className="p-2 bg-slate-50 dark:bg-white/5 text-slate-400 hover:text-brand-500 rounded-xl transition-all"
+                  >
+                    <FileText size={16} />
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(p.id, p.name)}
+                    className="p-2 bg-slate-50 dark:bg-white/5 text-slate-400 hover:text-rose-500 rounded-xl transition-all"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
 
-                <div className="space-y-4">
-                   <Link to={`/admin/projects/${p.id}`}>
-                     <h3 className="text-xl font-semibold text-slate-800 dark:text-white group-hover:text-brand-600 transition-colors tracking-tight line-clamp-1">{p.name}</h3>
-                   </Link>
-                   
-                   <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                         <div className="w-6 h-6 rounded-full bg-brand-500/10 flex items-center justify-center text-[10px] font-bold text-brand-500">
-                           {p.client?.user?.firstName?.[0]}
-                         </div>
-                         <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                           {p.client?.user?.firstName} {p.client?.user?.lastName}
-                         </p>
-                      </div>
+                {/* Profile-like Info */}
+                <div className="flex flex-col items-center text-center pt-2">
+                  <div className="relative mb-5">
+                    <div className="w-24 h-24 rounded-[2rem] overflow-hidden border-4 border-slate-100 dark:border-white/10 shadow-2xl transition-transform duration-500 group-hover:scale-110">
+                      {p.logoUrl ? (
+                        <img src={getFormattedLogoUrl(p.logoUrl)} alt="" className="w-full h-full object-cover" />
+                      ) : p.client?.logoUrl ? (
+                        <img src={getFormattedLogoUrl(p.client.logoUrl)} alt="" className="w-full h-full object-cover opacity-60" />
+                      ) : (
+                        <div className="w-full h-full bg-slate-50 dark:bg-white/5 flex items-center justify-center text-3xl font-black text-slate-300">
+                          {p.name?.[0]}
+                        </div>
+                      )}
+                    </div>
+                    <div className="absolute -bottom-2 -right-2 bg-brand-500 text-white p-2 rounded-xl shadow-lg border-2 border-white dark:border-[#0a0a0c]">
+                      <Activity size={16} />
+                    </div>
+                  </div>
 
-                      {/* Team Avatars (Simulation for now based on data structure if available) */}
-                      <div className="flex -space-x-2">
-                         {[1,2].map(i => (
-                           <div key={i} className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[8px] font-bold text-slate-500">
-                             +
-                           </div>
-                         ))}
-                      </div>
-                   </div>
-                </div>
+                  <h3 className="text-xl font-black text-slate-800 dark:text-white mb-1 uppercase tracking-tight line-clamp-1">{p.name}</h3>
+                  <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border mb-5 transition-all ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}`}>
+                    {statusConfig.label}
+                  </div>
 
-                <p className="text-xs font-medium text-slate-400 dark:text-slate-500 line-clamp-2 min-h-[32px] leading-relaxed">
-                  {p.description || t('projects_empty')}
-                </p>
+                  <div className="w-full p-5 bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-[2rem] mb-6 flex items-center justify-center gap-3">
+                    <div className="w-6 h-6 rounded-full bg-brand-500/10 flex items-center justify-center text-[10px] font-bold text-brand-500">
+                      {p.client?.user?.firstName?.[0]}
+                    </div>
+                    <p className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">
+                      {p.client?.user?.firstName} {p.client?.user?.lastName}
+                    </p>
+                  </div>
 
-                <div className="mt-auto pt-5 border-t border-slate-100 dark:border-white/5 flex flex-col gap-3">
-                   <Link 
-                     to={`/admin/projects/${p.id}`}
-                     className="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-xs shadow-md active:scale-95"
-                   >
-                     <Layout size={16} />
-                     {t('open_project')}
-                   </Link>
-                   
-                   <div className="flex items-center justify-between text-[10px] font-medium text-slate-400 dark:text-slate-600 px-1">
-                      <div className="flex items-center gap-1.5">
-                         <Calendar size={12} className="opacity-50" />
-                         {new Date(p.createdAt).toLocaleDateString()}
-                      </div>
-                      <span className="font-mono opacity-50">#{String(p.id).split('-')[0]}</span>
-                   </div>
+                  <Link 
+                    to={`/admin/projects/${p.id}`}
+                    className="w-full py-3.5 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-2xl transition-all flex items-center justify-center gap-2 text-sm shadow-xl shadow-brand-600/20 active:scale-95 group-hover:-translate-y-1"
+                  >
+                    <ExternalLink size={18} />
+                    {t('open_project')}
+                  </Link>
+
+                  <div className="mt-4 flex items-center justify-between w-full px-2 text-[9px] font-black text-slate-400 uppercase tracking-widest opacity-50">
+                    <div className="flex items-center gap-1">
+                      <Calendar size={12} />
+                      {new Date(p.createdAt).toLocaleDateString()}
+                    </div>
+                    <span>#{String(p.id).split('-')[0]}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
