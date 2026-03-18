@@ -153,7 +153,9 @@ const MessagesPage = () => {
     e.preventDefault();
     if ((!content.trim() && !selectedFile) || !activeThread || uploadingFile) return;
     
-    if (content.trim() && !validateMessage(content)) return;
+    // Privacy Firewall: Admins bypass validation rule
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'OWNER';
+    if (content.trim() && !isAdmin && !validateMessage(content)) return;
 
     if (selectedFile) {
       setUploadingFile(true);
@@ -234,13 +236,23 @@ const MessagesPage = () => {
   };
 
   const selectThread = (item, type) => {
+    let memberCount = 2;
+    if (type === 'GROUP') {
+      memberCount = (item.teamMembers?.length || 0) + 1; // Team + Client
+    } else if (type === 'TEAM_GROUP') {
+      memberCount = item.members?.length || 0;
+    } else if (type === 'GLOBAL') {
+      memberCount = teamMembers.length + 1; // Team + Owner
+    }
+
     const thread = {
       id: type === 'DM' || type === 'TEAM' ? item.user?.id || item.id : item.id,
       name: type === 'DM' || type === 'TEAM' ? (item.user ? `${item.user.firstName} ${item.user.lastName}` : (item.firstName ? `${item.firstName} ${item.lastName}` : item.name)) : item.name,
       type: type,
       userId: type === 'DM' || type === 'TEAM' ? (item.user?.id || item.id) : null,
       driveUrl: type === 'GROUP' ? item.driveUrl : null,
-      avatarUrl: type === 'DM' || type === 'TEAM' ? (item.logoUrl || item.avatarUrl) : null
+      avatarUrl: type === 'DM' || type === 'TEAM' ? (item.logoUrl || item.avatarUrl) : null,
+      memberCount
     };
     setActiveThread(thread);
     fetchThreadMessages(thread.id);
@@ -538,7 +550,9 @@ Availability: ${bookingData.dates}`;
                        </h2>
                        <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{activeThread.type === 'DM' ? 'محادثة خاصة' : 'جروب المشروع'} • قناة تواصل محصنة</span>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{activeThread.type === 'DM' ? 'محادثة خاصة' : activeThread.type === 'TEAM_GROUP' ? 'مجموعة عمل داخلي' : 'جروب المشـروع'} • قناة تواصل محصنة</span>
+                          <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5" dir="rtl"><Users size={12}/> {activeThread.memberCount} أشخاص</span>
                        </div>
                     </div>
                   </div>
