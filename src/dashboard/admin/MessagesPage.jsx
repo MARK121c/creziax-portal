@@ -63,6 +63,19 @@ const MessagesPage = () => {
   const socketRef = useRef();
   const scrollRef = useRef();
 
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (emojiRef.current && !emojiRef.current.contains(event.target)) {
+        setShowEmojiPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const fetchData = useCallback(async () => {
     setLoadingSidebar(true);
     try {
@@ -761,7 +774,7 @@ Availability: ${bookingData.dates}`;
                     <button 
                       type="submit" 
                       disabled={(!content.trim() && !selectedFile) || uploadingFile}
-                      className="bg-brand-600 text-white w-[60px] h-[60px] rounded-2xl hover:bg-brand-500 flex items-center justify-center transition-all shadow-xl shadow-brand-600/30 disabled:opacity-50 active:scale-90 flex-shrink-0"
+                      className="bg-brand-600 text-white w-[60px] h-[60px] rounded-full hover:bg-brand-500 flex items-center justify-center transition-all shadow-xl shadow-brand-600/30 disabled:opacity-50 active:scale-90 flex-shrink-0"
                     >
                       {uploadingFile ? (
                         <Loader2 size={24} className="animate-spin" />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getInvoicesAPI, createInvoiceAPI, updateInvoiceAPI, deleteInvoiceAPI, getClientsAPI, downloadInvoicePDFAPI, getExpensesAPI, createExpenseAPI, updateExpenseAPI, deleteExpenseAPI, getUsersAPI } from '../../store/api';
+import { getInvoicesAPI, createInvoiceAPI, updateInvoiceAPI, deleteInvoiceAPI, getClientsAPI, downloadInvoicePDFAPI, getExpensesAPI, createExpenseAPI, updateExpenseAPI, deleteExpenseAPI, getUsersAPI, downloadTeamDuePDFAPI } from '../../store/api';
 import { Plus, X, Trash2, Receipt, Search, Loader2, DollarSign, FileText, Gift, CheckCircle, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
@@ -172,6 +172,23 @@ const InvoicesPage = () => {
       fetchData(); 
     } catch (err) {
       toast.error('Failed to delete', { id: loadingToast });
+    }
+  };
+
+  const handleDownloadDuePDF = async (id) => {
+    const loadingToast = toast.loading('Generating receipt PDF...');
+    try {
+      const response = await downloadTeamDuePDFAPI(id);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `TeamDue-${id.slice(0, 8)}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      toast.success('PDF Downloaded!', { id: loadingToast });
+    } catch (err) {
+      toast.error('Failed to generate PDF', { id: loadingToast });
     }
   };
 
