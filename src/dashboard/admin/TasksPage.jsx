@@ -92,7 +92,7 @@ const TasksPage = () => {
       ]);
       
       const allWorkspacesShort = wRes.data.data || wRes.data || [];
-      const allUsers = (uRes.data.data || uRes.data || []).filter(u => u.role === 'TEAM');
+      const allUsers = (uRes.data.data || uRes.data || []).filter(u => u.role === 'TEAM' || u.role === 'ADMIN');
       const allTeamTasks = tRes.data.data || tRes.data || [];
       
       setWorkspaces(allWorkspacesShort);
@@ -168,12 +168,16 @@ const TasksPage = () => {
 
   // Team Logic
   const handleTeamStatusToggle = async (task) => {
-    // Map PENDING/COMPLETED to backend enums IDEA/DELIVERED
+    // Map internal Pending/Done to backend IDEA/DELIVERED
     const newStatus = task.status === 'DELIVERED' ? 'IDEA' : 'DELIVERED';
     const optimistic = { ...task, status: newStatus };
     setTeamTasks(prev => prev.map(t => t.id === task.id ? optimistic : t));
-    try { await updateTaskAPI(task.id, { status: newStatus }); }
-    catch (err) { fetchData(); }
+    try { 
+      await updateTaskAPI(task.id, { status: newStatus }); 
+    } catch (err) { 
+      console.error('Task status update failed:', err);
+      fetchData(); 
+    }
   };
 
   const handleAddTeamTask = async (e) => {
@@ -184,21 +188,28 @@ const TasksPage = () => {
     }
     setSubmitting(true);
     try {
-      // Create task using backend schema values
+      // Find the selected user's TeamMember ID
+      const selectedUser = teamMembers.find(u => u.id === teamTaskForm.assignedToId);
+      const tmId = selectedUser?.teamMemberInfo?.id || teamTaskForm.assignedToId;
+
       const taskData = {
         title: teamTaskForm.title,
         description: teamTaskForm.description,
-        assignedToId: teamTaskForm.assignedToId,
+        assignedToId: tmId,
         deadline: teamTaskForm.deadline,
         projectId: teamTaskForm.workspaceId,
         status: 'IDEA' // Pending
       };
+      
       await createTaskAPI(taskData);
       toast.success(t('saved_successfully'));
       setShowAddTeamTask(false);
       setTeamTaskForm({ title: '', description: '', deadline: '', assignedToId: '', workspaceId: '' });
       fetchData();
-    } catch (err) { toast.error(t('error_general')); }
+    } catch (err) { 
+      console.error('Team task creation failed:', err);
+      toast.error('حدث خطأ أثناء إنشاء المهمة. تأكد من إدخال جميع البيانات.'); 
+    }
     finally { setSubmitting(false); }
   };
 
