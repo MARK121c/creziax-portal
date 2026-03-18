@@ -77,9 +77,11 @@ const TasksPage = () => {
   };
 
   const isTaskOverdue = (task) => {
-    if (task.status === 'DELIVERED') return false; // Map DELIVERED to COMPLETED
+    if (task.status === 'DELIVERED') return false;
     if (!task.deadline) return false;
-    return new Date() > new Date(task.deadline);
+    try {
+      return new Date() > new Date(task.deadline);
+    } catch (e) { return false; }
   };
 
   const fetchData = useCallback(async () => {
@@ -192,11 +194,25 @@ const TasksPage = () => {
       const selectedUser = teamMembers.find(u => u.id === teamTaskForm.assignedToId);
       const tmId = selectedUser?.teamMemberInfo?.id || teamTaskForm.assignedToId;
 
+      // Robust Date Sanitization: Prevent malformed years (e.g. 202610)
+      let isoDeadline = null;
+      if (teamTaskForm.deadline) {
+        const d = new Date(teamTaskForm.deadline);
+        if (isNaN(d.getTime())) {
+          toast.error('التاريخ غير صحيح');
+          setSubmitting(false);
+          return;
+        }
+        // Extra check: If year > 2100, truncate it to current year or 2026
+        if (d.getFullYear() > 2100) { d.setFullYear(2026); }
+        isoDeadline = d.toISOString();
+      }
+
       const taskData = {
         title: teamTaskForm.title,
         description: teamTaskForm.description,
         assignedToId: tmId,
-        deadline: teamTaskForm.deadline,
+        deadline: isoDeadline,
         projectId: teamTaskForm.workspaceId,
         status: 'IDEA' // Pending
       };
@@ -208,7 +224,8 @@ const TasksPage = () => {
       fetchData();
     } catch (err) { 
       console.error('Team task creation failed:', err);
-      toast.error('حدث خطأ أثناء إنشاء المهمة. تأكد من إدخال جميع البيانات.'); 
+      const errorMsg = err.response?.data?.message || 'حدث خطأ أثناء إنشاء المهمة. تأكد من إدخال جميع البيانات.';
+      toast.error(errorMsg); 
     }
     finally { setSubmitting(false); }
   };
@@ -230,6 +247,9 @@ const TasksPage = () => {
 
   const filteredTeam = useMemo(() => {
     return teamTasks.filter(t => {
+      // 1. Must be an Administrative task (No phaseId)
+      if (t.phaseId) return false;
+
       const matchesSearch = t.title.toLowerCase().includes(filters.search.toLowerCase()) || (t.description || '').toLowerCase().includes(filters.search.toLowerCase());
       const matchesAssignee = filters.assigneeId === 'ALL' || t.assignedToId === filters.assigneeId;
       
@@ -339,7 +359,7 @@ const TasksPage = () => {
                 <option value="ALL">كل الحالات</option>
                 <option value="PENDING">قيد التنفيذ</option>
                 <option value="COMPLETED">تم الانتهاء</option>
-                <option value="OVERDUE">متأخر (Penalty)</option>
+                <option value="OVERDUE">متأخر (تجاوز الوقت)</option>
               </select>
             )}
             <button onClick={() => setSortOrder(prev => prev === 'ASC' ? 'DESC' : 'ASC')} className="p-4 bg-white dark:bg-white/5 text-slate-400 rounded-2xl border border-slate-100 dark:border-white/10 shadow-sm transition-all hover:text-brand-500"><ArrowUpDown size={18} className={sortOrder === 'DESC' ? 'rotate-180' : ''} /></button>
@@ -378,7 +398,11 @@ const TasksPage = () => {
                       </td>
                       <td className="px-4 py-6">
                         <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 overflow-hidden mx-auto shadow-sm">
-                          {t.assignedTo?.user?.avatarUrl ? <img src={getFormattedUrl(t.assignedTo.user.avatarUrl)} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-slate-400">{t.assignedTo?.user?.firstName?.[0] || <User size={14} />}</div>}
+                          {(() => {
+                            const u = teamMembers.find(m => m.teamMemberInfo?.id === t.assignedToId || m.id === t.assignedToId);
+                            const url = u?.avatarUrl || t.assignedTo?.user?.avatarUrl;
+                            return url ? <img src={getFormattedUrl(url)} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-slate-400">{u?.firstName?.[0] || t.assignedTo?.user?.firstName?.[0] || <User size={14} />}</div>;
+                          })()}
                         </div>
                       </td>
                       {['script', 'shoot', 'edit', 'publish'].map(f => (
@@ -389,7 +413,7 @@ const TasksPage = () => {
                          </td>
                       ))}
                       <td className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                         {t.deadline ? new Date(t.deadline).toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase() : '--'}
+                         {t.deadline ? new Date(t.deadline).toLocaleDateString('ar-EG', { day: '2-digit', month: 'short' }).toUpperCase() : '--'}
                       </td>
                       <td className="px-4 py-6 text-right">
                          <button onClick={() => setShowNotes(t.id)} className="p-3 text-slate-300 hover:text-brand-500 transition-all"><MessageSquare size={18} /></button>
@@ -405,9 +429,9 @@ const TasksPage = () => {
                 <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-black/20 text-right rtl">
                   <th className="px-8 py-6 text-left">المسؤول</th>
                   <th className="px-8 py-6">المهمة المطلوبة</th>
-                  <th className="px-8 py-6 text-center">الالتزام (Deadline)</th>
+                  <th className="px-8 py-6 text-center">الموعد النهائي</th>
                   <th className="px-8 py-6 text-center w-32">الحالة</th>
-                  <th className="px-8 py-6 text-center">الجزاءات (Penalty)</th>
+                  <th className="px-8 py-6 text-center">الجزاءات</th>
                   <th className="px-4 py-6 text-right w-16 text-left"></th>
                 </tr>
               </thead>
@@ -421,9 +445,18 @@ const TasksPage = () => {
                       <td className="px-8 py-6 text-left">
                         <div className="flex items-center gap-4">
                            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 overflow-hidden shadow-sm">
-                             {t.assignedTo?.user?.avatarUrl ? <img src={getFormattedUrl(t.assignedTo.user.avatarUrl)} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-xs font-black text-slate-400">{t.assignedTo?.user?.firstName?.[0] || 'U'}</div>}
+                             {(() => {
+                               const u = teamMembers.find(m => m.teamMemberInfo?.id === t.assignedToId || m.id === t.assignedToId);
+                               const url = u?.avatarUrl || t.assignedTo?.user?.avatarUrl;
+                               return url ? <img src={getFormattedUrl(url)} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-xs font-black text-slate-400">{u?.firstName?.[0] || t.assignedTo?.user?.firstName?.[0] || 'U'}</div>;
+                             })()}
                            </div>
-                           <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">{t.assignedTo?.user?.firstName} {t.assignedTo?.user?.lastName}</span>
+                           <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">
+                             {(() => {
+                               const u = teamMembers.find(m => m.teamMemberInfo?.id === t.assignedToId || m.id === t.assignedToId);
+                               return u ? `${u.firstName} ${u.lastName}` : (t.assignedTo?.user ? `${t.assignedTo.user.firstName} ${t.assignedTo.user.lastName}` : 'غير معين');
+                             })()}
+                           </span>
                         </div>
                       </td>
                       <td className="px-8 py-6">
