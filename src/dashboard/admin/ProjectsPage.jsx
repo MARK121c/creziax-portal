@@ -147,12 +147,12 @@ const ProjectsPage = () => {
     }
   };
 
-  const toggleTeamMember = (memberId) => {
+  const toggleTeamMember = (tmId) => {
     setForm(prev => ({
       ...prev,
-      teamMemberIds: prev.teamMemberIds.includes(memberId)
-        ? prev.teamMemberIds.filter(id => id !== memberId)
-        : [...prev.teamMemberIds, memberId]
+      teamMemberIds: prev.teamMemberIds.includes(tmId)
+        ? prev.teamMemberIds.filter(id => id !== tmId)
+        : [...prev.teamMemberIds, tmId]
     }));
   };
 
@@ -407,31 +407,41 @@ const ProjectsPage = () => {
               <div className="space-y-4">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 leading-relaxed italic opacity-70">الفريق المسؤول عن التشغيل</label>
                 <div className="grid grid-cols-2 gap-4">
-                  {teamMembers.map(member => (
-                    <div 
-                      key={member.id} 
-                      onClick={() => toggleTeamMember(member.id)}
-                      className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                        form.teamMemberIds.includes(member.id) 
-                        ? 'border-brand-500 bg-brand-500/5' 
-                        : 'border-slate-100 dark:border-white/10 hover:border-brand-500/30'
-                      }`}
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 overflow-hidden shadow-sm">
-                        {member.user?.avatarUrl ? (
-                          <img src={getFormattedUrl(member.user.avatarUrl)} className="w-full h-full object-cover" alt="" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-slate-400">
-                            {member.user?.firstName?.[0]}
+                  {teamMembers.map(member => {
+                    const isSelected = member.teamMemberInfo?.id && form.teamMemberIds.includes(member.teamMemberInfo.id);
+                    return (
+                      <div 
+                        key={member.id} 
+                        onClick={() => toggleTeamMember(member.teamMemberInfo?.id)}
+                        className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all relative overflow-hidden group ${
+                          isSelected
+                          ? 'border-brand-500 bg-brand-500/5 shadow-lg shadow-brand-500/10' 
+                          : 'border-slate-100 dark:border-white/10 hover:border-brand-500/30 bg-slate-50/50 dark:bg-white/5'
+                        }`}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-0 right-0 p-1.5 bg-brand-500 text-white rounded-bl-xl">
+                            <CheckCircle2 size={12} strokeWidth={3} />
                           </div>
                         )}
+                        <div className="w-12 h-12 rounded-xl bg-white dark:bg-slate-800 overflow-hidden border border-slate-100 dark:border-white/10 flex-shrink-0">
+                          {member.avatarUrl ? (
+                            <img src={getFormattedUrl(member.avatarUrl)} className="w-full h-full object-cover" alt="" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-xs font-black text-slate-300 italic uppercase">
+                              {member.firstName?.[0]}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-black truncate ${isSelected ? 'text-brand-600 dark:text-brand-400' : 'text-slate-700 dark:text-slate-200'}`}>
+                            {member.firstName} {member.lastName}
+                          </p>
+                          <p className="text-[10px] font-bold text-slate-400 truncate uppercase tracking-widest">{member.teamMemberInfo?.position || 'Video Production'}</p>
+                        </div>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-black text-slate-700 dark:text-white uppercase tracking-tight">{member.user?.firstName} {member.user?.lastName}</span>
-                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{member.position || 'TEAM MEMBER'}</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 

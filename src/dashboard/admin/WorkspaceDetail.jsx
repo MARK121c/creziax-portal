@@ -93,7 +93,18 @@ const WorkspaceDetail = () => {
     });
   };
 
-  const loadPhaseTasks = async (phaseId) => {
+  const handleDeletePhase = async (phaseId) => {
+    if (!confirm('هل أنت متأكد من حذف هذا الشهر؟ سيتم حذف جميع المهام بداخله.')) return;
+    try {
+      await deletePhaseAPI(phaseId);
+      toast.success('تم حذف الشهر بنجاح');
+      fetchData();
+    } catch (err) {
+      toast.error('فشل حذف الشهر');
+    }
+  };
+
+  const loadPhaseTasks = useCallback(async (phaseId) => {
     setLoadingTasks(prev => ({ ...prev, [phaseId]: true }));
     try {
       const res = await getPhaseTasksAPI(phaseId);
@@ -104,7 +115,7 @@ const WorkspaceDetail = () => {
     } finally {
       setLoadingTasks(prev => ({ ...prev, [phaseId]: false }));
     }
-  };
+  }, [t]);
 
   const handleTaskUpdate = async (taskId, phaseId, updates) => {
     try {
@@ -144,15 +155,6 @@ const WorkspaceDetail = () => {
       setTaskForm({ title: '', deadline: '', assignedToId: '' });
     } catch (err) { toast.error(t('error_general')); }
     finally { setSubmitting(false); }
-  };
-
-  const handleDeletePhase = async (phaseId) => {
-    if (!confirm(t('confirm_delete'))) return;
-    try {
-      await deletePhaseAPI(phaseId);
-      toast.success(t('saved_successfully'));
-      fetchData();
-    } catch (err) { toast.error(t('error_general')); }
   };
 
   const handleDeleteTask = async (taskId, phaseId) => {
@@ -205,13 +207,15 @@ const WorkspaceDetail = () => {
               <ChevronRight className="rotate-180" size={24} />
             </Link>
             <div className="flex items-center gap-5">
-              <div className="w-16 h-16 rounded-[2rem] bg-white dark:bg-white/5 border-2 border-slate-100 dark:border-white/10 overflow-hidden shadow-2xl flex-shrink-0 transition-transform hover:scale-105">
+              <div className="w-16 h-16 rounded-[1.75rem] bg-white dark:bg-[#0a0a0c] border-2 border-slate-100 dark:border-white/10 overflow-hidden shadow-2xl flex-shrink-0 transition-all hover:scale-105 group ring-offset-4 ring-offset-white dark:ring-offset-[#050505] hover:ring-2 hover:ring-brand-500/30">
                 {workspace.logoUrl ? (
                   <img src={getFormattedUrl(workspace.logoUrl)} alt="" className="w-full h-full object-cover" />
                 ) : workspace.client?.logoUrl ? (
                   <img src={getFormattedUrl(workspace.client.logoUrl)} alt="" className="w-full h-full object-cover opacity-60" />
                 ) : (
-                  <Briefcase size={28} className="m-auto text-slate-200 dark:text-slate-800" />
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-white/5 dark:to-white/10 text-slate-300 dark:text-slate-700 uppercase font-black text-2xl tracking-tighter">
+                    {workspace.name?.[0]}
+                  </div>
                 )}
               </div>
               <div className="space-y-1">
@@ -239,17 +243,20 @@ const WorkspaceDetail = () => {
                    href={workspace.notionUrl} 
                    target="_blank" 
                    rel="noopener noreferrer"
-                   className="p-4 bg-slate-100 dark:bg-white/5 text-slate-400 hover:text-brand-500 rounded-[1.25rem] transition-all shadow-sm active:scale-95"
-                   title="Notion"
+                   className="flex items-center gap-3 px-6 py-4 bg-white dark:bg-white/5 text-slate-500 dark:text-slate-400 hover:text-brand-500 hover:bg-brand-500/5 rounded-[1.5rem] transition-all border border-slate-200 dark:border-white/10 hover:border-brand-500/30 shadow-sm active:scale-95 group"
+                   title="Notion Workspace"
                  >
-                   <FileText size={22} />
+                   <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-white/5 flex items-center justify-center group-hover:bg-brand-500/10 transition-colors">
+                     <FileText size={18} />
+                   </div>
+                   <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">مستندات المشروع</span>
                  </a>
                )}
                <a 
                  href={workspace.clientChannelLink || '#'} 
                  target="_blank" 
                  rel="noopener noreferrer"
-                 className="flex items-center gap-3 px-8 py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest transition-all shadow-2xl shadow-brand-600/30 active:scale-95 whitespace-nowrap"
+                 className="flex items-center gap-3 px-8 py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-brand-600/20 active:scale-95 whitespace-nowrap"
                >
                  <PlayCircle size={18} />
                  افتح قناة اليوتيوب
