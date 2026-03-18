@@ -132,11 +132,15 @@ const WorkspaceDetail = () => {
   const handleTaskUpdate = async (taskId, phaseId, updates) => {
     try {
       const res = await updateWorkspaceTaskAPI(taskId, updates);
-      const updatedTask = res.data.data || res.data;
-      setPhaseTasks(prev => ({
-        ...prev,
-        [phaseId]: (prev[phaseId] || []).map(t => t.id === taskId ? updatedTask : t)
-      }));
+      const updatedTask = res.data?.data || res.data;
+      if (updatedTask && updatedTask.id) {
+        setPhaseTasks(prev => ({
+          ...prev,
+          [phaseId]: (prev[phaseId] || []).map(t => t.id === taskId ? updatedTask : t)
+        }));
+      } else {
+        await loadPhaseTasks(phaseId);
+      }
     } catch (err) {
       toast.error(t('error_general'));
     }
@@ -147,10 +151,18 @@ const WorkspaceDetail = () => {
     const newVal = meta[field] === 'DONE' ? 'NOT_STARTED' : 'DONE';
     const newMeta = { ...meta, [field]: newVal };
     
+    // Optimistic Update
+    const optimisticTask = { ...task, description: JSON.stringify(newMeta) };
+    setPhaseTasks(prev => ({
+      ...prev,
+      [phaseId]: (prev[phaseId] || []).map(t => t.id === task.id ? optimisticTask : t)
+    }));
+
     try {
-      await handleTaskUpdate(task.id, phaseId, { description: JSON.stringify(newMeta) });
+      await updateWorkspaceTaskAPI(task.id, { description: JSON.stringify(newMeta) });
     } catch (err) {
       toast.error('فشل تحديث الحالة');
+      loadPhaseTasks(phaseId);
     }
   };
 
@@ -231,13 +243,7 @@ const WorkspaceDetail = () => {
           </div>
 
           <div className="flex items-center gap-6">
-             <div className="hidden xl:flex -space-x-4 mr-4">
-               {(workspace.teamMembers || []).map((m, i) => (
-                 <div key={i} title={m.user?.firstName} className="w-11 h-11 rounded-[1.25rem] bg-slate-100 dark:bg-slate-800 border-4 border-white dark:border-[#050505] shadow-lg overflow-hidden transition-transform hover:-translate-y-1">
-                   {m.user?.avatarUrl ? <img src={getFormattedUrl(m.user.avatarUrl)} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-xs font-black text-slate-400 italic">{m.user?.firstName?.[0]}</div>}
-                 </div>
-               ))}
-             </div>
+             {/* Team Members Avatars Removed as per V3.2 Clean UI Request */}
              
              <div className="flex items-center gap-4">
                {workspace.notionUrl && (
