@@ -124,6 +124,8 @@ export const getWorkspaceAPI = (id) => api.get(`/workspaces/${id}`);
 export const getPhaseTasksAPI = (phaseId) => api.get(`/workspaces/phases/${phaseId}/tasks`);
 export const updateWorkspaceTaskAPI = (id, data) => api.put(`/workspaces/tasks/${id}`, data);
 export const createPhaseAPI = (projectId, data) => api.post(`/workspaces/${projectId}/phases`, data);
+export const deletePhaseAPI = (id) => api.delete(`/workspaces/phases/${id}`);
 export const createWorkspaceTaskAPI = (phaseId, data) => api.post(`/workspaces/phases/${phaseId}/tasks`, data);
+export const deleteWorkspaceTaskAPI = (id) => api.delete(`/workspaces/tasks/${id}`);
 
 export default api;
