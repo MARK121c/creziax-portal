@@ -43,7 +43,7 @@ export const createUserAPI = (data) => api.post('/users', data);
 export const updateUserAPI = (id, data) => api.put(`/users/${id}`, data);
 export const deleteUserAPI = (id) => api.delete(`/users/${id}`);
 export const resetPasswordAPI = (id, newPassword) => api.post(`/users/${id}/reset-password`, { newPassword });
-export const grantChatAccessAPI = (userId, clientId) => api.patch(`/users/${userId}/grant-chat`, { clientId });
+export const grantChatAccessAPI = (userId, chatId) => api.patch(`/users/${userId}/grant-chat`, { chatId });
 
 // Clients
 export const getClientsAPI = () => api.get('/clients');
@@ -74,6 +74,8 @@ export const deleteFileAPI = (id) => api.delete(`/files/${id}`);
 export const getMessagesAPI = (threadId) => api.get(`/messages?threadId=${threadId}`);
 export const sendMessageAPI = (data) => api.post('/messages', data);
 export const getThreadsAPI = () => api.get('/messages/threads');
+export const createTeamGroupAPI = (data) => api.post('/messages/groups', data);
+export const getTeamGroupsAPI = () => api.get('/messages/groups');
 
 // Invoices
 export const getInvoicesAPI = () => api.get('/invoices');

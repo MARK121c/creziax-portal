@@ -5,7 +5,9 @@ import {
   getMessagesAPI, 
   sendMessageAPI,
   getUsersAPI,
-  grantChatAccessAPI
+  grantChatAccessAPI,
+  createTeamGroupAPI,
+  getTeamGroupsAPI
 } from '../../store/api';
 import useAuthStore from '../../store/authStore';
 import { io } from 'socket.io-client';
@@ -15,7 +17,7 @@ import {
   Send, MessageSquare, Search, MoreHorizontal, Smile, Paperclip, 
   Loader2, UserCircle, Plus, Filter, Clock, CheckCircle2, AlertCircle,
   Tag, ChevronRight, Briefcase, Calendar, ExternalLink, ShieldAlert,
-  UserPlus, X
+  UserPlus, X, Users, Check
 } from 'lucide-react';
 
 const MessagesPage = () => {
@@ -24,25 +26,31 @@ const MessagesPage = () => {
   
   const [clients, setClients] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [activeThread, setActiveThread] = useState(null); 
   const [messages, setMessages] = useState([]);
   const [content, setContent] = useState('');
-  const [loadingSidebar, setLoadingSidebar] = useState(false);
-  const [loadingMessages, setLoadingMessages] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [teamGroups, setTeamGroups] = useState([]);
+  const [activeThread, setActiveThread] = useState(null);
   const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-  const [teamMembers, setTeamMembers] = useState([]);
-  const [grantingAccess, setGrantingAccess] = useState(false);
+  const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
   const [selectedTeamMember, setSelectedTeamMember] = useState(null);
+  const [grantingAccess, setGrantingAccess] = useState(false);
   const [bookingData, setBookingData] = useState({ topic: '', dates: '' });
   const [sendingBooking, setSendingBooking] = useState(false);
+  const [loadingSidebar, setLoadingSidebar] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [expandedSections, setExpandedSections] = useState({
     projects: true,
+    groups: true,
     global: true,
-    team: true,
+    team: false,
     clients: false
   });
+
+  const [newGroupData, setNewGroupData] = useState({ name: '', memberIds: [] });
+  const [creatingGroup, setCreatingGroup] = useState(false);
   
   const socketRef = useRef();
   const scrollRef = useRef();
@@ -50,17 +58,16 @@ const MessagesPage = () => {
   const fetchData = useCallback(async () => {
     setLoadingSidebar(true);
     try {
-      const [cRes, pRes] = await Promise.all([
+      const [cRes, pRes, uRes, gRes] = await Promise.all([
         getClientsAPI(),
-        getProjectsAPI()
+        getProjectsAPI(),
+        getUsersAPI(),
+        getTeamGroupsAPI()
       ]);
-      setClients(cRes.data.data || cRes.data || []);
-      setProjects(pRes.data.data || pRes.data || []);
-
-      if (user?.role === 'ADMIN' || user?.role === 'OWNER') {
-        const { data: uRes } = await getUsersAPI();
-        setTeamMembers(uRes.filter(u => u.role === 'TEAM'));
-      }
+      setClients(cRes.data);
+      setProjects(pRes.data);
+      setTeamMembers(uRes.data.filter(u => u.role !== 'CLIENT'));
+      setTeamGroups(gRes.data);
     } catch (err) {
       toast.error("فشل تحميل البيانات");
     } finally {
@@ -177,13 +184,36 @@ const MessagesPage = () => {
     if (!selectedTeamMember || !activeThread) return;
     setGrantingAccess(true);
     try {
-      await grantChatAccessAPI(selectedTeamMember, activeThread.userId);
+      // Use activeThread.id as the identifier (works for projects and clients now)
+      await grantChatAccessAPI(selectedTeamMember, activeThread.id);
       toast.success(`تم منح ${teamMembers.find(t => t.id === selectedTeamMember)?.firstName} صلاحية الدخول للشات`);
       setIsAddMemberModalOpen(false);
     } catch (err) {
       toast.error(err.response?.data?.message || "فشل منح الصلاحية");
     } finally {
       setGrantingAccess(false);
+    }
+  };
+
+  const handleCreateGroup = async (e) => {
+    if (e) e.preventDefault();
+    if (!newGroupData.name || newGroupData.memberIds.length === 0) {
+      toast.error("يرجى إدخال اسم الجروب واختيار أعضاء");
+      return;
+    }
+    setCreatingGroup(true);
+    try {
+      const { data } = await createTeamGroupAPI(newGroupData);
+      setTeamGroups(prev => [...prev, data]);
+      toast.success("تم إنشاء جروب الفريق بنجاح");
+      setIsCreateGroupModalOpen(false);
+      setNewGroupData({ name: '', memberIds: [] });
+      // Auto-select the new group
+      selectThread(data, 'TEAM_GROUP');
+    } catch (err) {
+      toast.error(err.response?.data?.message || "فشل إنشاء الجروب");
+    } finally {
+      setCreatingGroup(false);
     }
   };
 
@@ -276,25 +306,37 @@ Availability: ${bookingData.dates}`;
                     )}
                   </div>
 
-                  {/* 2. Global Team Channel */}
+                  {/* 2. Internal Team Groups (New) */}
                   {user?.role !== 'CLIENT' && (
                     <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-white/5">
-                      <button 
-                        onClick={() => toggleSection('global')}
-                        className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all group"
-                      >
-                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">قناة الفريق العامة</h3>
-                        <div className={`text-slate-400 transition-transform duration-300 ${expandedSections.global ? 'rotate-180' : ''}`}>
-                          <ChevronRight size={14} />
-                        </div>
-                      </button>
-                      {expandedSections.global && (
-                        <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="w-full flex items-center justify-between px-4 py-2">
+                        <button 
+                          onClick={() => toggleSection('groups')}
+                          className="flex items-center gap-2 hover:text-brand-500 transition-colors group"
+                        >
+                          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">قنوات الفريق (Internal)</h3>
+                          <div className={`text-slate-400 transition-transform duration-300 ${expandedSections.groups ? 'rotate-180' : ''}`}>
+                            <ChevronRight size={14} />
+                          </div>
+                        </button>
+                        {(user.role === 'ADMIN' || user.role === 'OWNER') && (
                           <button 
-                            onClick={() => selectThread({ id: 'TEAM_GLOBAL', name: 'قروب الفريق (العام)' }, 'GROUP')}
-                            className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === 'TEAM_GLOBAL' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
+                            onClick={() => setIsCreateGroupModalOpen(true)}
+                            className="w-6 h-6 rounded-lg bg-brand-500/10 text-brand-500 flex items-center justify-center hover:bg-brand-500 hover:text-white transition-all shadow-sm"
+                            title="إنشاء جروب جديد"
                           >
-                            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20 shadow-inner">
+                            <Plus size={14} />
+                          </button>
+                        )}
+                      </div>
+                      {expandedSections.groups && (
+                        <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                           {/* Global Team Channel (Always first in this section) */}
+                           <button 
+                            onClick={() => selectThread({ id: 'TEAM_GLOBAL', name: 'قروب الفريق (العام)' }, 'GROUP')}
+                            className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === 'TEAM_GLOBAL' ? 'bg-emerald-600 text-white shadow-lg' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
+                          >
+                            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20">
                               <ShieldAlert size={20} />
                             </div>
                             <div className="flex-1 text-right overflow-hidden">
@@ -302,6 +344,23 @@ Availability: ${bookingData.dates}`;
                               <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === 'TEAM_GLOBAL' ? 'text-white' : 'text-emerald-500'}`}>المركز الرئيسي للنقاش</p>
                             </div>
                           </button>
+
+                          {/* Custom Team Groups */}
+                          {teamGroups.map(tg => (
+                            <button 
+                              key={tg.id} 
+                              onClick={() => selectThread(tg, 'TEAM_GROUP')}
+                              className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === tg.id ? 'bg-brand-600 text-white shadow-lg' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
+                            >
+                              <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center overflow-hidden border border-white/10">
+                                <Users size={20} />
+                              </div>
+                              <div className="flex-1 text-right overflow-hidden">
+                                <h4 className="text-xs font-black truncate">{tg.name}</h4>
+                                <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === tg.id ? 'text-white' : 'text-slate-400'}`}>{tg.members?.length} أعضاء</p>
+                              </div>
+                            </button>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -648,6 +707,86 @@ Availability: ${bookingData.dates}`;
                 </button>
                 <button 
                   onClick={() => setIsBookingModalOpen(false)}
+                  className="flex-1 h-14 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:bg-slate-200 dark:hover:bg-white/10"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isCreateGroupModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full max-w-lg bg-white dark:bg-[#0a0a0c] rounded-[2.5rem] border border-slate-200 dark:border-white/5 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-8 border-b border-slate-100 dark:border-white/5 flex items-center justify-between" dir="rtl">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-500 flex items-center justify-center">
+                  <Plus size={24} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-800 dark:text-white">إنشاء جروب فريق جديد</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">مساحة عمل خاصة لأعضاء الفريق</p>
+                </div>
+              </div>
+              <button onClick={() => setIsCreateGroupModalOpen(false)} className="text-slate-400 hover:text-rose-500 transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-8 space-y-6" dir="rtl">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">اسم الجروب</label>
+                  <input 
+                    type="text"
+                    value={newGroupData.name}
+                    onChange={e => setNewGroupData({...newGroupData, name: e.target.value})}
+                    placeholder="مثال: فريق المونتاج، إدارة المشاريع..."
+                    className="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 dark:text-white focus:ring-2 focus:ring-brand-500/20 transition-all font-black"
+                  />
+                </div>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">اختر الأعضاء</label>
+                  <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto custom-scrollbar">
+                    {teamMembers.filter(tm => tm.id !== user.id).map(tm => (
+                      <button 
+                        key={tm.id}
+                        type="button"
+                        onClick={() => {
+                          const exists = newGroupData.memberIds.includes(tm.id);
+                          if (exists) {
+                            setNewGroupData({...newGroupData, memberIds: newGroupData.memberIds.filter(id => id !== tm.id)});
+                          } else {
+                            setNewGroupData({...newGroupData, memberIds: [...newGroupData.memberIds, tm.id]});
+                          }
+                        }}
+                        className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${newGroupData.memberIds.includes(tm.id) ? 'bg-brand-500/5 border-brand-500/30' : 'bg-slate-50 dark:bg-white/[0.02] border-slate-100 dark:border-white/5'}`}
+                      >
+                        <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${newGroupData.memberIds.includes(tm.id) ? 'bg-brand-500 border-brand-500 text-white' : 'border-slate-300 dark:border-white/10'}`}>
+                          {newGroupData.memberIds.includes(tm.id) && <Check size={12} strokeWidth={4} />}
+                        </div>
+                        <div className="flex-1 text-right">
+                          <h4 className="text-xs font-black text-slate-700 dark:text-white">{tm.firstName} {tm.lastName}</h4>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 pt-4">
+                <button 
+                  disabled={!newGroupData.name || newGroupData.memberIds.length === 0 || creatingGroup}
+                  onClick={handleCreateGroup}
+                  className="flex-1 h-14 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-brand-600/20 disabled:opacity-50 flex items-center justify-center gap-3"
+                >
+                  {creatingGroup ? <Loader2 size={18} className="animate-spin" /> : <Users size={18} />}
+                  إنشاء الجروب
+                </button>
+                <button 
+                  onClick={() => setIsCreateGroupModalOpen(false)}
                   className="flex-1 h-14 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:bg-slate-200 dark:hover:bg-white/10"
                 >
                   إلغاء
