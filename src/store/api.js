@@ -115,6 +115,7 @@ export const getExpensesAPI = () => api.get('/expenses');
 export const createExpenseAPI = (data) => api.post('/expenses', data);
 export const updateExpenseAPI = (id, data) => api.put(`/expenses/${id}`, data);
 export const deleteExpenseAPI = (id) => api.delete(`/expenses/${id}`);
+export const downloadExpensePDFAPI = (id) => api.get(`/expenses/${id}/download`, { responseType: 'blob' });
 export const downloadTeamDuePDFAPI = (id) => api.get(`/expenses/${id}/download`, { responseType: 'blob' });
 
 // Bonuses

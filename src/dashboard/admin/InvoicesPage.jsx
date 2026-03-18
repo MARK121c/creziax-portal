@@ -31,7 +31,7 @@ const InvoicesPage = () => {
   });
 
   const [dueForm, setDueForm] = useState({
-    userId: '', description: '', amount: '', transferMethod: ''
+    userId: '', description: '', amount: '', transferMethod: '', transferDetails: ''
   });
 
   const paymentMethods = ['PayPal', 'Payoneer', 'Barq', 'InstaPay', 'Bank Transfer', 'Vodafone Cash'];
@@ -135,12 +135,13 @@ const InvoicesPage = () => {
         category: 'TEAM_DUE', 
         description: dueForm.description, 
         transferMethod: dueForm.transferMethod, 
+        transferDetails: dueForm.transferDetails,
         userId: dueForm.userId 
       });
       toast.success('Due created successfully!', { id: loadingToast });
       addNotification(`New Team Due created for $${dueForm.amount}`, 'success');
       setShowDueModal(false);
-      setDueForm({ userId: '', description: '', amount: '', transferMethod: '' });
+      setDueForm({ userId: '', description: '', amount: '', transferMethod: '', transferDetails: '' });
       fetchData();
     } catch (err) {
       const msg = err.response?.data?.message || 'Error saving due';
@@ -419,6 +420,9 @@ const InvoicesPage = () => {
                       </td>
                       <td className="px-6 md:px-10 py-5 md:py-7 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <button onClick={() => handleDownloadDuePDF(due.id)} className="p-3 text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 rounded-2xl transition-all" title="تحميل إيصال الدفع">
+                            <FileText size={18} />
+                          </button>
                           <button onClick={() => handleDeleteDue(due.id)} className="p-3 text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 rounded-2xl transition-all">
                             <Trash2 size={18} />
                           </button>
@@ -552,6 +556,22 @@ const InvoicesPage = () => {
                   </select>
                 </div>
               </div>
+              {/* Dynamic transfer details field */}
+              {dueForm.transferMethod && (
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">
+                    تفاصيل التحويل لـ {dueForm.transferMethod} — <span className="text-amber-400">اختياري (سيبدأ في إيصال الـ PDF)</span>
+                  </label>
+                  <textarea
+                    value={dueForm.transferDetails}
+                    onChange={e => setDueForm({...dueForm, transferDetails: e.target.value})}
+                    rows={2}
+                    className="w-full px-5 py-4 bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 font-bold resize-none placeholder:text-slate-400"
+                    placeholder={`مثال: ${dueForm.transferMethod === 'Vodafone Cash' || dueForm.transferMethod === 'InstaPay' ? `تم التحويل على رقم: 010XXXXXXXX` : dueForm.transferMethod === 'Bank Transfer' ? 'رقم الحساب: 12345 | البنك: الأهلي' : `تفاصيل التحويل لـ ${dueForm.transferMethod}`}`}
+                  />
+                  <p className="text-[10px] text-slate-400 mt-2 font-medium">💡 لإضافة توثيق ورقم مرجعي للتحويل في ملف الـ PDF.</p>
+                </div>
+              )}
               <div className="pt-4 flex gap-4 border-t border-slate-100 dark:border-white/5">
                 <button type="button" onClick={() => setShowDueModal(false)} className="flex-1 py-4 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all">إلغاء</button>
                 <button type="submit" disabled={submittingDue} className="flex-1 py-4 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 text-white font-bold rounded-2xl shadow-lg shadow-amber-500/20 transition-all active:scale-95">
