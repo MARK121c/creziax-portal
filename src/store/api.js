@@ -43,6 +43,7 @@ export const createUserAPI = (data) => api.post('/users', data);
 export const updateUserAPI = (id, data) => api.put(`/users/${id}`, data);
 export const deleteUserAPI = (id) => api.delete(`/users/${id}`);
 export const resetPasswordAPI = (id, newPassword) => api.post(`/users/${id}/reset-password`, { newPassword });
+export const grantChatAccessAPI = (userId, clientId) => api.patch(`/users/${userId}/grant-chat`, { clientId });
 
 // Clients
 export const getClientsAPI = () => api.get('/clients');

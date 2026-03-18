@@ -96,11 +96,24 @@ const WorkspaceDetail = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await createPhaseAPI(id, phaseForm);
+      const res = await createPhaseAPI(id, phaseForm);
+      const newPhase = res.data?.data || res.data;
+      
       toast.success(t('saved_successfully'));
       setShowAddPhase(false);
       setPhaseForm({ name: '', startDate: '', endDate: '' });
-      fetchData();
+      
+      // Update local state to show new phase immediately
+      setWorkspace(prev => ({
+        ...prev,
+        phases: [newPhase, ...(prev.phases || [])]
+      }));
+      
+      // If the new phase is a month (e.g. "March 2024"), expand it
+      if (newPhase?.id) {
+        setExpandedPhases(prev => ({ ...prev, [newPhase.id]: true }));
+        setPhaseTasks(prev => ({ ...prev, [newPhase.id]: [] }));
+      }
     } catch (err) { toast.error(t('error_general')); }
     finally { setSubmitting(false); }
   };
@@ -434,7 +447,7 @@ const WorkspaceDetail = () => {
               <form onSubmit={handleAddTask} className="space-y-8">
                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 opacity-70 italic">عنوان الفيديو</label>
-                    <input value={taskForm.title} onChange={e => setTaskForm({...taskForm, title: e.target.value})} required placeholder="مثال: كيف تصنع فيديو احترافي؟" className="w-full px-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500/20" />
+                    <input value={taskForm?.title || ''} onChange={e => setTaskForm(prev => ({...prev, title: e.target.value}))} required placeholder="مثال: كيف تصنع فيديو احترافي؟" className="w-full px-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-100 rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500/20" />
                  </div>
                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 opacity-70 italic">تاريخ النشر المتوقع</label>
