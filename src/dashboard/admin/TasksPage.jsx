@@ -240,7 +240,9 @@ const TasksPage = () => {
     return productionTasks.filter(t => {
       const matchesSearch = t.title.toLowerCase().includes(filters.search.toLowerCase()) || t.workspaceName.toLowerCase().includes(filters.search.toLowerCase());
       const matchesProject = filters.projectId === 'ALL' || t.workspaceId === filters.projectId;
-      const matchesAssignee = filters.assigneeId === 'ALL' || t.assignedToId === filters.assigneeId;
+      const matchesAssignee = filters.assigneeId === 'ALL' || 
+                             t.assignedToId === filters.assigneeId || 
+                             teamMembers.find(m => m.id === filters.assigneeId)?.teamMemberInfo?.id === t.assignedToId;
       return matchesSearch && matchesProject && matchesAssignee;
     }).sort((a,b) => sortOrder === 'ASC' ? new Date(a.deadline) - new Date(b.deadline) : new Date(b.deadline) - new Date(a.deadline));
   }, [productionTasks, filters, sortOrder]);
@@ -251,7 +253,9 @@ const TasksPage = () => {
       if (t.phaseId) return false;
 
       const matchesSearch = t.title.toLowerCase().includes(filters.search.toLowerCase()) || (t.description || '').toLowerCase().includes(filters.search.toLowerCase());
-      const matchesAssignee = filters.assigneeId === 'ALL' || t.assignedToId === filters.assigneeId;
+      const matchesAssignee = filters.assigneeId === 'ALL' || 
+                             t.assignedToId === filters.assigneeId || 
+                             teamMembers.find(m => m.id === filters.assigneeId)?.teamMemberInfo?.id === t.assignedToId;
       
       let matchesStatus = true;
       if (filters.status !== 'ALL') {
@@ -271,7 +275,8 @@ const TasksPage = () => {
     const overdue = teamTasks.filter(t => t.status === 'IDEA' && isTaskOverdue(t));
     const counts = {};
     overdue.forEach(t => {
-      const name = t.assignedTo?.firstName || 'Unknown';
+      const u = teamMembers.find(m => m.teamMemberInfo?.id === t.assignedToId || m.id === t.assignedToId);
+      const name = u ? `${u.firstName} ${u.lastName}` : (t.assignedTo?.user?.firstName || 'غير معروف');
       counts[name] = (counts[name] || 0) + 1;
     });
     return { 
@@ -331,7 +336,7 @@ const TasksPage = () => {
                    <div className="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center font-black text-xl">{count}</div>
                    <div>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2 text-right">تحذيرات: {name}</p>
-                      <p className="text-sm font-black text-slate-800 dark:text-white uppercase text-right">Overdue: {count}</p>
+                      <p className="text-sm font-black text-slate-800 dark:text-white uppercase text-right">متأخر: {count}</p>
                    </div>
                 </div>
              ))}
