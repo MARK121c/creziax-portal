@@ -64,7 +64,7 @@ const ContractsPage = () => {
         }));
       }
     }
-  }, [form.clientId]);
+  }, [form.clientId, clients]);
 
   const openCreateModal = () => {
     setEditingContract(null);
@@ -99,12 +99,20 @@ const ContractsPage = () => {
     }
     setSubmitting(true);
     const loadingToast = toast.loading(editingContract ? 'جاري تحديث العقد...' : 'جاري إنشاء العقد...');
+    const payload = {
+      ...form,
+      clientId: form.clientId || null,
+      clientPhone: form.clientPhone || null,
+      clientYoutube: form.clientYoutube || null,
+      extraFields: form.extraFields.filter(f => f.label || f.value),
+    };
+
     try {
       if (editingContract) {
-        await updateContractAPI(editingContract.id, form);
+        await updateContractAPI(editingContract.id, payload);
         toast.success('تم تحديث العقد بنجاح', { id: loadingToast });
       } else {
-        await createContractAPI(form);
+        await createContractAPI(payload);
         toast.success('تم إنشاء العقد بنجاح', { id: loadingToast });
       }
       setShowModal(false);
