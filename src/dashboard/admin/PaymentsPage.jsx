@@ -41,7 +41,7 @@ const PaymentsPage = () => {
       setExpenses(expensesRes.data || []);
       setBonuses(bonusesRes.data || []);
     } catch (err) {
-      toast.error(t('error_loading_financials') || 'Failed to load financial data');
+      toast.error(t('error_general'));
     } finally {
       setLoading(false);
     }
@@ -85,7 +85,7 @@ const PaymentsPage = () => {
     const mappedExpenses = expenses.map(exp => ({
       ...exp,
       type: exp.userId ? 'DUE' : 'OPERATIONAL',
-      name: exp.user ? `${exp.user.firstName} ${exp.user.lastName}` : `Agency / ${exp.category}`,
+      name: exp.user ? `${exp.user.firstName} ${exp.user.lastName}` : `${t('agency_portal')} / ${exp.category}`,
       purpose: exp.description || exp.category,
       color: exp.userId ? 'amber' : 'rose',
       icon: exp.userId ? TrendingDown : Building2,
@@ -96,8 +96,8 @@ const PaymentsPage = () => {
     const mappedBonuses = bonuses.map(bonus => ({
       ...bonus,
       type: 'BONUS',
-      name: bonus.user ? `${bonus.user.firstName} ${bonus.user.lastName}` : 'Team Member',
-      purpose: bonus.reason || 'Performance Bonus',
+      name: bonus.user ? `${bonus.user.firstName} ${bonus.user.lastName}` : t('member'),
+      purpose: bonus.reason || t('bonus_reason'),
       color: 'sky',
       icon: Gift,
       date: bonus.date || bonus.createdAt,
@@ -150,7 +150,7 @@ const PaymentsPage = () => {
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
         <div>
           <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight uppercase">
-            Financial <span className="text-brand-500">Ledger</span>
+            {t('ledger_title').split(' ')[0]} <span className="text-brand-500">{t('ledger_title').split(' ')[1]}</span>
           </h1>
           <p className="text-slate-500 dark:text-slate-400 font-bold mt-2 text-lg border-l-4 border-brand-500/30 pl-4 uppercase tracking-tighter">
             V 2.5 — <span className="text-brand-600">Unified Financial Hub</span>
@@ -162,16 +162,16 @@ const PaymentsPage = () => {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={18} />
             <input 
               type="text"
-              placeholder="Search Ledger Name or Purpose..."
+              placeholder={t('search_ledger_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-11 pr-6 py-4 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all w-full sm:w-64 md:w-80 shadow-sm font-bold"
             />
           </div>
           <div className="flex items-center bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200 dark:border-white/10">
-             <button onClick={() => setDateFilter('all')} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${dateFilter === 'all' ? 'bg-white dark:bg-brand-500 text-brand-600 dark:text-white shadow-sm' : 'text-slate-500'}`}>All</button>
-             <button onClick={() => setDateFilter('thisMonth')} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${dateFilter === 'thisMonth' ? 'bg-white dark:bg-brand-500 text-brand-600 dark:text-white shadow-sm' : 'text-slate-500'}`}>This Month</button>
-             <button onClick={() => setDateFilter('lastMonth')} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${dateFilter === 'lastMonth' ? 'bg-white dark:bg-brand-500 text-brand-600 dark:text-white shadow-sm' : 'text-slate-500'}`}>Last Month</button>
+             <button onClick={() => setDateFilter('all')} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${dateFilter === 'all' ? 'bg-white dark:bg-brand-500 text-brand-600 dark:text-white shadow-sm' : 'text-slate-500'}`}>{t('filter_all')}</button>
+             <button onClick={() => setDateFilter('thisMonth')} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${dateFilter === 'thisMonth' ? 'bg-white dark:bg-brand-500 text-brand-600 dark:text-white shadow-sm' : 'text-slate-500'}`}>{t('filter_this_month')}</button>
+             <button onClick={() => setDateFilter('lastMonth')} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${dateFilter === 'lastMonth' ? 'bg-white dark:bg-brand-500 text-brand-600 dark:text-white shadow-sm' : 'text-slate-500'}`}>{t('filter_last_month')}</button>
           </div>
         </div>
       </div>
@@ -183,14 +183,14 @@ const PaymentsPage = () => {
           <div className="absolute top-6 right-6 p-4 rounded-2xl bg-emerald-500/10 text-emerald-500">
              <TrendingUp size={24} />
           </div>
-          <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-[0.25em] mb-4">Total Revenue</p>
+          <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-[0.25em] mb-4">{t('stat_gross_revenue')}</p>
           <div className="flex items-baseline gap-2">
             <h3 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter">${stats.totalRevenue.toLocaleString()}</h3>
             <span className="text-xs font-bold text-emerald-500/60 uppercase">USD</span>
           </div>
           <p className="text-[10px] font-bold text-slate-400 mt-4 flex items-center gap-2">
              <CheckCircle2 size={12} className="text-emerald-500" />
-             Aggregated from all PAID Invoices
+             {t('rev_sub_detail')}
           </p>
         </div>
 
@@ -199,14 +199,14 @@ const PaymentsPage = () => {
           <div className="absolute top-6 right-6 p-4 rounded-2xl bg-rose-500/10 text-rose-500">
              <TrendingDown size={24} />
           </div>
-          <p className="text-[10px] font-black text-rose-600 dark:text-rose-500 uppercase tracking-[0.25em] mb-4">Total Expenses</p>
+          <p className="text-[10px] font-black text-rose-600 dark:text-rose-500 uppercase tracking-[0.25em] mb-4">{t('total_expenses')}</p>
           <div className="flex items-baseline gap-2">
             <h3 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter">${stats.totalExpenses.toLocaleString()}</h3>
             <span className="text-xs font-bold text-rose-500/60 uppercase">USD</span>
           </div>
           <p className="text-[10px] font-bold text-slate-400 mt-4 flex items-center gap-2">
              <ArrowDownRight size={12} className="text-rose-500" />
-             Dues + Bonuses + Ops Expenses
+             {t('exp_sub_detail')}
           </p>
         </div>
 
@@ -219,14 +219,14 @@ const PaymentsPage = () => {
           <div className="absolute top-6 right-6 p-4 rounded-2xl bg-white/10 text-white">
              <Wallet size={24} />
           </div>
-          <p className="text-[10px] font-black text-white/70 uppercase tracking-[0.25em] mb-4">Final Net Profit</p>
+          <p className="text-[10px] font-black text-white/70 uppercase tracking-[0.25em] mb-4">{t('stat_net_profit')}</p>
           <div className="flex items-baseline gap-2">
             <h3 className="text-4xl md:text-5xl font-black text-white tracking-tighter">${stats.netProfit.toLocaleString()}</h3>
             <span className="text-xs font-bold text-white/60 uppercase">USD</span>
           </div>
           <p className="text-[10px] font-bold text-white/40 mt-4 flex items-center gap-2">
              <CheckCircle2 size={12} />
-             Consolidated Agency Balance
+             {t('profit_sub_detail')}
           </p>
         </div>
       </div>
@@ -238,13 +238,13 @@ const PaymentsPage = () => {
             onClick={() => setActiveTab('revenue')}
             className={`px-10 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'revenue' ? 'bg-white dark:bg-brand-500 text-brand-600 dark:text-white shadow-xl' : 'text-slate-500'}`}
           >
-            Collections <span className="opacity-40 ml-2 font-mono">({revenueData.length})</span>
+            {t('tab_collections')} <span className="opacity-40 ml-2 font-mono">({revenueData.length})</span>
           </button>
           <button 
             onClick={() => setActiveTab('expenses')}
             className={`px-10 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'expenses' ? 'bg-white dark:bg-brand-500 text-brand-600 dark:text-white shadow-xl' : 'text-slate-500'}`}
           >
-            Payments <span className="opacity-40 ml-2 font-mono">({expenseData.length})</span>
+            {t('tab_payments')} <span className="opacity-40 ml-2 font-mono">({expenseData.length})</span>
           </button>
         </div>
 
@@ -255,19 +255,19 @@ const PaymentsPage = () => {
               <thead>
                 <tr className="border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02]">
                   <th className="text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-10 py-7">
-                    {activeTab === 'revenue' ? 'Source / Category' : 'Recipient / Purpose'}
+                    {activeTab === 'revenue' ? t('col_source_category') : t('col_recipient_purpose')}
                   </th>
                   <th className="text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-10 py-7 hidden md:table-cell">
-                    Type
+                    {t('tier')}
                   </th>
                   <th className="text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-10 py-7">
-                    Amount
+                    {t('amount')}
                   </th>
                   <th className="text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-10 py-7 hidden sm:table-cell">
-                    Execution Date
+                    {t('col_execution_date')}
                   </th>
                   <th className="text-right text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] px-10 py-7">
-                    Status
+                    {t('status')}
                   </th>
                 </tr>
               </thead>
@@ -276,7 +276,7 @@ const PaymentsPage = () => {
                   <tr>
                     <td colSpan={5} className="py-32 text-center">
                       <Loader2 size={40} className="animate-spin text-brand-500 mx-auto mb-6" />
-                      <p className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Mapping Financial Matrix...</p>
+                      <p className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">{t('ledger_loading_msg')}</p>
                     </td>
                   </tr>
                 ) : (activeTab === 'revenue' ? revenueData : expenseData).length === 0 ? (
@@ -285,8 +285,8 @@ const PaymentsPage = () => {
                       <div className="w-24 h-24 bg-slate-50 dark:bg-white/5 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 border border-slate-100 dark:border-white/5">
                         <History size={40} className="text-slate-200 dark:text-slate-700" />
                       </div>
-                      <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tighter">No Ledger Entries</h3>
-                      <p className="text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-widest">Adjust filters to find historical records</p>
+                      <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2 uppercase tracking-tighter">{t('no_ledger_title')}</h3>
+                      <p className="text-slate-500 dark:text-slate-400 font-bold uppercase text-[10px] tracking-widest">{t('no_ledger_desc')}</p>
                     </td>
                   </tr>
                 ) : (
@@ -321,7 +321,7 @@ const PaymentsPage = () => {
                             {activeTab === 'revenue' ? 'INVOICE' : item.type}
                           </span>
                           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">
-                            Via {activeTab === 'revenue' ? (item.paymentMethod || 'Wire Transfer') : (item.transferMethod || 'Agency Account')}
+                             {activeTab === 'revenue' ? (item.paymentMethod || 'Wire Transfer') : (item.transferMethod || 'Agency Account')}
                           </span>
                         </div>
                       </td>
@@ -339,7 +339,7 @@ const PaymentsPage = () => {
                       <td className="px-10 py-8 text-right">
                         <div className="flex items-center justify-end gap-3 text-emerald-500 bg-emerald-500/10 px-4 py-2 rounded-2xl w-fit ml-auto border border-emerald-500/20">
                           <CheckCircle2 size={14} />
-                          <span className="text-[10px] font-black uppercase tracking-widest">Confirmed</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest">{t('status_confirmed')}</span>
                         </div>
                       </td>
                     </tr>

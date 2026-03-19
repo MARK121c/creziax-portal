@@ -310,14 +310,14 @@ const ProfilePage = () => {
                   <Wallet size={24} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">إعدادات الدفع (Finance Settings)</h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Automatic Payment Instructions</p>
+                  <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">{t('finance_settings')}</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{t('finance_settings_desc')}</p>
                 </div>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">PayPal Email</label>
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">{t('paypal_email')}</label>
                   <input
                     type="text"
                     name="paypal"
@@ -328,7 +328,7 @@ const ProfilePage = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">Vodafone Cash Number</label>
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">{t('vodafone_number')}</label>
                   <input
                     type="text"
                     name="vodafone"
@@ -339,7 +339,7 @@ const ProfilePage = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">InstaPay / Barq Address</label>
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">{t('instapay_address')}</label>
                   <input
                     type="text"
                     name="instapay"
@@ -350,7 +350,7 @@ const ProfilePage = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">Bank Transfer Details</label>
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">{t('bank_details')}</label>
                   <textarea
                     name="bank"
                     value={formData.bank}
