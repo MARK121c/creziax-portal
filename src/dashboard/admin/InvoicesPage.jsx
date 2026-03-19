@@ -116,25 +116,39 @@ const InvoicesPage = () => {
   };
 
   const handleDownloadPDF = async (inv) => {
+    console.log('Starting PDF generation for:', inv.invoiceNumber);
     const loadingToast = toast.loading('Generating premium PDF...');
     try {
       setPrintingInvoice(inv);
       // Wait for React to render the component
       setTimeout(() => {
+        console.log('React rendered template, capturing element...');
         const element = invoiceRef.current;
+        if (!element) {
+          console.error('Invoice element not found!');
+          toast.error('Internal Error: Template not found', { id: loadingToast });
+          return;
+        }
+        
         const opt = {
           margin: 0,
           filename: `Invoice-${inv.invoiceNumber}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+          html2canvas: { scale: 1, useCORS: true, letterRendering: true },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
+        console.log('Calling html2pdf...');
         html2pdf().from(element).set(opt).save().then(() => {
+          console.log('PDF generation complete!');
           setPrintingInvoice(null);
           toast.success('PDF Downloaded!', { id: loadingToast });
+        }).catch(err => {
+          console.error('html2pdf Error:', err);
+          toast.error('Generation Error', { id: loadingToast });
+          setPrintingInvoice(null);
         });
-      }, 500);
+      }, 800);
     } catch (err) {
       console.error('PDF Error:', err);
       toast.error('Failed to generate PDF', { id: loadingToast });
@@ -196,25 +210,39 @@ const InvoicesPage = () => {
   };
 
   const handleDownloadDuePDF = async (due) => {
+    console.log('Starting Team Due PDF generation...');
     const loadingToast = toast.loading('Generating receipt PDF...');
     try {
       setPrintingDue(due);
       // Wait for React to render the component
       setTimeout(() => {
+        console.log('React rendered template, capturing element...');
         const element = dueRef.current;
+        if (!element) {
+          console.error('Due element not found!');
+          toast.error('Internal Error: Template not found', { id: loadingToast });
+          return;
+        }
+
         const opt = {
           margin: 0,
           filename: `TeamDue-${due.id?.slice(0, 8)}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+          html2canvas: { scale: 1, useCORS: true, letterRendering: true },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
+        console.log('Calling html2pdf...');
         html2pdf().from(element).set(opt).save().then(() => {
+          console.log('Team Due PDF generation complete!');
           setPrintingDue(null);
           toast.success('PDF Downloaded!', { id: loadingToast });
+        }).catch(err => {
+          console.error('html2pdf Error:', err);
+          toast.error('Generation Error', { id: loadingToast });
+          setPrintingDue(null);
         });
-      }, 500);
+      }, 800);
     } catch (err) {
       console.error('PDF Error:', err);
       toast.error('Failed to generate PDF', { id: loadingToast });
