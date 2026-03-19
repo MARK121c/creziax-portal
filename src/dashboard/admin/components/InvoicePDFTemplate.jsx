@@ -5,117 +5,120 @@ const InvoicePDFTemplate = ({ invoice }) => {
 
   const isPaid = invoice.status === 'PAID';
 
-  // Safe Hex Colors for html2canvas compatibility (avoiding oklch)
   const colors = {
-    indigo600: '#4f46e5',
-    indigo100: '#e0e7ff',
-    indigo50: '#eef2ff',
-    slate900: '#0f172a',
-    slate800: '#1e293b',
-    slate400: '#94a3b8',
-    slate300: '#cbd5e1',
-    slate100: '#f1f5f9',
-    slate50: '#f8fafc',
-    emerald500: '#10b981',
-    amber500: '#f59e0b',
+    black: '#000000',
+    white: '#ffffff',
+    slate900: '#111827',
+    slate700: '#374151',
+    slate500: '#6b7280',
+    slate400: '#9ca3af',
+    slate200: '#e5e7eb',
+    slate100: '#f3f4f6',
+    slate50: '#f9fafb',
+    emerald600: '#059669',
+    amber600: '#d97706',
   };
 
+  // Minimalist English-only design, no Tailwind classes to avoid oklch errors
   return (
     <div 
-      dir="rtl" 
-      className="bg-white p-12 w-[794px] min-h-[1123px] mx-auto relative border"
       style={{ 
-        fontFamily: "'Cairo', sans-serif", 
+        width: '794px', 
+        minHeight: '1123px', 
+        padding: '64px',
+        backgroundColor: colors.white,
         color: colors.slate900,
-        backgroundColor: '#ffffff'
+        fontFamily: "'Outfit', sans-serif",
+        position: 'relative',
+        boxSizing: 'border-box',
+        border: `1px solid ${colors.slate100}`
       }}
     >
       {/* Header */}
-      <div className="flex justify-between items-start mb-16">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '80px' }}>
         <div>
-          <h1 className="text-4xl font-[900] tracking-tighter mb-1" style={{ color: colors.indigo600 }}>CREZIAX</h1>
-          <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: colors.slate400 }}>Creative Agency</p>
+          <h1 style={{ fontSize: '36px', fontWeight: '900', margin: '0 0 4px 0', letterSpacing: '-0.05em', color: colors.black }}>CREZIAX</h1>
+          <p style={{ fontSize: '10px', fontWeight: '700', margin: 0, letterSpacing: '0.3em', textTransform: 'uppercase', opacity: 0.5 }}>STUDIO & AGENCY</p>
         </div>
-        <div className="text-left" dir="ltr">
-          <h2 className="text-5xl font-[900] uppercase leading-none mb-4" style={{ color: colors.slate100 }}>INVOICE</h2>
-          <div className="space-y-1">
-            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: colors.slate400 }}>Invoice No.</p>
-            <p className="text-sm font-black" style={{ color: colors.slate800 }}>{invoice.invoiceNumber}</p>
+        <div style={{ textAlign: 'right' }}>
+          <h2 style={{ fontSize: '48px', fontWeight: '900', color: colors.slate100, margin: '0 0 24px 0', textTransform: 'uppercase', lineHeight: 1 }}>INVOICE</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <p style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0, color: colors.slate400 }}>Reference</p>
+            <p style={{ fontSize: '14px', fontWeight: '700', margin: 0 }}>{invoice.invoiceNumber}</p>
           </div>
         </div>
       </div>
 
-      {/* Meta Info */}
-      <div className="grid grid-cols-2 gap-12 mb-16">
+      {/* Info Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', marginBottom: '80px' }}>
         <div>
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-3" style={{ color: colors.slate400 }}>Billed To / العميل</h3>
-          <p className="text-xl font-black" style={{ color: colors.slate800 }}>
+          <p style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '16px', margin: '0 0 16px 0', opacity: 0.5 }}>Billed To</p>
+          <p style={{ fontSize: '24px', fontWeight: '900', letterSpacing: '-0.025em', margin: 0 }}>
             {invoice.client?.user?.firstName} {invoice.client?.user?.lastName}
           </p>
         </div>
-        <div className="text-left" dir="ltr">
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-3" style={{ color: colors.slate400 }}>Date / التاريخ</h3>
-          <p className="text-lg font-bold" style={{ color: colors.slate800 }}>
-            {new Date(invoice.createdAt).toLocaleDateString('en-GB')}
+        <div style={{ textAlign: 'right' }}>
+          <p style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '16px', margin: '0 0 16px 0', opacity: 0.5 }}>Date Issued</p>
+          <p style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>
+            {new Date(invoice.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
       </div>
 
-      {/* Status Stamp */}
-      <div className="absolute top-[20%] left-[10%] rotate-[-15deg] opacity-20 pointer-events-none">
+      {/* Line Item */}
+      <div style={{ marginBottom: '80px' }}>
+        <div style={{ borderBottom: `2px solid ${colors.black}`, paddingBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.3em', opacity: 0.5 }}>Description</span>
+          <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.3em', opacity: 0.5 }}>Amount</span>
+        </div>
+        <div style={{ padding: '40px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <p style={{ fontSize: '24px', fontWeight: '900', letterSpacing: '-0.025em', margin: 0 }}>{invoice.service || 'Creative Services'}</p>
+          <p style={{ fontSize: '30px', fontWeight: '900', margin: 0 }}>${invoice.amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+        </div>
+        <div style={{ borderTop: `1px solid ${colors.slate100}`, marginTop: '8px' }}></div>
+      </div>
+
+      {/* Summary */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '120px' }}>
+        <div style={{ width: '280px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', padding: '0 8px' }}>
+            <span style={{ fontSize: '14px', fontWeight: '700', opacity: 0.5 }}>Subtotal</span>
+            <span style={{ fontSize: '18px', fontWeight: '700', letterSpacing: '-0.025em' }}>${invoice.amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px', backgroundColor: colors.slate900, borderRadius: '8px', color: colors.white }}>
+            <span style={{ fontSize: '14px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total</span>
+            <span style={{ fontSize: '30px', fontWeight: '900' }}>${invoice.amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Details */}
+      {(invoice.paymentMethod || invoice.paymentDetails) && (
+        <div style={{ maxWidth: '448px', borderTop: `1px solid ${colors.slate100}`, paddingTop: '40px' }}>
+          <p style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '16px', opacity: 0.5 }}>Payment Instructions</p>
+          <p style={{ fontSize: '14px', fontWeight: '700', lineHeight: 1.6, whiteSpace: 'pre-wrap', color: colors.slate700, margin: 0 }}>
+            {invoice.paymentDetails ? invoice.paymentDetails : `Please settle via ${invoice.paymentMethod}`}
+          </p>
+        </div>
+      )}
+
+      {/* Minimalist Corner Stamp */}
+      <div style={{ position: 'absolute', bottom: '96px', right: '64px', pointerEvents: 'none', opacity: 0.8 }}>
         {isPaid ? (
-          <div className="border-8 rounded-3xl p-6" style={{ borderColor: colors.emerald500 }}>
-            <span className="text-7xl font-black uppercase" style={{ color: colors.emerald500 }}>PAID</span>
+          <div style={{ border: `4px solid ${colors.emerald600}`, borderRadius: '12px', padding: '8px 16px', transform: 'rotate(-5deg)' }}>
+            <span style={{ fontSize: '24px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', color: colors.emerald600 }}>PAID</span>
           </div>
         ) : (
-          <div className="border-8 rounded-3xl p-6" style={{ borderColor: colors.amber500 }}>
-            <span className="text-7xl font-black uppercase tracking-tighter" style={{ color: colors.amber500 }}>PENDING</span>
+          <div style={{ border: `4px solid ${colors.amber600}`, borderRadius: '12px', padding: '8px 16px', transform: 'rotate(-5deg)' }}>
+            <span style={{ fontSize: '24px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', color: colors.amber600 }}>PENDING</span>
           </div>
         )}
       </div>
 
-      {/* Items Table */}
-      <div className="mb-16">
-        <div className="border-b-2 pb-4 flex justify-between" style={{ borderColor: colors.slate100 }}>
-          <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: colors.slate400 }}>Service Description / وصف الخدمة</span>
-          <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: colors.slate400 }}>Amount / المبلغ</span>
-        </div>
-        <div className="py-8 flex justify-between items-center border-b" style={{ borderColor: colors.slate50 }}>
-          <p className="text-xl font-black" style={{ color: colors.slate800 }}>{invoice.service}</p>
-          <p className="text-2xl font-black" style={{ color: colors.slate800 }}>${invoice.amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-        </div>
-      </div>
-
-      {/* Total Section */}
-      <div className="flex justify-end mb-24">
-        <div className="w-64">
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-xs font-bold" style={{ color: colors.slate400 }}>Subtotal</span>
-            <span className="text-lg font-bold" style={{ color: colors.slate800 }}>${invoice.amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-          </div>
-          <div className="flex justify-between items-center p-4 rounded-2xl" style={{ backgroundColor: colors.slate50 }}>
-            <span className="text-sm font-black uppercase" style={{ color: colors.slate800 }}>Total Amount</span>
-            <span className="text-2xl font-black" style={{ color: colors.indigo600 }}>${invoice.amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Payment Footer */}
-      {(invoice.paymentMethod || invoice.paymentDetails) && (
-        <div className="mt-auto pt-16 border-t-2" style={{ borderColor: colors.slate100 }}>
-          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4" style={{ color: colors.slate400 }}>Payment Instructions / تعليمات الدفع</h4>
-          <div className="p-6 rounded-3xl border" style={{ backgroundColor: colors.indigo50, borderColor: colors.indigo100 }}>
-            <p className="text-sm font-bold leading-relaxed whitespace-pre-wrap" style={{ color: colors.slate800 }}>
-              {invoice.paymentDetails ? invoice.paymentDetails : `يرجى الدفع عبر ${invoice.paymentMethod}`}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Absolute Footer */}
-      <div className="absolute bottom-12 left-0 right-0 text-center">
-        <p className="text-[10px] font-medium" style={{ color: colors.slate300 }}>
-          Thank you for choosing Creziax Agency. This is an electronic document generated on {new Date().toLocaleDateString()}.
+      {/* Footer */}
+      <div style={{ position: 'absolute', bottom: '48px', left: '64px', right: '64px', borderTop: `1px solid ${colors.slate50}`, paddingTop: '32px' }}>
+        <p style={{ fontSize: '9px', fontWeight: '700', color: '#cbd5e1', letterSpacing: '0.1em', textAlign: 'center', textTransform: 'uppercase', margin: 0 }}>
+          Generated via Creziax Internal Portal. Electronic Document. No signature required.
         </p>
       </div>
     </div>

@@ -5,118 +5,116 @@ const TeamDuePDFTemplate = ({ due }) => {
 
   const isSent = due.status === 'SENT';
 
-  // Safe Hex Colors for html2canvas compatibility (avoiding oklch)
   const colors = {
-    amber500: '#f59e0b',
+    black: '#000000',
+    white: '#ffffff',
+    slate900: '#111827',
+    slate700: '#374151',
+    slate500: '#6b7280',
+    slate400: '#9ca3af',
+    slate100: '#f3f4f6',
+    slate50: '#f9fafb',
+    emerald600: '#059669',
     amber600: '#d97706',
-    amber100: '#fef3c7',
-    amber50: '#fffbeb',
-    slate900: '#0f172a',
-    slate800: '#1e293b',
-    slate600: '#475569',
-    slate400: '#94a3b8',
-    slate300: '#cbd5e1',
-    slate100: '#f1f5f9',
-    slate50: '#f8fafc',
-    emerald500: '#10b981',
   };
 
   return (
     <div 
-      dir="rtl" 
-      className="bg-white p-12 w-[794px] min-h-[1123px] mx-auto relative border"
       style={{ 
-        fontFamily: "'Cairo', sans-serif", 
+        width: '794px', 
+        minHeight: '1123px', 
+        padding: '64px',
+        backgroundColor: colors.white,
         color: colors.slate900,
-        backgroundColor: '#ffffff'
+        fontFamily: "'Outfit', sans-serif",
+        position: 'relative',
+        boxSizing: 'border-box',
+        border: `1px solid ${colors.slate100}`
       }}
     >
       {/* Header */}
-      <div className="flex justify-between items-start mb-16">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '80px' }}>
         <div>
-          <h1 className="text-4xl font-[900] tracking-tighter mb-1" style={{ color: colors.amber500 }}>CREZIAX</h1>
-          <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: colors.slate400 }}>Internal Financial Voucher</p>
+          <h1 style={{ fontSize: '36px', fontWeight: '900', margin: '0 0 4px 0', letterSpacing: '-0.05em', color: colors.black }}>CREZIAX</h1>
+          <p style={{ fontSize: '10px', fontWeight: '700', margin: 0, letterSpacing: '0.3em', textTransform: 'uppercase', opacity: 0.5 }}>FINANCIAL VOUCHER</p>
         </div>
-        <div className="text-left" dir="ltr">
-          <h2 className="text-4xl font-[900] uppercase leading-none mb-4" style={{ color: colors.slate100 }}>PAYMENT VOUCHER</h2>
-          <div className="space-y-1">
-            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: colors.slate400 }}>Voucher ID</p>
-            <p className="text-sm font-black" style={{ color: colors.slate800 }}>#V-{due.id?.slice(0, 8).toUpperCase()}</p>
+        <div style={{ textAlign: 'right' }}>
+          <h2 style={{ fontSize: '42px', fontWeight: '900', color: colors.slate100, margin: '0 0 24px 0', textTransform: 'uppercase', lineHeight: 1 }}>INTERNAL RECEIPT</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <p style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0, color: colors.slate400 }}>Reference</p>
+            <p style={{ fontSize: '14px', fontWeight: '700', margin: 0 }}>#V-{due.id?.slice(0, 8).toUpperCase()}</p>
           </div>
         </div>
       </div>
 
-      {/* Meta Info */}
-      <div className="grid grid-cols-2 gap-12 mb-16">
+      {/* Info Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', marginBottom: '80px' }}>
         <div>
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-3" style={{ color: colors.slate400 }}>Paid To (Beneficiary) / المستلم</h3>
-          <p className="text-xl font-black" style={{ color: colors.slate800 }}>
-             {due.user ? `${due.user.firstName} ${due.user.lastName}` : 'N/A'}
+          <p style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '16px', margin: '0 0 16px 0', opacity: 0.5 }}>Paid To (Beneficiary)</p>
+          <p style={{ fontSize: '24px', fontWeight: '900', letterSpacing: '-0.025em', margin: 0 }}>
+            {due.user ? `${due.user.firstName} ${due.user.lastName}` : 'System User'}
           </p>
         </div>
-        <div className="text-left" dir="ltr">
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-3" style={{ color: colors.slate400 }}>Issued Date / التاريخ</h3>
-          <p className="text-lg font-bold" style={{ color: colors.slate800 }}>
-            {new Date(due.createdAt).toLocaleDateString('en-GB')}
+        <div style={{ textAlign: 'right' }}>
+          <p style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '16px', margin: '0 0 16px 0', opacity: 0.5 }}>Date Issued</p>
+          <p style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>
+            {new Date(due.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
-      </div>
-
-      {/* Status Stamp */}
-      <div className="absolute top-[20%] left-[10%] rotate-[-15deg] opacity-20 pointer-events-none">
-        {isSent ? (
-          <div className="border-8 rounded-3xl p-6" style={{ borderColor: colors.emerald500 }}>
-            <span className="text-7xl font-black uppercase" style={{ color: colors.emerald500 }}>SENT</span>
-          </div>
-        ) : (
-          <div className="border-8 rounded-3xl p-6" style={{ borderColor: colors.amber500 }}>
-            <span className="text-7xl font-black uppercase tracking-tighter" style={{ color: colors.amber500 }}>PENDING</span>
-          </div>
-        )}
       </div>
 
       {/* Details Table */}
-      <div className="mb-16">
-        <div className="border-b-2 pb-4 flex justify-between" style={{ borderColor: colors.slate100 }}>
-          <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: colors.slate400 }}>Description / بيان الصرف</span>
-          <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: colors.slate400 }}>Transfer Method / طريقة التحويل</span>
+      <div style={{ marginBottom: '80px' }}>
+        <div style={{ borderBottom: `2px solid ${colors.black}`, paddingBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.3em', opacity: 0.5 }}>Description & Purpose</span>
+          <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.3em', opacity: 0.5 }}>Payment Method</span>
         </div>
-        <div className="py-8 flex justify-between items-start border-b" style={{ borderColor: colors.slate50 }}>
-          <div className="max-w-md">
-            <p className="text-xl font-black leading-relaxed" style={{ color: colors.slate800 }}>{due.description}</p>
-          </div>
-          <div className="text-left" dir="ltr">
-            <p className="text-lg font-black uppercase" style={{ color: colors.slate800 }}>{due.transferMethod || 'Manual'}</p>
+        <div style={{ padding: '40px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <p style={{ fontSize: '20px', fontWeight: '700', margin: 0, maxWidth: '448px', lineHeight: 1.4 }}>{due.description || 'Service/Expense Reimbursement'}</p>
+          <p style={{ fontSize: '20px', fontWeight: '900', margin: 0 }}>{due.transferMethod || 'BANK'}</p>
+        </div>
+        <div style={{ borderTop: `1px solid ${colors.slate100}`, marginTop: '8px' }}></div>
+      </div>
+
+      {/* Total Section */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '120px' }}>
+        <div style={{ width: '280px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px', backgroundColor: colors.slate100, borderRadius: '8px' }}>
+            <span style={{ fontSize: '14px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Voucher Total</span>
+            <span style={{ fontSize: '28px', fontWeight: '900' }}>${due.amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
           </div>
         </div>
       </div>
 
-      {/* Amount Section */}
-      <div className="flex justify-end mb-24">
-        <div className="w-64">
-          <div className="flex justify-between items-center p-4 rounded-2xl border" style={{ backgroundColor: colors.amber50, borderColor: colors.amber100 }}>
-            <span className="text-sm font-black uppercase" style={{ color: colors.slate800 }}>Voucher Amount</span>
-            <span className="text-2xl font-black" style={{ color: colors.amber600 }}>${due.amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Transfer Details */}
+      {/* Transfer Information */}
       {due.transferDetails && (
-        <div className="mt-auto pt-16 border-t-2" style={{ borderColor: colors.slate100 }}>
-          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4" style={{ color: colors.slate400 }}>Transfer Confirmation / تأكيد التحويل</h4>
-          <div className="p-6 rounded-3xl border" style={{ backgroundColor: colors.slate50, borderColor: colors.slate100 }}>
-            <p className="text-sm font-bold leading-relaxed whitespace-pre-wrap" style={{ color: colors.slate600 }}>
+        <div style={{ maxWidth: '512px', borderTop: `1px solid ${colors.slate100}`, paddingTop: '40px' }}>
+          <p style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '16px', opacity: 0.5 }}>Transfer Information</p>
+          <div style={{ padding: '24px', backgroundColor: colors.slate50, borderRadius: '12px', border: `1px solid ${colors.slate100}` }}>
+            <p style={{ fontSize: '14px', fontWeight: '700', lineHeight: 1.6, whiteSpace: 'pre-wrap', color: colors.slate700, margin: 0 }}>
               {due.transferDetails}
             </p>
           </div>
         </div>
       )}
 
-      {/* Absolute Footer */}
-      <div className="absolute bottom-12 left-0 right-0 text-center">
-        <p className="text-[10px] font-medium" style={{ color: colors.slate300 }}>
-          Confidential Internal Document. Creziax Digital Systems. Generated on {new Date().toLocaleDateString()}.
+      {/* Minimalist Corner Stamp */}
+      <div style={{ position: 'absolute', bottom: '96px', right: '64px', pointerEvents: 'none', opacity: 0.8 }}>
+        {isSent ? (
+          <div style={{ border: `4px solid ${colors.emerald600}`, borderRadius: '12px', padding: '8px 16px', transform: 'rotate(-5deg)' }}>
+            <span style={{ fontSize: '24px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', color: colors.emerald600 }}>SENT</span>
+          </div>
+        ) : (
+          <div style={{ border: `4px solid ${colors.amber600}`, borderRadius: '12px', padding: '8px 16px', transform: 'rotate(-5deg)' }}>
+            <span style={{ fontSize: '24px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', color: colors.amber600 }}>PENDING</span>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div style={{ position: 'absolute', bottom: '48px', left: '64px', right: '64px', borderTop: `1px solid ${colors.slate100}`, paddingTop: '32px' }}>
+        <p style={{ fontSize: '9px', fontWeight: '700', color: '#cbd5e1', letterSpacing: '0.1em', textAlign: 'center', textTransform: 'uppercase', margin: 0 }}>
+          Creziax Internal Financial Document. Confidential. Generated on {new Date().toLocaleDateString()}.
         </p>
       </div>
     </div>
