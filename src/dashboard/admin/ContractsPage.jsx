@@ -95,11 +95,6 @@ const ContractsPage = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (form.clauses.some(c => !c.title || !c.content)) {
-      toast.error('تأكد أن كل البنود لها عنوان ومحتوى');
-      return;
-    }
     setSubmitting(true);
     const loadingToast = toast.loading(editingContract ? 'جاري تحديث العقد...' : 'جاري إنشاء العقد...');
     const payload = {
