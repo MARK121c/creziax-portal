@@ -138,14 +138,12 @@ const InvoicesPage = () => {
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        console.log('Calling html2pdf...');
         html2pdf().from(element).set(opt).save().then(() => {
-          console.log('PDF generation complete!');
           setPrintingInvoice(null);
           toast.success('PDF Downloaded!', { id: loadingToast });
         }).catch(err => {
-          console.error('html2pdf Error:', err);
-          toast.error('Error: ' + (err.message || 'Generation Failed'), { id: loadingToast });
+          console.error('PDF Error:', err);
+          toast.error('Generation Failed', { id: loadingToast });
           setPrintingInvoice(null);
         });
       }, 800);
@@ -232,14 +230,12 @@ const InvoicesPage = () => {
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        console.log('Calling html2pdf...');
         html2pdf().from(element).set(opt).save().then(() => {
-          console.log('Team Due PDF generation complete!');
           setPrintingDue(null);
           toast.success('PDF Downloaded!', { id: loadingToast });
         }).catch(err => {
-          console.error('html2pdf Error:', err);
-          toast.error('Error: ' + (err.message || 'Generation Failed'), { id: loadingToast });
+          console.error('PDF Error:', err);
+          toast.error('Generation Failed', { id: loadingToast });
           setPrintingDue(null);
         });
       }, 800);
