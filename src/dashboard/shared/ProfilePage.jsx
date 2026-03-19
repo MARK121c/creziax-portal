@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { 
   User, Mail, Lock, Camera, CheckCircle2, ShieldCheck, 
-  Trash2, UploadCloud, Loader2, Key, Shield
+  Trash2, UploadCloud, Loader2, Key, Shield, Wallet
 } from 'lucide-react';
 
 const getFormattedAvatarUrl = (url) => {
