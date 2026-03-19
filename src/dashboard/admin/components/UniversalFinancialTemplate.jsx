@@ -13,6 +13,7 @@ const UniversalFinancialTemplate = ({ data }) => {
     amount,
     payment_method,
     payment_details,
+    party_label,
   } = data || {};
 
   return (
@@ -39,13 +40,13 @@ const UniversalFinancialTemplate = ({ data }) => {
         <div style={{ textAlign: 'right' }}>
           <h2 style={{ margin: 0, fontSize: '16px', letterSpacing: '1px', textTransform: 'uppercase', color: '#111' }}>{document_type}</h2>
           <p style={{ margin: '8px 0 0', fontSize: '14px', fontWeight: 'bold' }}>Ref: #{transaction_id}</p>
-          <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#666' }}>Date: {date}</p>
+          <p style={{ margin: '3px 0 0', fontSize: '13px', fontWeight: 700, color: '#666' }}>Date: {date}</p>
         </div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', background: '#f9f9f9', padding: '25px', borderRadius: '12px' }}>
         <div>
-          <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#888', marginBottom: '5px', margin: 0 }}>Recipient / Party</p>
+          <p style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#888', marginBottom: '5px', margin: 0 }}>{party_label || 'Recipient / Party'}</p>
           <p style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>{party_name}</p>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -58,8 +59,8 @@ const UniversalFinancialTemplate = ({ data }) => {
       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '40px' }}>
         <thead>
           <tr style={{ borderBottom: '2px solid #111' }}>
-            <th style={{ textAlign: 'left', padding: '15px 0 15px 20px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>Description of Service/Task</th>
-            <th style={{ textAlign: 'right', padding: '15px 20px 15px 0', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>Amount (USD)</th>
+            <th style={{ textAlign: 'left', padding: '15px 0 15px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px' }}>Description of Service/Task</th>
+            <th style={{ textAlign: 'right', padding: '15px 20px 15px 0', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px' }}>Amount (USD)</th>
           </tr>
         </thead>
         <tbody>
@@ -86,15 +87,15 @@ const UniversalFinancialTemplate = ({ data }) => {
       </div>
 
       <div style={{ marginTop: '20px', textAlign: 'left' }}>
-        <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#888', marginBottom: '12px', margin: 0, textAlign: 'left' }}>Payment Method & Settlement Details</p>
+        <p style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.5px', color: '#888', marginBottom: '12px', margin: 0, textAlign: 'left' }}>Payment Method & Settlement Details</p>
         <div style={{ border: '2px dashed #e2e8f0', padding: '25px', borderRadius: '12px', background: '#fff', marginTop: '12px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             <div style={{ textAlign: 'left', marginLeft: 0 }}>
-              <p style={{ margin: 0, fontSize: '11px', color: '#999', textAlign: 'left' }}>Method:</p>
+              <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#999', textAlign: 'left' }}>Method:</p>
               <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: 700, color: '#111', textAlign: 'left' }}>{payment_method || 'N/A'}</p>
             </div>
             <div style={{ textAlign: 'left', marginLeft: 0 }}>
-              <p style={{ margin: 0, fontSize: '11px', color: '#999', textAlign: 'left' }}>Transfer Details:</p>
+              <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#999', textAlign: 'left' }}>Transfer Details:</p>
               <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: 600, color: '#111', textAlign: 'left' }}>{payment_details || 'N/A'}</p>
             </div>
           </div>
