@@ -17,6 +17,7 @@ const UniversalFinancialTemplate = ({ data }) => {
 
   return (
     <div style={{ 
+      direction: 'ltr',
       fontFamily: "'Inter', Arial, sans-serif", 
       padding: '40px', 
       background: '#fff', 
@@ -57,44 +58,44 @@ const UniversalFinancialTemplate = ({ data }) => {
       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '40px' }}>
         <thead>
           <tr style={{ borderBottom: '2px solid #111' }}>
-            <th style={{ textAlign: 'left', padding: '15px 0', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>Description of Service/Task</th>
-            <th style={{ textAlign: 'right', padding: '15px 0', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>Amount (USD)</th>
+            <th style={{ textAlign: 'left', padding: '15px 0 15px 20px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>Description of Service/Task</th>
+            <th style={{ textAlign: 'right', padding: '15px 20px 15px 0', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>Amount (USD)</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td style={{ padding: '30px 0' }}>
+            <td style={{ textAlign: 'left', padding: '30px 0 30px 20px' }}>
               <div style={{ fontSize: '16px', fontWeight: 700 }}>{service_name}</div>
               <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#666' }}>Transaction processed via Creziax Internal Financial System.</p>
             </td>
-            <td style={{ textAlign: 'right', fontSize: '20px', fontWeight: 900 }}>${amount}</td>
+            <td style={{ textAlign: 'right', paddingRight: '20px', fontSize: '20px', fontWeight: 900 }}>${amount}</td>
           </tr>
         </tbody>
       </table>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '50px' }}>
         <div style={{ width: '280px', background: '#111', color: '#fff', padding: '25px', borderRadius: '12px', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px', paddingLeft: '15px' }}>
             <span>Final Balance</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '28px', fontWeight: 900 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '28px', fontWeight: 900, paddingLeft: '15px' }}>
             <span>Total</span>
             <span>${amount}</span>
           </div>
         </div>
       </div>
 
-      <div style={{ marginTop: '20px' }}>
-        <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#888', marginBottom: '12px', margin: 0 }}>Payment Method & Settlement Details</p>
+      <div style={{ marginTop: '20px', textAlign: 'left' }}>
+        <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#888', marginBottom: '12px', margin: 0, textAlign: 'left' }}>Payment Method & Settlement Details</p>
         <div style={{ border: '2px dashed #e2e8f0', padding: '25px', borderRadius: '12px', background: '#fff', marginTop: '12px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            <div>
-              <p style={{ margin: 0, fontSize: '11px', color: '#999' }}>Method:</p>
-              <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: 700, color: '#111' }}>{payment_method || 'N/A'}</p>
+            <div style={{ textAlign: 'left', marginLeft: 0 }}>
+              <p style={{ margin: 0, fontSize: '11px', color: '#999', textAlign: 'left' }}>Method:</p>
+              <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: 700, color: '#111', textAlign: 'left' }}>{payment_method || 'N/A'}</p>
             </div>
-            <div>
-              <p style={{ margin: 0, fontSize: '11px', color: '#999' }}>Transfer Details:</p>
-              <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: 600, color: '#111' }}>{payment_details || 'N/A'}</p>
+            <div style={{ textAlign: 'left', marginLeft: 0 }}>
+              <p style={{ margin: 0, fontSize: '11px', color: '#999', textAlign: 'left' }}>Transfer Details:</p>
+              <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: 600, color: '#111', textAlign: 'left' }}>{payment_details || 'N/A'}</p>
             </div>
           </div>
         </div>
