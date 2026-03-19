@@ -69,6 +69,37 @@ const InvoicesPage = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  // Auto-fill Payment Details for Invoices
+  useEffect(() => {
+    if (invoiceForm.paymentMethod) {
+      const method = invoiceForm.paymentMethod;
+      let details = '';
+      if (method === 'PayPal') details = localStorage.getItem('creziax_pay_paypal') || '';
+      else if (method === 'Vodafone Cash') details = localStorage.getItem('creziax_pay_vodafone') || '';
+      else if (method === 'InstaPay' || method === 'Barq') details = localStorage.getItem('creziax_pay_instapay') || '';
+      else if (method === 'Bank Transfer') details = localStorage.getItem('creziax_pay_bank') || '';
+      
+      if (details) {
+        setInvoiceForm(prev => ({ ...prev, paymentDetails: details }));
+      }
+    }
+  }, [invoiceForm.paymentMethod]);
+
+  // Auto-fill Transfer Details for Team Dues
+  useEffect(() => {
+    if (dueForm.transferMethod) {
+      const method = dueForm.transferMethod;
+      let details = '';
+      if (method === 'Vodafone Cash') details = localStorage.getItem('creziax_pay_vodafone') || '';
+      else if (method === 'InstaPay' || method === 'Barq') details = localStorage.getItem('creziax_pay_instapay') || '';
+      else if (method === 'Bank Transfer') details = localStorage.getItem('creziax_pay_bank') || '';
+      
+      if (details) {
+        setDueForm(prev => ({ ...prev, transferDetails: details }));
+      }
+    }
+  }, [dueForm.transferMethod]);
+
   // --- CLIENT INVOICES LOGIC ---
   const handleCreateInvoice = async (e) => {
     e.preventDefault();

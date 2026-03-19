@@ -28,6 +28,11 @@ const ProfilePage = () => {
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
+    // Payment Settings
+    paypal: localStorage.getItem('creziax_pay_paypal') || '',
+    vodafone: localStorage.getItem('creziax_pay_vodafone') || '',
+    instapay: localStorage.getItem('creziax_pay_instapay') || '',
+    bank: localStorage.getItem('creziax_pay_bank') || '',
   });
   
   const [loading, setLoading] = useState(false);
@@ -71,6 +76,11 @@ const ProfilePage = () => {
     setLoading(true);
     const loadingToast = toast.loading('جاري حفظ التعديلات...');
     try {
+      if (formData.paypal) localStorage.setItem('creziax_pay_paypal', formData.paypal);
+      if (formData.vodafone) localStorage.setItem('creziax_pay_vodafone', formData.vodafone);
+      if (formData.instapay) localStorage.setItem('creziax_pay_instapay', formData.instapay);
+      if (formData.bank) localStorage.setItem('creziax_pay_bank', formData.bank);
+      
       await updateProfile({
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -287,6 +297,68 @@ const ProfilePage = () => {
                       dir="ltr"
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="h-px bg-slate-100 dark:bg-white/5 w-full"></div>
+
+            {/* Payment Details Section */}
+            <div className="space-y-8">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/10">
+                  <Wallet size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">إعدادات الدفع (Finance Settings)</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Automatic Payment Instructions</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">PayPal Email</label>
+                  <input
+                    type="text"
+                    name="paypal"
+                    value={formData.paypal}
+                    onChange={handleChange}
+                    placeholder="example@gmail.com"
+                    className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-emerald-500/10 focus:border-brand-500/50 outline-none transition-all dark:text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">Vodafone Cash Number</label>
+                  <input
+                    type="text"
+                    name="vodafone"
+                    value={formData.vodafone}
+                    onChange={handleChange}
+                    placeholder="010XXXXXXXX"
+                    className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-emerald-500/10 focus:border-brand-500/50 outline-none transition-all dark:text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">InstaPay / Barq Address</label>
+                  <input
+                    type="text"
+                    name="instapay"
+                    value={formData.instapay}
+                    onChange={handleChange}
+                    placeholder="username@instapay"
+                    className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-emerald-500/10 focus:border-brand-500/50 outline-none transition-all dark:text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">Bank Transfer Details</label>
+                  <textarea
+                    name="bank"
+                    value={formData.bank}
+                    onChange={handleChange}
+                    rows={2}
+                    placeholder="Bank Name | Account Number | IBAN"
+                    className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-emerald-500/10 focus:border-brand-500/50 outline-none transition-all dark:text-white resize-none"
+                  />
                 </div>
               </div>
             </div>
