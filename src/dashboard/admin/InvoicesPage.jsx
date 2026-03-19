@@ -533,7 +533,7 @@ const InvoicesPage = () => {
                   <option value="Graphic Design / تصميم جرافيك">Graphic Design / تصميم جرافيك</option>
                   <option value="Voice Over / تعليق صوتي">Voice Over / تعليق صوتي</option>
                   <option value="Consultation / استشارة">Consultation / استشارة</option>
-                  <option value="Other / أخرى">Other / أخرى</option>
+                  <option value="Online Service">Online Service</option>
                 </select>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
