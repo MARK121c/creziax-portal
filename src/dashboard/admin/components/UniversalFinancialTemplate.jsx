@@ -1,0 +1,112 @@
+import React from 'react';
+
+const UniversalFinancialTemplate = ({ data }) => {
+  const {
+    document_type,
+    transaction_id,
+    date,
+    party_name,
+    status_bg,
+    status_color,
+    status_label,
+    service_name,
+    amount,
+    payment_method,
+    payment_details,
+  } = data || {};
+
+  return (
+    <div style={{ 
+      fontFamily: "'Inter', Arial, sans-serif", 
+      padding: '40px', 
+      background: '#fff', 
+      color: '#111', 
+      height: '1123px', // strictly A4 proportion for 800px width
+      width: '800px',
+      boxSizing: 'border-box',
+      margin: 0,
+      position: 'relative',
+      textAlign: 'left',
+      lineHeight: 'normal'
+    }}>
+      
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '4px solid #111', paddingBottom: '25px', marginBottom: '40px' }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 900, letterSpacing: '-1px' }}>CREZIAX</h1>
+          <p style={{ margin: '5px 0 0', fontSize: '11px', color: '#666', letterSpacing: '2px', textTransform: 'uppercase' }}>Official Financial Document</p>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <h2 style={{ margin: 0, fontSize: '16px', letterSpacing: '1px', textTransform: 'uppercase', color: '#111' }}>{document_type}</h2>
+          <p style={{ margin: '8px 0 0', fontSize: '14px', fontWeight: 'bold' }}>Ref: #{transaction_id}</p>
+          <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#666' }}>Date: {date}</p>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', background: '#f9f9f9', padding: '25px', borderRadius: '12px' }}>
+        <div>
+          <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#888', marginBottom: '5px', margin: 0 }}>Recipient / Party</p>
+          <p style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>{party_name}</p>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <span style={{ padding: '8px 18px', borderRadius: '50px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', background: status_bg, color: status_color, border: '1px solid rgba(0,0,0,0.05)' }}>
+            {status_label}
+          </span>
+        </div>
+      </div>
+
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '40px' }}>
+        <thead>
+          <tr style={{ borderBottom: '2px solid #111' }}>
+            <th style={{ textAlign: 'left', padding: '15px 0', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>Description of Service/Task</th>
+            <th style={{ textAlign: 'right', padding: '15px 0', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>Amount (USD)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={{ padding: '30px 0' }}>
+              <div style={{ fontSize: '16px', fontWeight: 700 }}>{service_name}</div>
+              <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#666' }}>Transaction processed via Creziax Internal Financial System.</p>
+            </td>
+            <td style={{ textAlign: 'right', fontSize: '20px', fontWeight: 900 }}>${amount}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '50px' }}>
+        <div style={{ width: '280px', background: '#111', color: '#fff', padding: '25px', borderRadius: '12px', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px' }}>
+            <span>Final Balance</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '28px', fontWeight: 900 }}>
+            <span>Total</span>
+            <span>${amount}</span>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: '20px' }}>
+        <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#888', marginBottom: '12px', margin: 0 }}>Payment Method & Settlement Details</p>
+        <div style={{ border: '2px dashed #e2e8f0', padding: '25px', borderRadius: '12px', background: '#fff', marginTop: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <div>
+              <p style={{ margin: 0, fontSize: '11px', color: '#999' }}>Method:</p>
+              <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: 700, color: '#111' }}>{payment_method || 'N/A'}</p>
+            </div>
+            <div>
+              <p style={{ margin: 0, fontSize: '11px', color: '#999' }}>Transfer Details:</p>
+              <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: 600, color: '#111' }}>{payment_details || 'N/A'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: '60px', borderTop: '1px solid #eee', paddingTop: '20px', textAlign: 'center' }}>
+        <p style={{ fontSize: '11px', color: '#aaa', margin: 0 }}>This is a computer-generated document. No signature is required.</p>
+        <p style={{ fontSize: '10px', color: '#ccc', marginTop: '5px', margin: '5px 0 0 0' }}>Creziax Agency | Financial Department</p>
+      </div>
+
+    </div>
+  );
+};
+
+export default UniversalFinancialTemplate;

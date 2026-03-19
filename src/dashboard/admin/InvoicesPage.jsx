@@ -5,8 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
 import html2pdf from 'html2pdf.js';
-import InvoicePDFTemplate from './components/InvoicePDFTemplate';
-import TeamDuePDFTemplate from './components/TeamDuePDFTemplate';
+import UniversalFinancialTemplate from './components/UniversalFinancialTemplate';
 
 const InvoicesPage = () => {
   const { t } = useTranslation();
@@ -164,8 +163,15 @@ const InvoicesPage = () => {
         const opt = {
           margin: 0,
           filename: `Invoice-${inv.invoiceNumber}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 1, useCORS: true, letterRendering: true },
+          image: { type: 'jpeg', quality: 1 },
+          html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            letterRendering: true, 
+            backgroundColor: '#ffffff',
+            windowWidth: 800,
+            width: 800
+          },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
@@ -256,8 +262,15 @@ const InvoicesPage = () => {
         const opt = {
           margin: 0,
           filename: `TeamDue-${due.id?.slice(0, 8)}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 1, useCORS: true, letterRendering: true },
+          image: { type: 'jpeg', quality: 1 },
+          html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            letterRendering: true, 
+            backgroundColor: '#ffffff',
+            windowWidth: 800,
+            width: 800
+          },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
@@ -680,12 +693,36 @@ const InvoicesPage = () => {
         </div>
       )}
       {/* HIDDEN TEMPLATES FOR PDF GENERATION */}
-      <div className="fixed top-0 left-0 -z-50 pointer-events-none opacity-0" style={{ width: '794px' }}>
-        <div ref={invoiceRef} style={{ width: '794px' }}>
-          {printingInvoice && <InvoicePDFTemplate invoice={printingInvoice} />}
+      <div className="absolute top-[100%] left-[-9999px] opacity-0 pointer-events-none" style={{ width: '800px', backgroundColor: '#fff', margin: 0, padding: 0 }}>
+        <div ref={invoiceRef} style={{ width: '800px', backgroundColor: '#fff', margin: 0, padding: 0 }}>
+          {printingInvoice && <UniversalFinancialTemplate data={{
+            document_type: 'INVOICE / PAYMENT REQUEST',
+            transaction_id: printingInvoice.invoiceNumber,
+            date: new Date(printingInvoice.createdAt || Date.now()).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
+            party_name: `${printingInvoice.client?.user?.firstName || ''} ${printingInvoice.client?.user?.lastName || ''}`.trim() || 'Valued Client',
+            status_bg: printingInvoice.status === 'PAID' ? '#dcfce7' : '#fef3c7',
+            status_color: printingInvoice.status === 'PAID' ? '#166534' : '#92400e',
+            status_label: printingInvoice.status === 'PAID' ? 'PAID' : 'PENDING',
+            service_name: printingInvoice.service,
+            amount: printingInvoice.amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            payment_method: printingInvoice.paymentMethod,
+            payment_details: printingInvoice.paymentDetails
+          }} />}
         </div>
-        <div ref={dueRef} style={{ width: '794px' }}>
-          {printingDue && <TeamDuePDFTemplate due={printingDue} />}
+        <div ref={dueRef} style={{ width: '800px', backgroundColor: '#fff', margin: 0, padding: 0 }}>
+          {printingDue && <UniversalFinancialTemplate data={{
+            document_type: 'PAYMENT TRANSFER ADVICE',
+            transaction_id: printingDue.id?.slice(0, 8).toUpperCase(),
+            date: new Date(printingDue.createdAt || Date.now()).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
+            party_name: `${printingDue.user?.firstName || ''} ${printingDue.user?.lastName || ''}`.trim() || 'Team Member',
+            status_bg: printingDue.status === 'SENT' ? '#dcfce7' : '#fef3c7',
+            status_color: printingDue.status === 'SENT' ? '#166534' : '#92400e',
+            status_label: printingDue.status === 'SENT' ? 'PAID' : 'PENDING',
+            service_name: printingDue.description,
+            amount: printingDue.amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            payment_method: printingDue.transferMethod,
+            payment_details: printingDue.transferDetails
+          }} />}
         </div>
       </div>
     </div>
