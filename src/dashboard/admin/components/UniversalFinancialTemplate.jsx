@@ -50,27 +50,21 @@ const UniversalFinancialTemplate = ({ data }) => {
           <p style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>{party_name}</p>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ 
-            display: 'table', 
-            background: status_bg, 
-            borderRadius: '4px', 
-            border: '1px solid rgba(0,0,0,0.05)',
-            marginLeft: 'auto',
-            width: '100px',
-            height: '35px'
+          <span style={{
+            display: 'inline-block',
+            width: '80px',
+            height: '30px',
+            lineHeight: '30px',
+            textAlign: 'center',
+            backgroundColor: status_bg,
+            color: status_color,
+            borderRadius: '4px',
+            fontSize: '12px',
+            fontWeight: '900',
+            padding: '0'
           }}>
-            <span style={{ 
-              display: 'table-cell',
-              verticalAlign: 'middle',
-              textAlign: 'center',
-              fontSize: '13px',
-              fontWeight: 900,
-              color: status_color,
-              textTransform: 'uppercase'
-            }}>
-              {status_label}
-            </span>
-          </div>
+            {status_label}
+          </span>
         </div>
       </div>
 
