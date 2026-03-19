@@ -136,4 +136,11 @@ export const deletePhaseAPI = (id) => api.delete(`/workspaces/phases/${id}`);
 export const createWorkspaceTaskAPI = (phaseId, data) => api.post(`/workspaces/phases/${phaseId}/tasks`, data);
 export const deleteWorkspaceTaskAPI = (id) => api.delete(`/workspaces/tasks/${id}`);
 
+// Contracts
+export const getContractsAPI = () => api.get('/contracts');
+export const getContractAPI = (id) => api.get(`/contracts/${id}`);
+export const createContractAPI = (data) => api.post('/contracts', data);
+export const updateContractAPI = (id, data) => api.put(`/contracts/${id}`, data);
+export const deleteContractAPI = (id) => api.delete(`/contracts/${id}`);
+
 export default api;
