@@ -51,12 +51,12 @@ const UniversalFinancialTemplate = ({ data }) => {
         </div>
         <div style={{ textAlign: 'right' }}>
           <span style={{ 
-            display: 'inline-flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            height: '26px', 
-            padding: '0 16px', 
-            lineHeight: 1,
+            display: 'inline-block',
+            verticalAlign: 'middle',
+            padding: '4px 15px',
+            lineHeight: 1.2,
+            minWidth: '80px',
+            textAlign: 'center',
             borderRadius: '50px', 
             fontSize: '11px', 
             fontWeight: 800, 
