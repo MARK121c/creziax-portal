@@ -625,11 +625,11 @@ const InvoicesPage = () => {
         </div>
       )}
       {/* HIDDEN TEMPLATES FOR PDF GENERATION */}
-      <div className="fixed top-0 left-0 -z-50 pointer-events-none overflow-hidden h-0 w-0">
-        <div ref={invoiceRef}>
+      <div className="fixed top-0 left-0 -z-50 pointer-events-none opacity-0" style={{ width: '794px' }}>
+        <div ref={invoiceRef} style={{ width: '794px' }}>
           {printingInvoice && <InvoicePDFTemplate invoice={printingInvoice} />}
         </div>
-        <div ref={dueRef}>
+        <div ref={dueRef} style={{ width: '794px' }}>
           {printingDue && <TeamDuePDFTemplate due={printingDue} />}
         </div>
       </div>
