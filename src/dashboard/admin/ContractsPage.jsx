@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { getContractsAPI, createContractAPI, updateContractAPI, deleteContractAPI, getClientsAPI, uploadAttachmentAPI } from '../../store/api';
 import { Plus, X, Trash2, FileText, Search, Loader2, Link as LinkIcon, Download, ExternalLink, UploadCloud, Calendar } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -8,11 +9,16 @@ const CANVA_LINK = "https://www.canva.com/design/DAG-3cp5x9g/VsK4i4NViBIoYk-0Uij
 const emptyForm = {
   title: '',
   date: new Date().toLocaleDateString('ar-EG'),
+  startDate: '',
+  endDate: '',
   clientId: '',
   pdfUrl: '',
 };
 
 const ContractsPage = () => {
+  const [searchParams] = useSearchParams();
+  const initialClientId = searchParams.get('clientId');
+
   const [contracts, setContracts] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +38,11 @@ const ContractsPage = () => {
       ]);
       setContracts(contRes.data);
       setClients(clRes.data);
+      
+      // If we have an initialClientId, pre-select it in the form if modal opens
+      if (initialClientId) {
+        setForm(prev => ({ ...prev, clientId: initialClientId }));
+      }
     } catch (err) {
       console.error('Failed to load data:', err);
       toast.error('فشل تحميل البيانات');
@@ -100,10 +111,23 @@ const ContractsPage = () => {
     }
   };
 
-  const filtered = (contracts || []).filter(c => 
-    c.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.client?.user?.firstName?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter logic including query param
+  const filtered = (contracts || []).filter(c => {
+    const matchesSearch = c.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         c.client?.user?.firstName?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (initialClientId) {
+       return matchesSearch && String(c.clientId) === String(initialClientId);
+    }
+    return matchesSearch;
+  });
+
+  const getFullFileUrl = (path) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    const baseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api$/, '');
+    return `${baseUrl.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+  };
 
   return (
     <div className="space-y-8">
@@ -111,7 +135,9 @@ const ContractsPage = () => {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white dark:bg-white/5 p-8 rounded-[2.5rem] border border-slate-200 dark:border-white/10 shadow-sm">
         <div className="space-y-2">
           <h1 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">أرشيف العقود</h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium font-arabic">صمم عقدك على كانفا وأرشفه هنا للوصول السريع</p>
+          <p className="text-slate-500 dark:text-slate-400 font-medium font-arabic">
+            {initialClientId ? `عرض عقود العميل المختار` : `صمم عقدك على كانفا وأرشفه هنا للوصول السريع`}
+          </p>
         </div>
         
         <div className="flex flex-wrap items-center gap-4">
@@ -126,7 +152,11 @@ const ContractsPage = () => {
           </a>
           
           <button 
-            onClick={() => { setEditingContract(null); setForm(emptyForm); setShowModal(true); }}
+            onClick={() => { 
+              setEditingContract(null); 
+              setForm({ ...emptyForm, clientId: initialClientId || '' }); 
+              setShowModal(true); 
+            }}
             className="flex items-center gap-3 px-8 py-4 bg-slate-800 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black hover:-translate-y-1 transition-all"
           >
             <Plus size={20} />
@@ -138,7 +168,7 @@ const ContractsPage = () => {
       {/* Table Section */}
       <div className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] overflow-hidden shadow-xl shadow-slate-200/40 dark:shadow-none">
         <div className="p-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
-          <div className="relative group w-full max-w-md">
+          <div className="relative group w-full max-md:max-w-full max-w-md">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={18} />
             <input 
               type="text" 
@@ -148,6 +178,19 @@ const ContractsPage = () => {
               className="w-full pl-12 pr-6 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold"
             />
           </div>
+          {initialClientId && (
+            <button 
+              onClick={() => {
+                const url = new URL(window.location);
+                url.searchParams.delete('clientId');
+                window.history.pushState({}, '', url);
+                window.location.reload(); // Quick way to clear filter
+              }}
+              className="text-xs font-black text-rose-500 uppercase tracking-widest hover:underline"
+            >
+              عرض كل العقود
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -168,8 +211,9 @@ const ContractsPage = () => {
             <table className="w-full text-right border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b border-slate-100 dark:border-white/5">
-                  <th className="px-10 py-6 text-xs font-black text-slate-400 uppercase tracking-widest font-arabic">اسم العميل / العقد</th>
-                  <th className="px-10 py-6 text-xs font-black text-slate-400 uppercase tracking-widest font-arabic">تاريخ العقد</th>
+                  <th className="px-10 py-6 text-xs font-black text-slate-400 uppercase tracking-widest font-arabic text-right">اسم العقد / العميل</th>
+                  <th className="px-10 py-6 text-xs font-black text-slate-400 uppercase tracking-widest font-arabic text-right">مدة العقد</th>
+                  <th className="px-10 py-6 text-xs font-black text-slate-400 uppercase tracking-widest font-arabic text-right">تاريخ الأرشفة</th>
                   <th className="px-10 py-6 text-xs font-black text-slate-400 uppercase tracking-widest font-arabic text-left">الملف</th>
                 </tr>
               </thead>
@@ -184,9 +228,17 @@ const ContractsPage = () => {
                         <div>
                           <p className="font-black text-slate-800 dark:text-white">{contract.title}</p>
                           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
-                            {contract.client?.user?.firstName} {contract.client?.user?.lastName}
+                            {contract.client?.user?.firstName} {contract.client?.user?.lastName} {(contract.client?.company && `(${contract.client.company})`)}
                           </p>
                         </div>
+                      </div>
+                    </td>
+                    <td className="px-10 py-6">
+                      <div className="flex flex-col gap-0.5">
+                        <p className="text-sm font-black text-slate-600 dark:text-slate-300">
+                          {contract.startDate || '---'}
+                        </p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">إلى: {contract.endDate || '---'}</p>
                       </div>
                     </td>
                     <td className="px-10 py-6">
@@ -199,13 +251,13 @@ const ContractsPage = () => {
                       <div className="flex items-center justify-start gap-4">
                         {contract.pdfUrl && (
                           <a 
-                            href={contract.pdfUrl.startsWith('http') ? contract.pdfUrl : `${import.meta.env.VITE_API_URL || ''}${contract.pdfUrl}`}
+                            href={getFullFileUrl(contract.pdfUrl)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl font-black text-xs hover:bg-emerald-500/20 transition-all"
+                            className="flex items-center gap-2 px-6 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl font-black text-xs hover:bg-emerald-500 hover:text-white shadow-lg shadow-emerald-500/10 transition-all active:scale-95"
                           >
                             <Download size={14} />
-                            <span>تحميل</span>
+                            <span>عرض / تحميل</span>
                           </a>
                         )}
                         <button 
@@ -253,26 +305,39 @@ const ContractsPage = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">تاريخ العقد</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">تاريخ البداية</label>
                   <input 
-                    required
-                    type="text"
-                    value={form.date}
-                    onChange={e => setForm({...form, date: e.target.value})}
+                    type="date"
+                    value={form.startDate}
+                    onChange={e => setForm({...form, startDate: e.target.value})}
                     className="w-full px-5 py-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ربط بالعميل</label>
-                  <select 
-                    value={form.clientId}
-                    onChange={e => setForm({...form, clientId: e.target.value})}
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">تاريخ الانتهاء</label>
+                  <input 
+                    type="date"
+                    value={form.endDate}
+                    onChange={e => setForm({...form, endDate: e.target.value})}
                     className="w-full px-5 py-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold"
-                  >
-                    <option value="">غير مرتبط بعميل معين</option>
-                    {clients.map(c => <option key={c.id} value={c.id}>{c.user?.firstName} {c.user?.lastName}</option>)}
-                  </select>
+                  />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ربط بالعميل</label>
+                <select 
+                  value={form.clientId}
+                  onChange={e => setForm({...form, clientId: e.target.value})}
+                  className="w-full px-5 py-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold"
+                >
+                  <option value="">غير مرتبط بعميل معين</option>
+                  {clients.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.user?.firstName || 'Client'} {c.user?.lastName || ''} ({c.company || 'Private'})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="space-y-2">

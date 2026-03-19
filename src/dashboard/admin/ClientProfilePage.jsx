@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getClientAPI, getInvoicesAPI, getProjectsAPI, getRecentActivityAPI, updateClientAPI, uploadImageAPI } from '../../store/api';
+import { getClientAPI, getInvoicesAPI, getProjectsAPI, getRecentActivityAPI, updateClientAPI, uploadImageAPI, getContractsAPI } from '../../store/api';
 import { 
   Building2, Mail, Phone, Calendar, Star, ExternalLink, 
   ChevronLeft, FileText, Receipt, Briefcase, Activity,
@@ -39,6 +39,13 @@ const getFormattedLogoUrl = (url) => {
   return `${baseUrl.replace(/\/$/, '')}/${url.replace(/^\//, '')}`;
 };
 
+const getFullFileUrl = (path) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  const baseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api$/, '');
+  return `${baseUrl.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+};
+
 const getCountryFlagUrl = (phone) => {
   if (!phone) return null;
   // Support both strings and objects if it comes that way
@@ -66,6 +73,7 @@ const ClientProfilePage = () => {
   const [client, setClient] = useState(null);
   const [invoices, setInvoices] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [contracts, setContracts] = useState([]);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -77,11 +85,12 @@ const ClientProfilePage = () => {
     const fetchClientData = async () => {
       setLoading(true);
       try {
-        const [clientRes, invoicesRes, projectsRes, activityRes] = await Promise.all([
+        const [clientRes, invoicesRes, projectsRes, activityRes, contractsRes] = await Promise.all([
           getClientAPI(id),
           getInvoicesAPI(),
           getProjectsAPI(),
-          getRecentActivityAPI(10)
+          getRecentActivityAPI(10),
+          getContractsAPI()
         ]);
         
         const clientData = clientRes.data;
@@ -96,6 +105,7 @@ const ClientProfilePage = () => {
         // Use string comparison for UUIDs (parseInt was a bug)
         setInvoices(invoicesRes.data.filter(inv => String(inv.clientId) === String(id)));
         setProjects(projectsRes.data.filter(proj => String(proj.clientId) === String(id)));
+        setContracts(contractsRes.data.filter(cont => String(cont.clientId) === String(id)));
         setActivities(activityRes.data.filter(log => String(log.entityId) === String(id) || log.userId === (clientData?.userId)));
       } catch (err) {
         toast.error(t('error_general'));
@@ -519,21 +529,54 @@ const ClientProfilePage = () => {
 
         {/* Sidebar: Activity & Legal */}
         <div className="space-y-8">
-          {/* Contracts Briefing */}
-          <div className="bg-gradient-to-br from-slate-900 to-brand-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-xl shadow-brand-900/20">
-             <div className="relative z-10">
-               <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center mb-6 border border-white/20">
-                 <FileBadge size={20} />
-               </div>
-               <h3 className="text-xl font-black uppercase tracking-wider mb-2">{t('legal_vault')}</h3>
-               <p className="text-white/60 text-[10px] font-bold mb-8 uppercase tracking-widest">Digital Agreement Management</p>
-               
-               <Link to={`/admin/contracts?clientId=${id}`} className="w-full py-4 bg-white text-brand-600 rounded-2xl font-black text-xs flex items-center justify-center gap-2 hover:bg-brand-50 transition-all hover:scale-[1.02] active:scale-100">
-                 <Shield size={16} />
-                 {t('open_contracts')}
-               </Link>
+          {/* Contracts List / Legal Vault */}
+          <div className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-8 shadow-sm">
+             <div className="flex items-center justify-between mb-8">
+               <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-3">
+                 <FileBadge size={20} className="text-emerald-500" />
+                 {t('archives_contracts') || 'عقود العميل'}
+               </h3>
+               <Link to={`/admin/contracts?clientId=${id}`} className="text-xs font-black text-brand-500 uppercase tracking-widest">{t('view_all') || 'أرشيف كامل'}</Link>
              </div>
-             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+             
+             <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+               {contracts.length === 0 ? (
+                 <div className="text-center py-10 text-slate-400 font-bold border-2 border-dashed border-slate-100 dark:border-white/5 rounded-3xl">
+                   {t('contracts_empty') || 'لا توجد عقود مؤرشفة'}
+                 </div>
+               ) : (
+                 contracts.map(cont => (
+                   <div key={cont.id} className="p-5 bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-3xl flex items-center justify-between group transition-all hover:border-brand-500/30">
+                     <div className="flex items-center gap-4">
+                       <div className="w-10 h-10 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center text-emerald-500 shadow-sm border border-slate-100 dark:border-white/10 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                         <FileText size={18} />
+                       </div>
+                       <div className="min-w-0">
+                         <p className="font-black text-slate-800 dark:text-white truncate text-sm">{cont.title}</p>
+                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                           {cont.startDate || '---'} | {cont.endDate || '---'}
+                         </p>
+                       </div>
+                     </div>
+                     {cont.pdfUrl && (
+                       <a 
+                         href={getFullFileUrl(cont.pdfUrl)}
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="p-2.5 bg-brand-500 text-white rounded-xl shadow-lg shadow-brand-500/10 hover:scale-110 active:scale-95 transition-all flex-shrink-0"
+                       >
+                         <Download size={16} />
+                       </a>
+                     )}
+                   </div>
+                 ))
+               )}
+             </div>
+
+             <Link to={`/admin/contracts?clientId=${id}`} className="mt-6 w-full py-4 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded-2xl font-black text-xs flex items-center justify-center gap-2 hover:bg-brand-500 hover:text-white transition-all group">
+               <Shield size={16} className="group-hover:rotate-12 transition-transform" />
+               {t('open_contracts') || 'إدارة العقود'}
+             </Link>
           </div>
 
           {/* Audit Log / Recent Activity */}
