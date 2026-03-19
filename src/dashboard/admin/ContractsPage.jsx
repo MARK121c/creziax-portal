@@ -37,7 +37,9 @@ const ContractsPage = () => {
         getClientsAPI()
       ]);
       setContracts(contRes.data);
+      console.log('[DEBUG] Loaded Contracts:', contRes.data.length);
       setClients(clRes.data);
+      console.log('[DEBUG] Loaded Clients:', clRes.data.length, clRes.data);
       
       // If we have an initialClientId, pre-select it in the form if modal opens
       if (initialClientId) {
