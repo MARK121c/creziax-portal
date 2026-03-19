@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
-import { getInvoicesAPI, createInvoiceAPI, updateInvoiceAPI, deleteInvoiceAPI, getClientsAPI, downloadInvoicePDFAPI, getExpensesAPI, createExpenseAPI, updateExpenseAPI, deleteExpenseAPI, getUsersAPI, downloadTeamDuePDFAPI } from '../../store/api';
+import { useEffect, useState, useRef } from 'react';
+import { getInvoicesAPI, createInvoiceAPI, updateInvoiceAPI, deleteInvoiceAPI, getClientsAPI, getExpensesAPI, createExpenseAPI, updateExpenseAPI, deleteExpenseAPI, getUsersAPI } from '../../store/api';
 import { Plus, X, Trash2, Receipt, Search, Loader2, DollarSign, FileText, Gift, CheckCircle, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
+import html2pdf from 'html2pdf.js';
+import InvoicePDFTemplate from './components/InvoicePDFTemplate';
+import TeamDuePDFTemplate from './components/TeamDuePDFTemplate';
 
 const InvoicesPage = () => {
   const { t } = useTranslation();
@@ -29,6 +32,12 @@ const InvoicesPage = () => {
   const [invoiceForm, setInvoiceForm] = useState({ 
     invoiceNumber: '', clientId: '', service: '', amount: '', paymentMethod: '', paymentDetails: '', dueDate: '' 
   });
+
+  // Printing state
+  const [printingInvoice, setPrintingInvoice] = useState(null);
+  const [printingDue, setPrintingDue] = useState(null);
+  const invoiceRef = useRef();
+  const dueRef = useRef();
 
   const [dueForm, setDueForm] = useState({
     userId: '', description: '', amount: '', transferMethod: '', transferDetails: ''
@@ -106,20 +115,30 @@ const InvoicesPage = () => {
     }
   };
 
-  const handleDownloadPDF = async (id, invoiceNumber) => {
+  const handleDownloadPDF = async (inv) => {
     const loadingToast = toast.loading('Generating premium PDF...');
     try {
-      const response = await downloadInvoicePDFAPI(id);
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `Invoice-${invoiceNumber}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-      toast.success('PDF Downloaded!', { id: loadingToast });
+      setPrintingInvoice(inv);
+      // Wait for React to render the component
+      setTimeout(() => {
+        const element = invoiceRef.current;
+        const opt = {
+          margin: 0,
+          filename: `Invoice-${inv.invoiceNumber}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().from(element).set(opt).save().then(() => {
+          setPrintingInvoice(null);
+          toast.success('PDF Downloaded!', { id: loadingToast });
+        });
+      }, 500);
     } catch (err) {
+      console.error('PDF Error:', err);
       toast.error('Failed to generate PDF', { id: loadingToast });
+      setPrintingInvoice(null);
     }
   };
 
@@ -176,20 +195,30 @@ const InvoicesPage = () => {
     }
   };
 
-  const handleDownloadDuePDF = async (id) => {
+  const handleDownloadDuePDF = async (due) => {
     const loadingToast = toast.loading('Generating receipt PDF...');
     try {
-      const response = await downloadTeamDuePDFAPI(id);
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `TeamDue-${id.slice(0, 8)}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-      toast.success('PDF Downloaded!', { id: loadingToast });
+      setPrintingDue(due);
+      // Wait for React to render the component
+      setTimeout(() => {
+        const element = dueRef.current;
+        const opt = {
+          margin: 0,
+          filename: `TeamDue-${due.id?.slice(0, 8)}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().from(element).set(opt).save().then(() => {
+          setPrintingDue(null);
+          toast.success('PDF Downloaded!', { id: loadingToast });
+        });
+      }, 500);
     } catch (err) {
+      console.error('PDF Error:', err);
       toast.error('Failed to generate PDF', { id: loadingToast });
+      setPrintingDue(null);
     }
   };
 
@@ -328,7 +357,7 @@ const InvoicesPage = () => {
                       </td>
                       <td className="px-6 md:px-10 py-5 md:py-7 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => handleDownloadPDF(inv.id, inv.invoiceNumber)} className="p-3 text-brand-500 bg-brand-500/10 hover:bg-brand-500/20 rounded-2xl transition-all">
+                          <button onClick={() => handleDownloadPDF(inv)} className="p-3 text-brand-500 bg-brand-500/10 hover:bg-brand-500/20 rounded-2xl transition-all">
                             <FileText size={18} />
                           </button>
                           <button onClick={() => handleDeleteInvoice(inv.id, inv.invoiceNumber)} className="p-3 text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 rounded-2xl transition-all">
@@ -420,7 +449,7 @@ const InvoicesPage = () => {
                       </td>
                       <td className="px-6 md:px-10 py-5 md:py-7 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => handleDownloadDuePDF(due.id)} className="p-3 text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 rounded-2xl transition-all" title="تحميل إيصال الدفع">
+                          <button onClick={() => handleDownloadDuePDF(due)} className="p-3 text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 rounded-2xl transition-all" title="تحميل إيصال الدفع">
                             <FileText size={18} />
                           </button>
                           <button onClick={() => handleDeleteDue(due.id)} className="p-3 text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 rounded-2xl transition-all">
@@ -595,6 +624,15 @@ const InvoicesPage = () => {
           </div>
         </div>
       )}
+      {/* HIDDEN TEMPLATES FOR PDF GENERATION */}
+      <div className="fixed top-0 left-0 -z-50 pointer-events-none overflow-hidden h-0 w-0">
+        <div ref={invoiceRef}>
+          {printingInvoice && <InvoicePDFTemplate invoice={printingInvoice} />}
+        </div>
+        <div ref={dueRef}>
+          {printingDue && <TeamDuePDFTemplate due={printingDue} />}
+        </div>
+      </div>
     </div>
   );
 };
