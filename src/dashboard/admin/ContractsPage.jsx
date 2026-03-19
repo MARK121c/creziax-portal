@@ -32,22 +32,35 @@ const ContractsPage = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [contRes, clRes] = await Promise.all([
-        getContractsAPI(),
-        getClientsAPI()
-      ]);
-      setContracts(contRes.data);
-      console.log('[DEBUG] Loaded Contracts:', contRes.data.length);
-      setClients(clRes.data);
-      console.log('[DEBUG] Loaded Clients:', clRes.data.length, clRes.data);
-      
-      // If we have an initialClientId, pre-select it in the form if modal opens
-      if (initialClientId) {
-        setForm(prev => ({ ...prev, clientId: initialClientId }));
-      }
+      // Separate fetches to prevent one failure from blocking the other
+      const fetchContracts = async () => {
+        try {
+          const res = await getContractsAPI();
+          setContracts(res.data);
+          console.log('[DEBUG] Loaded Contracts:', res.data.length);
+        } catch (err) {
+          console.error('Failed to load contracts:', err);
+          // If it's a 500, it's likely the missing table
+          if (err.response?.status === 500) {
+            toast.error('خطأ في السيرفر: جدول العقود مفقود أو غير مكتمل');
+          }
+        }
+      };
+
+      const fetchClients = async () => {
+        try {
+          const res = await getClientsAPI();
+          setClients(res.data);
+          console.log('[DEBUG] Loaded Clients:', res.data.length);
+        } catch (err) {
+          console.error('Failed to load clients:', err);
+          toast.error('فشل تحميل قائمة العملاء');
+        }
+      };
+
+      await Promise.all([fetchContracts(), fetchClients()]);
     } catch (err) {
       console.error('Failed to load data:', err);
-      toast.error('فشل تحميل البيانات');
     } finally {
       setLoading(false);
     }
