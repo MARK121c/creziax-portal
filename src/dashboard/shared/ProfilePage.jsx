@@ -15,7 +15,7 @@ const getFormattedAvatarUrl = (url) => {
 };
 
 const ProfilePage = () => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, updateProfile } = useAuthStore();
   const isRTL = i18n.language === 'ar';
   const fileInputRef = useRef(null);
