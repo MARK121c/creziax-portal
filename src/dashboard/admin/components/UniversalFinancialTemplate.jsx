@@ -51,17 +51,11 @@ const UniversalFinancialTemplate = ({ data }) => {
         </div>
         <div style={{ textAlign: 'right' }}>
           <span style={{
-            display: 'inline-block',
-            width: '80px',
-            height: '30px',
-            lineHeight: '30px',
-            textAlign: 'center',
-            backgroundColor: status_bg,
-            color: status_color,
-            borderRadius: '4px',
-            fontSize: '12px',
+            fontSize: '15px',
             fontWeight: '900',
-            padding: '0'
+            color: status_color,
+            textTransform: 'uppercase',
+            textAlign: 'right'
           }}>
             {status_label}
           </span>
