@@ -475,10 +475,12 @@ const InvoicesPage = () => {
                   className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold appearance-none cursor-pointer"
                 >
                   <option value="">اختر نوع الخدمة...</option>
-                  <option value="YouTube Channel Management">YouTube Channel Management (إدارة قناة يوتيوب)</option>
-                  <option value="Video Editing">Video Editing (مونتاج فيديوهات)</option>
-                  <option value="Account Management">Account Management (إدارة حسابات)</option>
-                  <option value="Custom Online Service">Custom Online Service (خدمة أونلاين مخصصة)</option>
+                  <option value="Video Editing / تعديل فيديو">Video Editing / تعديل فيديو</option>
+                  <option value="YouTube Management / إدارة قناة">YouTube Management / إدارة قناة</option>
+                  <option value="Graphic Design / تصميم جرافيك">Graphic Design / تصميم جرافيك</option>
+                  <option value="Voice Over / تعليق صوتي">Voice Over / تعليق صوتي</option>
+                  <option value="Consultation / استشارة">Consultation / استشارة</option>
+                  <option value="Other / أخرى">Other / أخرى</option>
                 </select>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
