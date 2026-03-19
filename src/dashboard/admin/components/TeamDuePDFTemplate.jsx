@@ -9,20 +9,20 @@ const TeamDuePDFTemplate = ({ due }) => {
     black: '#000000',
     white: '#ffffff',
     slate900: '#111827',
-    slate600: '#4b5563',
-    slate400: '#9ca3af',
+    slate700: '#374151',
+    slate500: '#6b7280',
     slate100: '#f3f4f6',
+    slate50: '#f9fafb',
     emerald600: '#059669',
     amber600: '#d97706',
   };
 
-  // STRICT A4 ONE-PAGE MINIMALIST (ENGLISH ONLY)
   return (
     <div 
       style={{ 
         width: '794px', 
-        height: '1122px', // Strict A4 Height
-        padding: '40px 60px',
+        height: '1122px', 
+        padding: '60px 80px',
         backgroundColor: colors.white,
         color: colors.slate900,
         fontFamily: "'Outfit', sans-serif",
@@ -32,79 +32,137 @@ const TeamDuePDFTemplate = ({ due }) => {
         flexDirection: 'column'
       }}
     >
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px' }}>
+      {/* Header - Matching Invoice Style */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '60px' }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: '900', margin: '0 0 2px 0', letterSpacing: '-0.05em', color: colors.black }}>CREZIAX</h1>
-          <p style={{ fontSize: '9px', fontWeight: '700', margin: 0, letterSpacing: '0.2em', opacity: 0.6 }}>INTERNAL VOUCHER</p>
+          <h1 style={{ fontSize: '32px', fontWeight: '900', margin: '0 0 4px 0', letterSpacing: '-0.05em', color: colors.black }}>CREZIAX</h1>
+          <p style={{ fontSize: '10px', fontWeight: '600', margin: 0, letterSpacing: '0.4em', textTransform: 'uppercase', opacity: 0.4 }}>Internal Voucher</p>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: '900', margin: '0 0 8px 0', textTransform: 'uppercase' }}>PAYMENT RECEIPT</h2>
-          <p style={{ fontSize: '11px', margin: 0, fontWeight: '700' }}>#{due.id?.slice(0, 8).toUpperCase()}</p>
-          <p style={{ fontSize: '11px', margin: '2px 0 0 0', color: colors.slate400 }}>
-            {new Date(due.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-          </p>
+          <h2 style={{ fontSize: '36px', fontWeight: '900', margin: '0 0 12px 0', textTransform: 'uppercase', opacity: 0.1 }}>PAYMENT RECEIPT</h2>
+          <div style={{ lineHeight: 1.4 }}>
+            <p style={{ fontSize: '12px', fontWeight: '800', margin: 0 }}>#V-{due.id?.slice(0, 8).toUpperCase()}</p>
+            <p style={{ fontSize: '11px', margin: '4px 0 0 0', fontWeight: '500', color: colors.slate500 }}>
+              {new Date(due.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
         </div>
       </div>
 
-      <div style={{ borderBottom: `1px solid ${colors.slate100}`, marginBottom: '30px' }}></div>
+      <div style={{ height: '1px', backgroundColor: colors.slate100, marginBottom: '40px' }}></div>
 
-      {/* Paid To */}
-      <div style={{ marginBottom: '40px' }}>
-        <p style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', opacity: 0.5 }}>Beneficiary Name</p>
-        <p style={{ fontSize: '18px', fontWeight: '900', margin: 0 }}>
+      {/* Payee Info */}
+      <div style={{ marginBottom: '60px' }}>
+        <p style={{ fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '12px', color: colors.slate400 }}>Paid To (Beneficiary)</p>
+        <p style={{ fontSize: '22px', fontWeight: '900', letterSpacing: '-0.02em', margin: 0 }}>
           {due.user ? `${due.user.firstName} ${due.user.lastName}` : 'System Registered User'}
         </p>
       </div>
 
-      {/* Modern Table Layout */}
+      {/* Table Section */}
       <div style={{ flexGrow: 1 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
           <thead>
             <tr>
-              <th style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '12px', borderBottom: `1px solid ${colors.black}`, opacity: 0.5 }}>Description & Purpose</th>
-              <th style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', paddingBottom: '12px', borderBottom: `1px solid ${colors.black}`, textAlign: 'right', opacity: 0.5 }}>Payment Detail</th>
+              <th style={{ 
+                width: '70%',
+                fontSize: '10px', 
+                fontWeight: '900', 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.2em', 
+                paddingBottom: '16px', 
+                borderBottom: `2px solid ${colors.black}`, 
+                textAlign: 'left',
+                color: colors.slate400
+              }}>
+                Description & Purpose
+              </th>
+              <th style={{ 
+                width: '30%',
+                fontSize: '10px', 
+                fontWeight: '900', 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.2em', 
+                paddingBottom: '16px', 
+                borderBottom: `2px solid ${colors.black}`, 
+                textAlign: 'right',
+                color: colors.slate400
+              }}>
+                Payment Type
+              </th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td style={{ padding: '24px 0', fontSize: '15px', fontWeight: '700', maxWidth: '400px', lineHeight: 1.4 }}>
-                {due.description || 'Service Reimbursement / Performance Fee'}
+              <td style={{ padding: '32px 0', verticalAlign: 'top' }}>
+                <p style={{ fontSize: '16px', fontWeight: '700', margin: '0', color: colors.slate900, lineHeight: 1.5 }}>
+                   {due.description || 'Professional Service Reimbursement'}
+                </p>
               </td>
-              <td style={{ padding: '24px 0', fontSize: '15px', fontWeight: '900', textAlign: 'right' }}>
-                {due.transferMethod || 'INTERNAL'}
+              <td style={{ padding: '32px 0', textAlign: 'right', verticalAlign: 'top' }}>
+                <span style={{ fontSize: '12px', fontWeight: '800', padding: '6px 12px', backgroundColor: colors.slate100, borderRadius: '6px' }}>
+                  {due.transferMethod || 'BANK'}
+                </span>
               </td>
             </tr>
           </tbody>
         </table>
 
-        {/* Totals */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-          <div style={{ width: '220px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 0', backgroundColor: colors.slate100, borderRadius: '8px', padding: '10px 16px' }}>
-              <span style={{ fontSize: '12px', fontWeight: '900', textTransform: 'uppercase', opacity: 0.6 }}>Receipt Total</span>
-              <span style={{ fontSize: '18px', fontWeight: '900', color: colors.black }}>${due.amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+        {/* Totals Section */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '40px' }}>
+          <div style={{ width: '240px' }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '20px', 
+              backgroundColor: colors.slate100, 
+              borderRadius: '12px'
+            }}>
+              <span style={{ fontSize: '12px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.6 }}>Receipt Total</span>
+              <span style={{ fontSize: '20px', fontWeight: '900' }}>${due.amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Payment & Footer Section (Always at bottom of page) */}
-      <div style={{ marginTop: 'auto' }}>
-        {/* Shrunken Status Stamp */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+      {/* Footer Section - Dynamic Logic */}
+      <div style={{ marginTop: 'auto', paddingTop: '40px' }}>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '40px' }}>
+          <div style={{ maxWidth: '480px' }}>
+            <p style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '12px', color: colors.slate400 }}>
+              Transaction Summary
+            </p>
+            <div style={{ 
+              padding: '24px', 
+              backgroundColor: colors.slate50, 
+              border: `1px solid ${colors.slate100}`, 
+              borderRadius: '16px' 
+            }}>
+              <p style={{ fontSize: '12px', fontWeight: '600', lineHeight: 1.6, margin: 0, color: colors.slate700 }}>
+                {isSent ? (
+                   "This receipt confirms that the funds have been successfully transferred to the designated account. Thank you for your continued cooperation."
+                ) : (
+                   due.transferDetails ? due.transferDetails : "Payment is scheduled for processing. Funds will be released via the selected transfer method shortly."
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* Clean Small Status Stamp */}
           <div style={{ 
-            border: `2px solid ${isSent ? colors.emerald600 : colors.amber600}`, 
-            borderRadius: '6px', 
-            padding: '4px 10px',
+            border: `3px solid ${isSent ? colors.emerald600 : colors.amber600}`, 
+            borderRadius: '8px', 
+            padding: '6px 12px',
             transform: 'rotate(-5deg)',
-            opacity: 0.8
+            marginBottom: '10px'
           }}>
             <span style={{ 
-              fontSize: '12px', 
+              fontSize: '14px', 
               fontWeight: '900', 
               textTransform: 'uppercase', 
-              letterSpacing: '0.1em', 
+              letterSpacing: '0.2em', 
               color: isSent ? colors.emerald600 : colors.amber600 
             }}>
               {isSent ? 'SENT' : 'PENDING'}
@@ -112,19 +170,9 @@ const TeamDuePDFTemplate = ({ due }) => {
           </div>
         </div>
 
-        {/* Confirmation Details */}
-        {due.transferDetails && (
-          <div style={{ padding: '20px', border: `1px solid ${colors.slate100}`, borderRadius: '8px', marginBottom: '30px' }}>
-            <p style={{ fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 8px 0', opacity: 0.5 }}>Transfer Details / Notes</p>
-            <p style={{ fontSize: '11px', fontWeight: '500', margin: 0, color: colors.slate600, lineHeight: 1.5 }}>
-              {due.transferDetails}
-            </p>
-          </div>
-        )}
-
-        <div style={{ borderTop: `1px solid ${colors.slate100}`, paddingTop: '20px', textAlign: 'center' }}>
-          <p style={{ fontSize: '9px', fontWeight: '700', color: colors.slate400, textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>
-            Internal Financial Document. Creziax Digital Systems. Confirmed & Secure.
+        <div style={{ borderTop: `1px solid ${colors.slate100}`, paddingTop: '32px', textAlign: 'center' }}>
+          <p style={{ fontSize: '9px', fontWeight: '700', color: colors.slate400, textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>
+            Official Internal Financial Record — Creziax Corporate Systems.
           </p>
         </div>
       </div>
