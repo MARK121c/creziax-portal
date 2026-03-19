@@ -22,6 +22,7 @@ const emptyForm = {
   preamble: defaultPreamble,
   penaltyClause: defaultPenalty,
   clauses: [{ title: '', content: '' }],
+  templateId: 'DEFAULT_TEMPLATE', // Placeholder for user's mentioned requirement
 };
 
 const ContractsPage = () => {
@@ -52,8 +53,9 @@ const ContractsPage = () => {
   useEffect(() => { fetchData(); }, []);
 
   // Auto-fill client details when a client is selected
+  const lastClientId = useRef('');
   useEffect(() => {
-    if (form.clientId) {
+    if (form.clientId && form.clientId !== lastClientId.current) {
       const client = clients.find(c => c.id === form.clientId);
       if (client) {
         setForm(prev => ({
@@ -62,7 +64,10 @@ const ContractsPage = () => {
           clientPhone: client.phone || '',
           clientYoutube: client.notionLink || '',
         }));
+        lastClientId.current = form.clientId;
       }
+    } else if (!form.clientId) {
+      lastClientId.current = '';
     }
   }, [form.clientId, clients]);
 
