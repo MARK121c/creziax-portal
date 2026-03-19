@@ -39,12 +39,26 @@ const ContractsPage = () => {
 
   const fetchData = async () => {
     setLoading(true);
+    
+    // Fetch Clients independently to ensure form works even if Contracts API fails
     try {
-      const [cRes, clRes] = await Promise.all([getContractsAPI(), getClientsAPI()]);
-      setContracts(cRes.data);
+      const clRes = await getClientsAPI();
       setClients(clRes.data);
     } catch (err) {
-      toast.error('فشل تحميل العقود');
+      console.error('Failed to load clients:', err);
+      toast.error('فشل تحميل قائمة العملاء');
+    }
+
+    // Fetch Contracts
+    try {
+      const cRes = await getContractsAPI();
+      setContracts(cRes.data);
+    } catch (err) {
+      console.error('Failed to load contracts:', err);
+      // Only toast error for contracts if it's a real failure
+      if (err.response?.status !== 404) {
+        toast.error('فشل تحميل العقود');
+      }
     } finally {
       setLoading(false);
     }
