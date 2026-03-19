@@ -145,7 +145,7 @@ const InvoicesPage = () => {
           toast.success('PDF Downloaded!', { id: loadingToast });
         }).catch(err => {
           console.error('html2pdf Error:', err);
-          toast.error('Generation Error', { id: loadingToast });
+          toast.error('Error: ' + (err.message || 'Generation Failed'), { id: loadingToast });
           setPrintingInvoice(null);
         });
       }, 800);
@@ -239,7 +239,7 @@ const InvoicesPage = () => {
           toast.success('PDF Downloaded!', { id: loadingToast });
         }).catch(err => {
           console.error('html2pdf Error:', err);
-          toast.error('Generation Error', { id: loadingToast });
+          toast.error('Error: ' + (err.message || 'Generation Failed'), { id: loadingToast });
           setPrintingDue(null);
         });
       }, 800);
