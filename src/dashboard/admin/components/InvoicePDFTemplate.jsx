@@ -68,10 +68,10 @@ const InvoicePDFTemplate = ({ invoice }) => {
           </thead>
           <tbody>
             <tr>
-              <td style={{ padding: '24px 0', fontSize: '15px', fontWeight: '700' }}>
-                {invoice.service || 'Studio Services'}
-                {invoice.type && <span style={{ display: 'block', fontSize: '11px', fontWeight: '500', marginTop: '4px', color: colors.slate400 }}>{invoice.type}</span>}
-              </td>
+          <td style={{ padding: '24px 0', fontSize: '15px', fontWeight: '700' }}>
+            {invoice.service === 'Other' ? 'Online Service' : (invoice.service || 'Creative Services')}
+            {invoice.type && <span style={{ display: 'block', fontSize: '11px', fontWeight: '500', marginTop: '4px', color: colors.slate400 }}>{invoice.type}</span>}
+          </td>
               <td style={{ padding: '24px 0', fontSize: '15px', fontWeight: '900', textAlign: 'right' }}>
                 ${invoice.amount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </td>
