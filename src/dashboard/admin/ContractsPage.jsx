@@ -66,24 +66,8 @@ const ContractsPage = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  // Auto-fill client details when a client is selected
-  const lastClientId = useRef('');
-  useEffect(() => {
-    if (form.clientId && form.clientId !== lastClientId.current) {
-      const client = clients.find(c => c.id === form.clientId);
-      if (client) {
-        setForm(prev => ({
-          ...prev,
-          clientName: `${client.user?.firstName || ''} ${client.user?.lastName || ''}`.trim(),
-          clientPhone: client.phone || '',
-          clientYoutube: client.notionLink || '',
-        }));
-        lastClientId.current = form.clientId;
-      }
-    } else if (!form.clientId) {
-      lastClientId.current = '';
-    }
-  }, [form.clientId, clients]);
+  // Auto-fill removed per user request for manual control
+  // Selecting a client now ONLY links the ID for the DB, doesn't overwrite form fields
 
   const openCreateModal = () => {
     setEditingContract(null);
