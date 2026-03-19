@@ -467,8 +467,19 @@ const InvoicesPage = () => {
                 </div>
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">الخدمة / الوصف</label>
-                <textarea value={invoiceForm.service} onChange={e => setInvoiceForm({...invoiceForm, service: e.target.value})} required rows={2} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold resize-none" placeholder="مثال: إدارة السوشيال ميديا لشهر مارس..." />
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">نوع الخدمة / Service Type</label>
+                <select 
+                  value={invoiceForm.service} 
+                  onChange={e => setInvoiceForm({...invoiceForm, service: e.target.value})} 
+                  required 
+                  className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold appearance-none cursor-pointer"
+                >
+                  <option value="">اختر نوع الخدمة...</option>
+                  <option value="YouTube Channel Management">YouTube Channel Management (إدارة قناة يوتيوب)</option>
+                  <option value="Video Editing">Video Editing (مونتاج فيديوهات)</option>
+                  <option value="Account Management">Account Management (إدارة حسابات)</option>
+                  <option value="Custom Online Service">Custom Online Service (خدمة أونلاين مخصصة)</option>
+                </select>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
