@@ -2,7 +2,7 @@
 FROM node:20-alpine as build-stage
 WORKDIR /app
 COPY package*.json ./
-RUN npm cache clean --force && npm install --legacy-peer-deps
+RUN npm install react-is --legacy-peer-deps && npm install --legacy-peer-deps
 COPY . .
 RUN npm run build
 
