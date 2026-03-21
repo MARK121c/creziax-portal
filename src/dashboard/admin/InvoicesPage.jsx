@@ -123,31 +123,31 @@ const InvoicesPage = () => {
 
   const toggleInvoiceStatus = async (id, currentStatus) => {
     const newStatus = currentStatus === 'PAID' ? 'PENDING' : 'PAID';
-    const loadingToast = toast.loading('Updating...');
+    const loadingToast = toast.loading('جاري التحديث...');
     try { 
       await updateInvoiceAPI(id, { status: newStatus }); 
-      toast.success('Updated successfully', { id: loadingToast });
+      toast.success('تم التحديث بنجاح', { id: loadingToast });
       fetchData(); 
     } catch (err) {
-      toast.error('Failed to update', { id: loadingToast });
+      toast.error('فشل التحديث', { id: loadingToast });
     }
   };
 
   const handleDeleteInvoice = async (id, num) => {
-    if (!confirm(`Are you sure you want to delete Invoice ${num}?`)) return;
-    const loadingToast = toast.loading('Deleting...');
+    if (!confirm(`هل أنت متأكد من حذف الفاتورة ${num}؟`)) return;
+    const loadingToast = toast.loading('جاري الحذف...');
     try { 
       await deleteInvoiceAPI(id); 
-      toast.success('Deleted successfully', { id: loadingToast });
+      toast.success('تم الحذف بنجاح', { id: loadingToast });
       fetchData(); 
     } catch (err) {
-      toast.error('Failed to delete', { id: loadingToast });
+      toast.error('فشل الحذف', { id: loadingToast });
     }
   };
 
   const handleDownloadPDF = async (inv) => {
     console.log('Starting PDF generation for:', inv.invoiceNumber);
-    const loadingToast = toast.loading('Generating premium PDF...');
+    const loadingToast = toast.loading('جاري تجهيز ملف الـ PDF...');
     try {
       setPrintingInvoice(inv);
       // Wait for React to render the component
@@ -156,7 +156,7 @@ const InvoicesPage = () => {
         const element = invoiceRef.current;
         if (!element) {
           console.error('Invoice element not found!');
-          toast.error('Internal Error: Template not found', { id: loadingToast });
+          toast.error('خطأ داخلي: القالب غير موجود', { id: loadingToast });
           return;
         }
         
@@ -177,16 +177,16 @@ const InvoicesPage = () => {
 
         html2pdf().from(element).set(opt).save().then(() => {
           setPrintingInvoice(null);
-          toast.success('PDF Downloaded!', { id: loadingToast });
+          toast.success('تم تحميل ملف الـ PDF بنجاح!', { id: loadingToast });
         }).catch(err => {
           console.error('PDF Error:', err);
-          toast.error('Generation Failed', { id: loadingToast });
+          toast.error('فشل تجهيز الملف', { id: loadingToast });
           setPrintingInvoice(null);
         });
       }, 800);
     } catch (err) {
       console.error('PDF Error:', err);
-      toast.error('Failed to generate PDF', { id: loadingToast });
+      toast.error('خطأ في تحميل ملف الـ PDF', { id: loadingToast });
       setPrintingInvoice(null);
     }
   };
@@ -222,31 +222,31 @@ const InvoicesPage = () => {
 
   const toggleDueStatus = async (id, currentStatus) => {
     const newStatus = currentStatus === 'SENT' ? 'PENDING' : 'SENT';
-    const loadingToast = toast.loading('Updating...');
+    const loadingToast = toast.loading('جاري التحديث...');
     try { 
       await updateExpenseAPI(id, { status: newStatus }); 
-      toast.success('Updated successfully', { id: loadingToast });
+      toast.success('تم التحديث بنجاح', { id: loadingToast });
       fetchData(); 
     } catch (err) {
-      toast.error('Failed to update', { id: loadingToast });
+      toast.error('فشل التحديث', { id: loadingToast });
     }
   };
 
   const handleDeleteDue = async (id) => {
-    if (!confirm('Are you sure you want to delete this Team Due?')) return;
-    const loadingToast = toast.loading('Deleting...');
+    if (!confirm('هل أنت متأكد من حذف هذا المستحق؟')) return;
+    const loadingToast = toast.loading('جاري الحذف...');
     try { 
       await deleteExpenseAPI(id); 
-      toast.success('Deleted successfully', { id: loadingToast });
+      toast.success('تم الحذف بنجاح', { id: loadingToast });
       fetchData(); 
     } catch (err) {
-      toast.error('Failed to delete', { id: loadingToast });
+      toast.error('فشل الحذف', { id: loadingToast });
     }
   };
 
   const handleDownloadDuePDF = async (due) => {
     console.log('Starting Team Due PDF generation...');
-    const loadingToast = toast.loading('Generating receipt PDF...');
+    const loadingToast = toast.loading('جاري تجهيز إيصال الدفع...');
     try {
       setPrintingDue(due);
       // Wait for React to render the component
@@ -255,7 +255,7 @@ const InvoicesPage = () => {
         const element = dueRef.current;
         if (!element) {
           console.error('Due element not found!');
-          toast.error('Internal Error: Template not found', { id: loadingToast });
+          toast.error('خطأ داخلي: القالب غير موجود', { id: loadingToast });
           return;
         }
 
@@ -276,16 +276,16 @@ const InvoicesPage = () => {
 
         html2pdf().from(element).set(opt).save().then(() => {
           setPrintingDue(null);
-          toast.success('PDF Downloaded!', { id: loadingToast });
+          toast.success('تم تحميل الإيصال بنجاح!', { id: loadingToast });
         }).catch(err => {
           console.error('PDF Error:', err);
-          toast.error('Generation Failed', { id: loadingToast });
+          toast.error('فشل تجهيز الإيصال', { id: loadingToast });
           setPrintingDue(null);
         });
       }, 800);
     } catch (err) {
       console.error('PDF Error:', err);
-      toast.error('Failed to generate PDF', { id: loadingToast });
+      toast.error('خطأ في تحميل الإيصال', { id: loadingToast });
       setPrintingDue(null);
     }
   };
@@ -577,7 +577,7 @@ const InvoicesPage = () => {
                   <option value="Graphic Design / تصميم جرافيك">Graphic Design / تصميم جرافيك</option>
                   <option value="Voice Over / تعليق صوتي">Voice Over / تعليق صوتي</option>
                   <option value="Consultation / استشارة">Consultation / استشارة</option>
-                  <option value="Online Service">Online Service</option>
+                  <option value="Online Service">خدمات أونلاين</option>
                 </select>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

@@ -103,7 +103,7 @@ const AdminDashboard = () => {
       setLoading(true);
       try {
         const [statsRes, logsRes, clientsRes] = await Promise.all([
-          getDashboardStatsAPI().catch(() => ({ data: null })),
+          getDashboardStatsAPI(exportMonth).catch(() => ({ data: null })),
           getRecentActivityAPI(5).catch(() => ({ data: [] })),
           getClientsAPI().catch(() => ({ data: [] }))
         ]);
@@ -117,7 +117,7 @@ const AdminDashboard = () => {
       }
     };
     fetchDashboardData();
-  }, []);
+  }, [exportMonth]);
 
   // Close action menu on outside click
   useEffect(() => {
@@ -206,18 +206,9 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* ─── Stat Cards Row ──────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-5">
-        <StatCard icon={Users} label={t('stat_clients')} value={stats?.users?.clients ?? 0} loading={loading} color="from-sky-500 to-blue-600" />
-        <StatCard icon={Briefcase} label={t('stat_team')} value={stats?.users?.team ?? 0} loading={loading} color="from-violet-500 to-purple-600" />
-        <StatCard icon={Shield} label={t('stat_admins')} value={stats?.users?.admins ?? 0} loading={loading} color="from-rose-500 to-red-600" />
-        <StatCard icon={FolderKanban} label={t('stat_active_projects')} value={stats?.projects?.active ?? 0} loading={loading} color="from-emerald-500 to-teal-600" />
-        <StatCard icon={Monitor} label={t('stat_managed_channels')} value={stats?.channels?.total ?? 0} loading={loading} color="from-amber-500 to-orange-600" />
-      </div>
-
       {/* ─── Financial Section ─────────────────── */}
       {hasFinancialAccess && (
-        <div className="bg-slate-50 dark:bg-[#0a0a0c]/20 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-6 md:p-8 relative overflow-hidden">
+        <div className="bg-slate-50 dark:bg-[#0a0a0c]/20 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-6 md:p-8 relative overflow-hidden mt-8">
           
           {/* Section Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -332,6 +323,8 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+
 
       {/* ─── Charts & Activity ─────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">

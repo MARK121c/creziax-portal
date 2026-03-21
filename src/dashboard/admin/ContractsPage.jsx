@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getContractsAPI, createContractAPI, updateContractAPI, deleteContractAPI, getClientsAPI, getUsersAPI, uploadAttachmentAPI } from '../../store/api';
+import api from '../../store/api';
 import { Plus, X, Trash2, FileText, Search, Loader2, Link as LinkIcon, Download, ExternalLink, UploadCloud, Calendar, User as UserIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -147,6 +148,27 @@ const ContractsPage = () => {
     }
   };
 
+  const handleDownload = async (contract) => {
+    const id = toast.loading('جاري تجهيز الملف للتحميل الآمن...');
+    try {
+      const url = getFullFileUrl(contract.pdfUrl);
+      // Ensure we hit the backend API (if url doesn't start with /api, adjust it or hit directly)
+      // Wait, api.get will automatically prepend baseURL. 
+      // getFullFileUrl returns absolute URL if it starts with http. If it's absolute, api.get will work!
+      const response = await api.get(url, { responseType: 'blob' });
+      const blobURL = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = blobURL;
+      link.setAttribute('download', `${contract.title}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('تم تحميل الملف بنجاح', { id });
+    } catch (err) {
+      toast.error('فشل تحميل الملف، قد تحتاج لتسجيل الدخول مرة أخرى', { id });
+    }
+  };
+
   const filtered = contracts.filter(c => 
     c.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.client?.user?.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -161,7 +183,7 @@ const ContractsPage = () => {
           <h1 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter">أرشيف العقود</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-3 font-bold text-lg uppercase tracking-widest flex items-center gap-3 italic">
             <span className="w-12 h-[2px] bg-brand-500 rounded-full" />
-            Canva Archive Management
+            إدارة أرشفة العقود السحابية
           </p>
         </div>
         
@@ -176,7 +198,7 @@ const ContractsPage = () => {
               <Plus size={24} />
             </div>
             <div className="text-right">
-              <span className="block text-[10px] opacity-70 uppercase tracking-widest font-bold">Design Studio</span>
+              <span className="block text-[10px] opacity-70 uppercase tracking-widest font-bold">استوديو التصميم المتكامل</span>
               <span className="text-lg">إنشاء عقد جديد - Canva</span>
             </div>
           </a>
@@ -267,15 +289,13 @@ const ContractsPage = () => {
                     <td className="px-10 py-6 text-left">
                       <div className="flex items-center justify-start gap-4">
                         {contract.pdfUrl && (
-                          <a 
-                            href={getFullFileUrl(contract.pdfUrl)}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button 
+                            onClick={() => handleDownload(contract)}
                             className="flex items-center gap-2 px-6 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl font-black text-xs hover:bg-emerald-500 hover:text-white shadow-lg shadow-emerald-500/10 transition-all active:scale-95"
                           >
                             <Download size={14} />
-                            <span>عرض / تحميل</span>
-                          </a>
+                            <span>تنزيل (آمن)</span>
+                          </button>
                         )}
                         <button 
                           onClick={() => handleDelete(contract.id)}

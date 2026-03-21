@@ -108,7 +108,7 @@ export const createTicketAPI = (data) => api.post('/tickets', data);
 export const updateTicketAPI = (id, data) => api.put(`/tickets/${id}`, data);
 
 // Dashboard & Financials
-export const getDashboardStatsAPI = () => api.get('/stats/dashboard');
+export const getDashboardStatsAPI = (month) => api.get(`/stats/dashboard${month ? `?month=${month}` : ''}`);
 
 // Expenses
 export const getExpensesAPI = () => api.get('/expenses');

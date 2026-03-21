@@ -398,12 +398,9 @@ Availability: ${bookingData.dates}`;
                             onClick={() => selectThread(p, 'GROUP')}
                             className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === p.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
                           >
-                            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center overflow-hidden border border-white/10 shadow-inner">
-                              {p.logoUrl ? <img src={p.logoUrl} className="w-full h-full object-cover" /> : <Briefcase size={20} />}
-                            </div>
                             <div className="flex-1 text-right overflow-hidden">
                               <h4 className="text-xs font-black truncate">{p.name}</h4>
-                              <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === p.id ? 'text-white' : 'text-slate-400'}`}>Project Command Center</p>
+                              <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === p.id ? 'text-white' : 'text-slate-400'}`}>مركز قيادة المشروع</p>
                             </div>
                           </button>
                         ))}
@@ -441,9 +438,6 @@ Availability: ${bookingData.dates}`;
                             onClick={() => selectThread({ id: 'TEAM_GLOBAL', name: 'قروب الفريق (العام)' }, 'GROUP')}
                             className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === 'TEAM_GLOBAL' ? 'bg-emerald-600 text-white shadow-lg' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
                           >
-                            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20">
-                              <ShieldAlert size={20} />
-                            </div>
                             <div className="flex-1 text-right overflow-hidden">
                               <h4 className="text-xs font-black truncate">قروب الفريق (العام)</h4>
                               <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === 'TEAM_GLOBAL' ? 'text-white' : 'text-emerald-500'}`}>المركز الرئيسي للنقاش</p>
@@ -457,9 +451,6 @@ Availability: ${bookingData.dates}`;
                               onClick={() => selectThread(tg, 'TEAM_GROUP')}
                               className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === tg.id ? 'bg-brand-600 text-white shadow-lg' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
                             >
-                              <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center overflow-hidden border border-white/10">
-                                <Users size={20} />
-                              </div>
                               <div className="flex-1 text-right overflow-hidden">
                                 <h4 className="text-xs font-black truncate">{tg.name}</h4>
                                 <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === tg.id ? 'text-white' : 'text-slate-400'}`}>{tg.members?.length} أعضاء</p>
@@ -491,12 +482,9 @@ Availability: ${bookingData.dates}`;
                               onClick={() => selectThread(tm, 'TEAM')}
                               className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === tm.id ? 'bg-slate-800 text-white shadow-lg' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
                             >
-                              <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center overflow-hidden border border-white/10 shadow-inner">
-                                {tm.avatarUrl ? <img src={tm.avatarUrl} className="w-full h-full object-cover" /> : <UserCircle size={24} />}
-                              </div>
                               <div className="flex-1 text-right overflow-hidden">
                                 <h4 className="text-xs font-black truncate">{tm.firstName} {tm.lastName}</h4>
-                                <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === tm.id ? 'text-white' : 'text-slate-400'}`}>{tm.position || 'Team Member'}</p>
+                                <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === tm.id ? 'text-white' : 'text-slate-400'}`}>{tm.position || 'عضو بالفريق'}</p>
                               </div>
                             </button>
                           ))}
@@ -524,12 +512,9 @@ Availability: ${bookingData.dates}`;
                             onClick={() => selectThread(c, 'DM')}
                             className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === c.user?.id ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/20' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
                           >
-                            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/10 flex items-center justify-center overflow-hidden border border-white/10 shadow-inner">
-                              {c.logoUrl ? <img src={c.logoUrl} className="w-full h-full object-cover" /> : <UserCircle size={24} />}
-                            </div>
                             <div className="flex-1 text-right overflow-hidden">
                               <h4 className="text-xs font-black truncate">{c.user?.firstName} {c.user?.lastName}</h4>
-                              <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === c.user?.id ? 'text-white' : 'text-slate-400'}`}>{c.company || 'Private Conversation'}</p>
+                              <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === c.user?.id ? 'text-white' : 'text-slate-400'}`}>{c.company || 'محادثة خاصة'}</p>
                             </div>
                           </button>
                         ))}
@@ -606,7 +591,7 @@ Availability: ${bookingData.dates}`;
                     className="flex items-center gap-2.5 px-6 py-3.5 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-brand-600/20 hover:scale-105 active:scale-95"
                   >
                     <Calendar size={16} />
-                    Book a Meeting
+                    حجز موعد الاجتماع
                   </button>
                   </div>
                 </div>
@@ -640,18 +625,13 @@ Availability: ${bookingData.dates}`;
                         fileDetails = { url: fileUrl, isImage, caption };
                       }
 
-                      // Enhance avatar rendering using fresh store data
-                      const msgAvatar = m.sender?.avatarUrl || 
-                                        clients.find(c => c.user?.id === m.senderId)?.logoUrl || 
-                                        teamMembers.find(t => t.id === m.senderId)?.avatarUrl;
+
 
                       return (
                         <div key={m.id || i} className={`flex ${m.senderId === user?.id ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-500`}>
                           <div className={`flex flex-col ${m.senderId === user?.id ? 'items-end' : 'items-start'} max-w-[85%] md:max-w-[70%]`}>
                              <div className={`flex items-center gap-3 mb-2 px-1 ${m.senderId === user?.id ? 'flex-row-reverse' : ''}`}>
-                                <div className="w-6 h-6 rounded-lg bg-slate-200 dark:bg-white/5 flex items-center justify-center text-[10px] font-bold text-slate-500 border border-slate-300 dark:border-white/10 overflow-hidden shadow-sm">
-                                   {msgAvatar ? <img src={msgAvatar} className="w-full h-full object-cover" /> : (m.sender?.firstName?.[0] || 'U')}
-                                </div>
+
                                 <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                                   {m.sender?.firstName} {m.sender?.lastName} {m.senderId === user?.id && '(أنت)'}
                                 </span>
