@@ -108,7 +108,7 @@ const InvoicesPage = () => {
     try {
       await createInvoiceAPI({ 
         ...invoiceForm, 
-        amount: parseFloat(invoiceForm.amount), 
+        amount: Number(invoiceForm.amount), 
         exchangeRate: invoiceForm.exchangeRate ? parseFloat(invoiceForm.exchangeRate) : 1, 
         dueDate: invoiceForm.dueDate || undefined 
       });
@@ -204,7 +204,7 @@ const InvoicesPage = () => {
     const loadingToast = toast.loading('جاري حفظ المستحق...');
     try {
       await createExpenseAPI({ 
-        amount: parseFloat(dueForm.amount), 
+        amount: Number(dueForm.amount), 
         category: 'TEAM_DUE', 
         description: dueForm.description, 
         transferMethod: dueForm.transferMethod, 
@@ -411,8 +411,8 @@ const InvoicesPage = () => {
                       </td>
                       <td className="px-6 md:px-10 py-5 md:py-7">
                         <div className="inline-flex items-center gap-1 text-lg font-black text-slate-800 dark:text-white">
-                          <span className="text-brand-500 text-sm">$</span>
-                          {inv.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          <span className="text-brand-500 text-sm">{inv.currency === 'USD' ? '$' : inv.currency} </span>
+                          {Number(inv.amount)}
                         </div>
                       </td>
                       <td className="px-6 md:px-10 py-5 md:py-7">
@@ -499,7 +499,7 @@ const InvoicesPage = () => {
                       <td className="px-6 md:px-10 py-5 md:py-7">
                         <div className="inline-flex items-center gap-1 text-lg font-black text-slate-800 dark:text-white">
                           <span className="text-amber-500 text-sm">$</span>
-                          {due.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {Number(due.amount)}
                         </div>
                       </td>
                       <td className="px-6 md:px-10 py-5 md:py-7">
@@ -591,7 +591,7 @@ const InvoicesPage = () => {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">المبلغ (بـ USD الأساسي)</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">المبلغ (Amount)</label>
                   <div className="relative">
                     <DollarSign size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-brand-500" />
                     <input type="number" step="0.01" min="0" value={invoiceForm.amount} onChange={e => setInvoiceForm({...invoiceForm, amount: e.target.value})} required className="w-full pl-12 pr-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-black" placeholder="0.00" />
@@ -731,8 +731,8 @@ const InvoicesPage = () => {
             status_color: printingInvoice.status === 'PAID' ? '#166534' : '#92400e',
             status_label: printingInvoice.status === 'PAID' ? 'تم الدفع PAID' : 'قيد الانتظار PENDING',
             service_name: printingInvoice.service,
-            amount: printingInvoice.amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-            local_amount: printingInvoice.currency !== 'USD' && printingInvoice.exchangeRate ? (printingInvoice.amount * printingInvoice.exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : null,
+            amount: Number(printingInvoice.amount),
+            local_amount: printingInvoice.currency !== 'USD' && printingInvoice.exchangeRate ? Number(printingInvoice.amount * printingInvoice.exchangeRate) : null,
             currency: printingInvoice.currency || 'USD',
             payment_method: printingInvoice.paymentMethod,
             payment_details: printingInvoice.paymentDetails
@@ -749,7 +749,7 @@ const InvoicesPage = () => {
             status_color: printingDue.status === 'SENT' ? '#166534' : '#92400e',
             status_label: printingDue.status === 'SENT' ? 'تم التحويل SENT' : 'قيد المعالجة PROCESSING',
             service_name: printingDue.description,
-            amount: printingDue.amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            amount: Number(printingDue.amount),
             payment_method: printingDue.transferMethod,
             payment_details: printingDue.transferDetails
           }} />}
