@@ -413,6 +413,7 @@ const InvoicesPage = () => {
                             <span className="text-brand-500 text-sm">
                               {inv.currency !== 'USD' && inv.exchangeRate && inv.exchangeRate > 1 ? inv.currency : 'USD'}
                             </span>
+                            {/* Strictly: Final = Amount * ExchangeRate */}
                             {inv.currency !== 'USD' && inv.exchangeRate && inv.exchangeRate > 1 
                               ? Number(inv.amount * inv.exchangeRate) 
                               : Number(inv.amount)}
