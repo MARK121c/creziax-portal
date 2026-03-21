@@ -172,7 +172,6 @@ const InvoicesPage = () => {
           html2canvas: { 
             scale: 2, 
             useCORS: true, 
-            letterRendering: true, 
             backgroundColor: '#ffffff',
             windowWidth: 800,
             width: 800
@@ -271,7 +270,6 @@ const InvoicesPage = () => {
           html2canvas: { 
             scale: 2, 
             useCORS: true, 
-            letterRendering: true, 
             backgroundColor: '#ffffff',
             windowWidth: 800,
             width: 800
@@ -410,9 +408,16 @@ const InvoicesPage = () => {
                         </span>
                       </td>
                       <td className="px-6 md:px-10 py-5 md:py-7">
-                        <div className="inline-flex items-center gap-1 text-lg font-black text-slate-800 dark:text-white">
-                          <span className="text-brand-500 text-sm">{inv.currency === 'USD' ? '$' : inv.currency} </span>
-                          {Number(inv.amount)}
+                        <div className="flex flex-col">
+                          <div className="inline-flex items-center gap-1 text-lg font-black text-slate-800 dark:text-white">
+                            <span className="text-brand-500 text-sm">USD </span>
+                            {Number(inv.amount)}
+                          </div>
+                          {inv.currency !== 'USD' && inv.exchangeRate && inv.exchangeRate > 1 && (
+                            <div className="text-xs font-bold text-slate-400 mt-1" dir="ltr">
+                              ≈ {Number(inv.amount * inv.exchangeRate)} {inv.currency}
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 md:px-10 py-5 md:py-7">
@@ -591,14 +596,14 @@ const InvoicesPage = () => {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">المبلغ (Amount)</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">المبلغ الأساسي (USD)</label>
                   <div className="relative">
                     <DollarSign size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-brand-500" />
                     <input type="number" step="0.01" min="0" value={invoiceForm.amount} onChange={e => setInvoiceForm({...invoiceForm, amount: e.target.value})} required className="w-full pl-12 pr-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-black" placeholder="0.00" />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">عملة العميل المفضلة</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">العملة الموازية (للفاتورة)</label>
                   <select value={invoiceForm.currency} onChange={e => setInvoiceForm({...invoiceForm, currency: e.target.value})} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold appearance-none cursor-pointer">
                     <option value="USD">USD ($)</option>
                     <option value="EGP">EGP</option>
