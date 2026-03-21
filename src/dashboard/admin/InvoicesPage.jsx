@@ -293,15 +293,15 @@ const InvoicesPage = () => {
     }
   };
 
-  const filteredInvoices = invoices.filter(inv => 
-    inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    inv.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    `${inv.client?.user?.firstName} ${inv.client?.user?.lastName}`.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredInvoices = (invoices || []).filter(inv => 
+    (inv.invoiceNumber || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+    (inv.service || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+    `${inv.client?.user?.firstName || ''} ${inv.client?.user?.lastName || ''}`.toLowerCase().includes((searchQuery || '').toLowerCase())
   );
 
-  const filteredDues = teamDues.filter(due => 
-    due.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    `${due.user?.firstName} ${due.user?.lastName}`.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredDues = (teamDues || []).filter(due => 
+    (due.description || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+    `${due.user?.firstName || ''} ${due.user?.lastName || ''}`.toLowerCase().includes((searchQuery || '').toLowerCase())
   );
 
   return (

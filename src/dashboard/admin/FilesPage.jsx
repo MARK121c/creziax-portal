@@ -82,8 +82,8 @@ const FilesPage = () => {
     }
   };
 
-  const filteredProjects = projects.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const filteredProjects = (projects || []).filter(p => 
+    (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
     (p.client?.company || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -155,7 +155,7 @@ const FilesPage = () => {
                             <img src={getFormattedUrl(p.logoUrl)} className="w-full h-full object-cover" alt="" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-xl font-black text-slate-200 dark:text-slate-800 uppercase italic">
-                              {p.name[0]}
+                              {(p.name || '?')[0]}
                             </div>
                           )}
                         </div>

@@ -136,18 +136,18 @@ const AdminDashboard = () => {
   const handleExportExcel = () => {
     if (!stats) return;
     const rows = [
-      { المؤشر: t('stat_clients'), القيمة: stats.users?.clients },
-      { [t('stat_label', 'المؤشر')]: t('stat_team'), [t('value_label', 'القيمة')]: stats.users?.team },
-      { [t('stat_label', 'المؤشر')]: t('stat_admins'), [t('value_label', 'القيمة')]: stats.users?.admins },
-      { [t('stat_label', 'المؤشر')]: t('stat_active_projects'), [t('value_label', 'القيمة')]: stats.projects?.active },
-      { [t('stat_label', 'المؤشر')]: t('stat_managed_channels'), [t('value_label', 'القيمة')]: stats.channels?.total },
+      { [t('stat_label', 'المؤشر')]: t('stat_clients'), [t('value_label', 'القيمة')]: stats.users?.clients || 0 },
+      { [t('stat_label', 'المؤشر')]: t('stat_team'), [t('value_label', 'القيمة')]: stats.users?.team || 0 },
+      { [t('stat_label', 'المؤشر')]: t('stat_admins'), [t('value_label', 'القيمة')]: stats.users?.admins || 0 },
+      { [t('stat_label', 'المؤشر')]: t('stat_active_projects'), [t('value_label', 'القيمة')]: stats.projects?.active || 0 },
+      { [t('stat_label', 'المؤشر')]: t('stat_managed_channels'), [t('value_label', 'القيمة')]: stats.channels?.total || 0 },
       ...(hasFinancialAccess ? [
-        { [t('stat_label', 'المؤشر')]: t('stat_gross_revenue'), [t('value_label', 'القيمة')]: `$${stats.financials?.grossRevenue}` },
-        { [t('stat_label', 'المؤشر')]: t('total_expenses'), [t('value_label', 'القيمة')]: `$${stats.financials?.totalExpenses}` },
-        { [t('stat_label', 'المؤشر')]: t('total_salaries'), [t('value_label', 'القيمة')]: `$${stats.financials?.salaries}` },
-        { [t('stat_label', 'المؤشر')]: t('operational_expenses'), [t('value_label', 'القيمة')]: `$${stats.financials?.operationalExpenses}` },
-        { [t('stat_label', 'المؤشر')]: t('total_bonuses'), [t('value_label', 'القيمة')]: `$${stats.financials?.bonuses}` },
-        { [t('stat_label', 'المؤشر')]: t('stat_net_profit'), [t('value_label', 'القيمة')]: `$${stats.financials?.netProfit}` },
+        { [t('stat_label', 'المؤشر')]: t('stat_gross_revenue'), [t('value_label', 'القيمة')]: `$${stats.financials?.grossRevenue || 0}` },
+        { [t('stat_label', 'المؤشر')]: t('total_expenses'), [t('value_label', 'القيمة')]: `$${stats.financials?.totalExpenses || 0}` },
+        { [t('stat_label', 'المؤشر')]: t('total_salaries'), [t('value_label', 'القيمة')]: `$${stats.financials?.salaries || 0}` },
+        { [t('stat_label', 'المؤشر')]: t('operational_expenses'), [t('value_label', 'القيمة')]: `$${stats.financials?.operationalExpenses || 0}` },
+        { [t('stat_label', 'المؤشر')]: t('total_bonuses'), [t('value_label', 'القيمة')]: `$${stats.financials?.bonuses || 0}` },
+        { [t('stat_label', 'المؤشر')]: t('stat_net_profit'), [t('value_label', 'القيمة')]: `$${stats.financials?.netProfit || 0}` },
       ] : [])
     ];
     const ws = XLSX.utils.json_to_sheet(rows);

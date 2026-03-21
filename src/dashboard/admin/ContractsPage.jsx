@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getContractsAPI, createContractAPI, updateContractAPI, deleteContractAPI, getClientsAPI, getUsersAPI } from '../../store/api';
-import { Plus, X, Trash2, FileText, Search, Loader2, Link as LinkIcon, ExternalLink, Calendar, User as UserIcon, ShieldAlert } from 'lucide-react';
+import { Plus, X, Trash2, FileText, Search, Loader2, Link as LinkIcon, ExternalLink, Calendar, User as UserIcon, ShieldAlert, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const CANVA_LINK = "https://www.canva.com/design/DAG-3cp5x9g/VsK4i4NViBIoYk-0Uij5Vw/edit?utm_content=DAG-3cp5x9g&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton";
@@ -147,10 +147,10 @@ const ContractsPage = () => {
     window.open(previewUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const filtered = contracts.filter(c => 
-    c.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.client?.user?.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.member?.firstName?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filtered = (contracts || []).filter(c => 
+    (c.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (c.client?.user?.firstName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (c.member?.firstName || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (

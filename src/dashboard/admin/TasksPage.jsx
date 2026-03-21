@@ -64,7 +64,9 @@ const TasksPage = () => {
 
   const parseTaskMeta = (desc) => {
     try { 
-      const parsed = JSON.parse(desc); 
+      if (!desc || desc === 'null' || desc === 'undefined') return { script: 'NOT_STARTED', shoot: 'NOT_STARTED', edit: 'NOT_STARTED', publish: 'NOT_STARTED' };
+      const parsed = typeof desc === 'string' ? JSON.parse(desc) : desc; 
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { script: 'NOT_STARTED', shoot: 'NOT_STARTED', edit: 'NOT_STARTED', publish: 'NOT_STARTED' };
       return {
         script: parsed.script || 'NOT_STARTED',
         shoot: parsed.shoot || 'NOT_STARTED',
@@ -72,6 +74,7 @@ const TasksPage = () => {
         publish: parsed.publish || 'NOT_STARTED'
       };
     } catch (e) { 
+      console.error("TasksPage: parseTaskMeta Error", e);
       return { script: 'NOT_STARTED', shoot: 'NOT_STARTED', edit: 'NOT_STARTED', publish: 'NOT_STARTED' }; 
     }
   };
@@ -93,9 +96,14 @@ const TasksPage = () => {
         getTasksAPI()
       ]);
       
-      const allWorkspacesShort = wRes.data.data || wRes.data || [];
-      const allUsers = (uRes.data.data || uRes.data || []).filter(u => u.role === 'TEAM' || u.role === 'ADMIN');
-      const allTeamTasks = tRes.data.data || tRes.data || [];
+      const rawW = wRes.data?.data || wRes.data;
+      const allWorkspacesShort = Array.isArray(rawW) ? rawW : [];
+      
+      const rawU = uRes.data?.data || uRes.data;
+      const allUsers = (Array.isArray(rawU) ? rawU : []).filter(u => u.role === 'TEAM' || u.role === 'ADMIN');
+      
+      const rawT = tRes.data?.data || tRes.data;
+      const allTeamTasks = Array.isArray(rawT) ? rawT : [];
       
       setWorkspaces(allWorkspacesShort);
       setTeamMembers(allUsers);
@@ -109,9 +117,10 @@ const TasksPage = () => {
           if (wsDetail.phases && wsDetail.phases.length > 0) {
             for (const ph of wsDetail.phases) {
               const ptRes = await getPhaseTasksAPI(ph.id);
-              const phaseTasks = ptRes.data.data || ptRes.data || [];
-              aggregatedProdTasks = [...aggregatedProdTasks, ...phaseTasks.map(t => ({
-                ...t,
+              const rawPT = ptRes.data?.data || ptRes.data;
+              const phaseTasks = Array.isArray(rawPT) ? rawPT : [];
+              aggregatedProdTasks = [...aggregatedProdTasks, ...phaseTasks.map(task => ({
+                ...task,
                 workspaceName: wsDetail.name,
                 workspaceId: wsDetail.id,
                 phaseName: ph.name,
@@ -237,53 +246,55 @@ const TasksPage = () => {
 
   // Filtering & Stats
   const filteredProduction = useMemo(() => {
-    return productionTasks.filter(t => {
-      const matchesSearch = t.title.toLowerCase().includes(filters.search.toLowerCase()) || t.workspaceName.toLowerCase().includes(filters.search.toLowerCase());
-      const matchesProject = filters.projectId === 'ALL' || t.workspaceId === filters.projectId;
+    return productionTasks.filter(task => {
+      const matchesSearch = (task.title || '').toLowerCase().includes((filters.search || '').toLowerCase()) || 
+                             (task.workspaceName || '').toLowerCase().includes((filters.search || '').toLowerCase());
+      const matchesProject = filters.projectId === 'ALL' || task.workspaceId === filters.projectId;
       const matchesAssignee = filters.assigneeId === 'ALL' || 
-                             t.assignedToId === filters.assigneeId || 
-                             teamMembers.find(m => m.id === filters.assigneeId)?.teamMemberInfo?.id === t.assignedToId;
+                             task.assignedToId === filters.assigneeId || 
+                             teamMembers.find(m => m.id === filters.assigneeId)?.teamMemberInfo?.id === task.assignedToId;
       return matchesSearch && matchesProject && matchesAssignee;
     }).sort((a,b) => sortOrder === 'ASC' ? new Date(a.deadline) - new Date(b.deadline) : new Date(b.deadline) - new Date(a.deadline));
-  }, [productionTasks, filters, sortOrder]);
+  }, [productionTasks, filters, sortOrder, teamMembers]);
 
   const filteredTeam = useMemo(() => {
-    return teamTasks.filter(t => {
+    return teamTasks.filter(task => {
       // 1. Must be an Administrative task (No phaseId)
-      if (t.phaseId) return false;
+      if (task.phaseId) return false;
 
-      const matchesSearch = t.title.toLowerCase().includes(filters.search.toLowerCase()) || (t.description || '').toLowerCase().includes(filters.search.toLowerCase());
+      const matchesSearch = (task.title || '').toLowerCase().includes((filters.search || '').toLowerCase()) || 
+                             (task.description || '').toLowerCase().includes((filters.search || '').toLowerCase());
       const matchesAssignee = filters.assigneeId === 'ALL' || 
-                             t.assignedToId === filters.assigneeId || 
-                             teamMembers.find(m => m.id === filters.assigneeId)?.teamMemberInfo?.id === t.assignedToId;
+                             task.assignedToId === filters.assigneeId || 
+                             teamMembers.find(m => m.id === filters.assigneeId)?.teamMemberInfo?.id === task.assignedToId;
       
       let matchesStatus = true;
       if (filters.status !== 'ALL') {
         if (filters.status === 'OVERDUE') {
-           matchesStatus = (t.status === 'IDEA' && isTaskOverdue(t));
+           matchesStatus = (task.status === 'IDEA' && isTaskOverdue(task));
         } else if (filters.status === 'PENDING') {
-           matchesStatus = (t.status === 'IDEA');
+           matchesStatus = (task.status === 'IDEA');
         } else if (filters.status === 'COMPLETED') {
-           matchesStatus = (t.status === 'DELIVERED');
+           matchesStatus = (task.status === 'DELIVERED');
         }
       }
       return matchesSearch && matchesAssignee && matchesStatus;
     }).sort((a,b) => sortOrder === 'ASC' ? new Date(a.deadline) - new Date(b.deadline) : new Date(b.deadline) - new Date(a.deadline));
-  }, [teamTasks, filters, sortOrder]);
+  }, [teamTasks, filters, sortOrder, teamMembers]);
 
   const teamStats = useMemo(() => {
-    const overdue = teamTasks.filter(t => t.status === 'IDEA' && isTaskOverdue(t));
+    const overdue = teamTasks.filter(task => task.status === 'IDEA' && isTaskOverdue(task));
     const counts = {};
-    overdue.forEach(t => {
-      const u = teamMembers.find(m => m.teamMemberInfo?.id === t.assignedToId || m.id === t.assignedToId);
-      const name = u ? `${u.firstName} ${u.lastName}` : (t.assignedTo?.user?.firstName || t('unknown', 'غير معروف'));
+    overdue.forEach(task => {
+      const u = teamMembers.find(m => m.teamMemberInfo?.id === task.assignedToId || m.id === task.assignedToId);
+      const name = u ? `${u.firstName} ${u.lastName}` : (task.assignedTo?.user?.firstName || t('unknown', 'غير معروف'));
       counts[name] = (counts[name] || 0) + 1;
     });
     return { 
       totalOverdue: overdue.length,
       userBreaks: Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 3)
     };
-  }, [teamTasks]);
+  }, [teamTasks, teamMembers, t]);
 
   if (loading && productionTasks.length === 0) {
     return (
@@ -390,38 +401,47 @@ const TasksPage = () => {
               <tbody className="divide-y divide-slate-50 dark:divide-white/5">
                 {filteredProduction.length === 0 ? (
                   <tr><td colSpan="9" className="py-32 text-center text-[10px] font-black text-slate-300 uppercase tracking-widest italic opacity-50">{t('production_empty_hint', 'قائمة الإنتاج فارغة حالياً')}</td></tr>
-                ) : filteredProduction.map(t => {
-                  const meta = parseTaskMeta(t.description);
+                ) : filteredProduction.map(task => {
+                  const meta = parseTaskMeta(task.description);
                   return (
-                    <tr key={t.id} className="group hover:bg-slate-50/50 transition-all">
+                    <tr key={task.id} className="group hover:bg-slate-50/50 transition-all">
                       <td className="px-8 py-6">
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-500/10 text-brand-600 rounded-xl text-[9px] font-black uppercase tracking-widest">{t.workspaceName}</div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-500/10 text-brand-600 rounded-xl text-[9px] font-black uppercase tracking-widest">{task.workspaceName}</div>
                       </td>
                       <td className="px-8 py-6 text-right rtl">
-                         <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{t.title}</span>
-                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 opacity-60">{t.phaseName}</p>
+                         <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{task.title}</span>
+                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 opacity-60">{task.phaseName}</p>
                       </td>
                       <td className="px-4 py-6">
                         <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 overflow-hidden mx-auto shadow-sm">
                           {(() => {
-                            const u = teamMembers.find(m => m.teamMemberInfo?.id === t.assignedToId || m.id === t.assignedToId);
-                            const url = u?.avatarUrl || t.assignedTo?.user?.avatarUrl;
-                            return url ? <img src={getFormattedUrl(url)} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-slate-400">{u?.firstName?.[0] || t.assignedTo?.user?.firstName?.[0] || <User size={14} />}</div>;
+                            const u = teamMembers.find(m => m.teamMemberInfo?.id === task.assignedToId || m.id === task.assignedToId);
+                            const url = u?.avatarUrl || task.assignedTo?.user?.avatarUrl;
+                            return url ? <img src={getFormattedUrl(url)} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-slate-400">{u?.firstName?.[0] || task.assignedTo?.user?.firstName?.[0] || <User size={14} />}</div>;
                           })()}
                         </div>
                       </td>
                       {['script', 'shoot', 'edit', 'publish'].map(f => (
                          <td key={f} className="px-4 py-6 text-center">
-                           <button onClick={() => toggleProdSubStatus(t, f)} className={`w-9 h-9 rounded-xl flex items-center justify-center mx-auto transition-all shadow-sm border-2 ${taskStatusConfig[meta[f] || 'NOT_STARTED'].bg} ${taskStatusConfig[meta[f] || 'NOT_STARTED'].color} border-transparent`}>
-                             {(() => { const Icon = taskStatusConfig[meta[f] || 'NOT_STARTED'].icon; return <Icon size={16} strokeWidth={3} />; })()}
+                           <button onClick={() => toggleProdSubStatus(task, f)} className={`w-9 h-9 rounded-xl flex items-center justify-center mx-auto transition-all shadow-sm border-2 ${taskStatusConfig[meta[f]]?.bg || 'bg-slate-50 dark:bg-white/5'} ${taskStatusConfig[meta[f]]?.color || 'text-slate-300'} border-transparent`}>
+                             {(() => { 
+                               const cfg = taskStatusConfig[meta[f]] || taskStatusConfig.NOT_STARTED;
+                               const Icon = cfg.icon; 
+                               return <Icon size={16} strokeWidth={3} />; 
+                             })()}
                            </button>
                          </td>
                       ))}
                       <td className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                         {t.deadline ? new Date(t.deadline).toLocaleDateString('ar-EG', { day: '2-digit', month: 'short' }).toUpperCase() : '--'}
+                         {(() => {
+                           if (!task.deadline) return '--';
+                           const d = new Date(task.deadline);
+                           if (isNaN(d.getTime())) return '--';
+                           return d.toLocaleDateString('ar-EG', { day: '2-digit', month: 'short' }).toUpperCase();
+                         })()}
                       </td>
                       <td className="px-4 py-6 text-right">
-                         <button onClick={() => setShowNotes(t.id)} className="p-3 text-slate-300 hover:text-brand-500 transition-all"><MessageSquare size={18} /></button>
+                         <button onClick={() => setShowNotes(task.id)} className="p-3 text-slate-300 hover:text-brand-500 transition-all"><MessageSquare size={18} /></button>
                       </td>
                     </tr>
                   );
@@ -443,49 +463,54 @@ const TasksPage = () => {
               <tbody className="divide-y divide-slate-50 dark:divide-white/5 text-right rtl">
                 {filteredTeam.length === 0 ? (
                   <tr><td colSpan="6" className="py-32 text-center text-[10px] font-black text-slate-300 uppercase tracking-widest italic opacity-50">{t('admin_task_empty_hint', 'لا توجد مهام إدارية حالياً')}</td></tr>
-                ) : filteredTeam.map(t => {
-                  const overdue = isTaskOverdue(t);
+                ) : filteredTeam.map(task => {
+                  const overdue = isTaskOverdue(task);
                   return (
-                    <tr key={t.id} className="group hover:bg-slate-50/50 transition-all">
+                    <tr key={task.id} className="group hover:bg-slate-50/50 transition-all">
                       <td className="px-8 py-6 text-left">
                         <div className="flex items-center gap-4">
                            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 overflow-hidden shadow-sm">
                              {(() => {
-                               const u = teamMembers.find(m => m.teamMemberInfo?.id === t.assignedToId || m.id === t.assignedToId);
-                               const url = u?.avatarUrl || t.assignedTo?.user?.avatarUrl;
-                               return url ? <img src={getFormattedUrl(url)} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-xs font-black text-slate-400">{u?.firstName?.[0] || t.assignedTo?.user?.firstName?.[0] || 'U'}</div>;
+                               const u = teamMembers.find(m => m.teamMemberInfo?.id === task.assignedToId || m.id === task.assignedToId);
+                               const url = u?.avatarUrl || task.assignedTo?.user?.avatarUrl;
+                               return url ? <img src={getFormattedUrl(url)} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-xs font-black text-slate-400">{u?.firstName?.[0] || task.assignedTo?.user?.firstName?.[0] || 'U'}</div>;
                              })()}
                            </div>
                            <span className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">
                              {(() => {
-                               const u = teamMembers.find(m => m.teamMemberInfo?.id === t.assignedToId || m.id === t.assignedToId);
-                               return u ? `${u.firstName} ${u.lastName}` : (t.assignedTo?.user ? `${t.assignedTo.user.firstName} ${t.assignedTo.user.lastName}` : 'غير معين');
+                               const u = teamMembers.find(m => m.teamMemberInfo?.id === task.assignedToId || m.id === task.assignedToId);
+                               return u ? `${u.firstName} ${u.lastName}` : (task.assignedTo?.user ? `${task.assignedTo.user.firstName} ${task.assignedTo.user.lastName}` : 'غير معين');
                              })()}
                            </span>
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                         <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{t.title}</span>
-                         <p className="text-[10px] text-slate-400 font-medium mt-1 line-clamp-1">{t.description || 'بدون وصف إضافي'}</p>
+                         <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{task.title}</span>
+                         <p className="text-[10px] text-slate-400 font-medium mt-1 line-clamp-1">{task.description || 'بدون وصف إضافي'}</p>
                       </td>
                       <td className="px-8 py-6 text-center">
                          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${overdue ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-50 dark:bg-white/5 text-slate-400'}`}>
                             <Timer size={12} />
-                            {t.deadline ? new Date(t.deadline).toLocaleString('ar-EG', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).toUpperCase() : '--'}
+                            {(() => {
+                              if (!task.deadline) return '--';
+                              const d = new Date(task.deadline);
+                              if (isNaN(d.getTime())) return '--';
+                              return d.toLocaleString('ar-EG', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).toUpperCase();
+                            })()}
                          </div>
                       </td>
                       <td className="px-8 py-6 text-center">
-                         <button onClick={() => handleTeamStatusToggle(t)} className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto transition-all shadow-xl active:scale-90 ${t.status === 'DELIVERED' ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-slate-100 dark:bg-white/5 text-slate-300 dark:text-slate-500 border border-slate-200 dark:border-white/10'}`}>
-                            {t.status === 'DELIVERED' ? <CheckCircle size={24} strokeWidth={3} /> : <div className="w-4 h-4 rounded-full border-2 border-current opacity-40"></div>}
+                         <button onClick={() => handleTeamStatusToggle(task)} className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto transition-all shadow-xl active:scale-90 ${task.status === 'DELIVERED' ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-slate-100 dark:bg-white/5 text-slate-300 dark:text-slate-500 border border-slate-200 dark:border-white/10'}`}>
+                            {task.status === 'DELIVERED' ? <CheckCircle size={24} strokeWidth={3} /> : <div className="w-4 h-4 rounded-full border-2 border-current opacity-40"></div>}
                          </button>
                       </td>
                       <td className="px-8 py-6 text-center">
-                         {t.status === 'IDEA' && overdue ? (
+                         {task.status === 'IDEA' && overdue ? (
                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest animate-pulse shadow-sm">
                               <ShieldAlert size={14} />
                               ⚠️ تحذير: -3% خصم أداء
                            </div>
-                         ) : t.status === 'DELIVERED' ? (
+                         ) : task.status === 'DELIVERED' ? (
                            <div className="inline-flex items-center gap-2 text-[10px] font-black text-emerald-500 uppercase tracking-widest opacity-60">
                               <Zap size={14} /> التزام ممتاز
                            </div>
@@ -494,7 +519,7 @@ const TasksPage = () => {
                          )}
                       </td>
                       <td className="px-4 py-6 text-right">
-                         <button onClick={() => handleDeleteTeamTask(t.id)} className="p-3 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={18} /></button>
+                         <button onClick={() => handleDeleteTeamTask(task.id)} className="p-3 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={18} /></button>
                       </td>
                     </tr>
                   );

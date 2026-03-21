@@ -204,7 +204,9 @@ const WorkspaceDetail = () => {
 
   const parseTaskMeta = (desc) => {
     try { 
+      if (!desc || desc === 'null' || desc === 'undefined') return { script: 'NOT_STARTED', shoot: 'NOT_STARTED', edit: 'NOT_STARTED', publish: 'NOT_STARTED' };
       const parsed = JSON.parse(desc); 
+      if (!parsed || typeof parsed !== 'object') return { script: 'NOT_STARTED', shoot: 'NOT_STARTED', edit: 'NOT_STARTED', publish: 'NOT_STARTED' };
       return {
         script: parsed.script || 'NOT_STARTED',
         shoot: parsed.shoot || 'NOT_STARTED',
@@ -325,7 +327,10 @@ const WorkspaceDetail = () => {
                     </div>
                     <div className="h-1 w-1 rounded-full bg-slate-300"></div>
                     <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic opacity-60">
-                       Started {new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                       Started {(() => {
+                         const d = new Date(p.createdAt);
+                         return !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '---';
+                       })()}
                     </div>
                   </div>
                 </div>
@@ -353,9 +358,9 @@ const WorkspaceDetail = () => {
                     <tbody className="divide-y divide-slate-50 dark:divide-white/5">
                       {loadingTasks[p.id] ? (
                         <tr><td colSpan="8" className="py-20 text-center"><Loader2 size={32} className="animate-spin mx-auto text-brand-500 opacity-20" /></td></tr>
-                      ) : phaseTasks[p.id].length === 0 ? (
+                      ) : (phaseTasks[p.id] || []).length === 0 ? (
                         <tr><td colSpan="8" className="py-20 text-center text-[10px] font-black text-slate-300 uppercase tracking-widest italic opacity-50">{t('tasks_empty_hint', 'قائمة المهام فارغة حالياً')}</td></tr>
-                      ) : phaseTasks[p.id].map(task => {
+                      ) : (phaseTasks[p.id] || []).map(task => {
                         const meta = parseTaskMeta(task.description);
                         const isFullyDone = meta.script === 'DONE' && meta.shoot === 'DONE' && meta.edit === 'DONE' && meta.publish === 'DONE';
                         
@@ -387,7 +392,11 @@ const WorkspaceDetail = () => {
                                </td>
                             ))}
                             <td className="px-8 py-6 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
-                               {task.deadline ? new Date(task.deadline).toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase() : '--'}
+                               {(() => {
+                                 if (!task.deadline) return '--';
+                                 const d = new Date(task.deadline);
+                                 return !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase() : '--';
+                               })()}
                             </td>
                             <td className="px-8 py-6 text-center">
                                {isFullyDone ? (

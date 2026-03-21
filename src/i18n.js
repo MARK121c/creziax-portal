@@ -660,7 +660,12 @@ const resources = {
       "confirm_save": "Confirm Save",
       "upload_logo": "Upload Logo",
       "delete_logo": "Delete Logo",
-      "vip_partner": "VIP Partner"
+      "vip_partner": "VIP Partner",
+      "contract_status": "Contract Status",
+      "days_remaining_label": "{{days}} days left",
+      "days_remaining_critical": "{{days}} days left ⚠️",
+      "loading": "Loading...",
+      "syncing": "Syncing Data..."
     }
   },
   ar: {
@@ -1124,6 +1129,8 @@ const resources = {
       "contract_status": "حالة العقد",
       "days_remaining_label": "فاضل {{days}} يوم",
       "days_remaining_critical": "فاضل {{days}} يوم ⚠️",
+      "loading": "جاري التحميل...",
+      "syncing": "جاري المزامنة...",
       "tasks_count_one": "{{count}} مهمة",
       "tasks_count_other": "{{count}} مهام",
       "work_entity": "جهة العمل",
@@ -1320,7 +1327,12 @@ const resources = {
       "confirm_save": "تأكيد الحفظ",
       "upload_logo": "رفع اللوجو",
       "delete_logo": "حذف اللوجو",
-      "vip_partner": "شريك في أي بي"
+      "vip_partner": "شريك في أي بي",
+      "contract_status": "حالة العقد",
+      "days_remaining_label": "متبقي {{days}} يوم",
+      "days_remaining_critical": "متبقي {{days}} يوم ⚠️",
+      "loading": "جاري التحميل...",
+      "syncing": "جاري المزامنة..."
     }
   }
 };
