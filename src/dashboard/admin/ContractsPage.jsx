@@ -148,12 +148,29 @@ const ContractsPage = () => {
     }
   };
 
-  const handleDownload = (contract) => {
+  const handleDownload = async (contract) => {
+    const loadingToast = toast.loading('جاري تحضير العقد للعرض...');
     try {
       const url = getFullFileUrl(contract.pdfUrl);
-      window.open(url, '_blank', 'noopener,noreferrer');
+      const token = localStorage.getItem('token');
+      
+      const res = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!res.ok) throw new Error('غير مصرح أو الملف غير موجود');
+      
+      const blob = await res.blob();
+      const blobURL = URL.createObjectURL(blob);
+      
+      window.open(blobURL, '_blank');
+      toast.dismiss(loadingToast);
     } catch (err) {
-      toast.error('تعذر فتح الملف');
+      console.error(err);
+      toast.dismiss(loadingToast);
+      toast.error('تعذر فتح الملف (تحقق من الصلاحيات)');
     }
   };
 

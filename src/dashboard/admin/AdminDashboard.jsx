@@ -4,7 +4,7 @@ import {
   TrendingUp, TrendingDown, Activity, Plus, Rocket, Wallet, Download, 
   ArrowUpRight, ChevronDown, DollarSign, MinusCircle, Gift, Bell, Building2
 } from 'lucide-react';
-import { getDashboardStatsAPI, getRecentActivityAPI, getClientsAPI } from '../../store/api';
+import { getDashboardStatsAPI, getRecentActivityAPI, getClientsAPI, getContractsAPI } from '../../store/api';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
@@ -88,6 +88,7 @@ const AdminDashboard = () => {
   const { t } = useTranslation();
   const [stats, setStats] = useState(null);
   const [clients, setClients] = useState([]);
+  const [contracts, setContracts] = useState([]);
   const [activityLogs, setActivityLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showActionMenu, setShowActionMenu] = useState(false);
@@ -102,14 +103,16 @@ const AdminDashboard = () => {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        const [statsRes, logsRes, clientsRes] = await Promise.all([
+        const [statsRes, logsRes, clientsRes, contractsRes] = await Promise.all([
           getDashboardStatsAPI(exportMonth).catch(() => ({ data: null })),
           getRecentActivityAPI(5).catch(() => ({ data: [] })),
-          getClientsAPI().catch(() => ({ data: [] }))
+          getClientsAPI().catch(() => ({ data: [] })),
+          getContractsAPI().catch(() => ({ data: [] }))
         ]);
         if (statsRes.data) setStats(statsRes.data);
         if (logsRes.data) setActivityLogs(logsRes.data);
         if (clientsRes.data) setClients(clientsRes.data);
+        if (contractsRes.data) setContracts(contractsRes.data);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -405,23 +408,29 @@ const AdminDashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {clients
-              .filter(c => c.clientInfo?.contractEndDate)
+            {contracts
+              .filter(c => c.endDate)
               .map(c => {
-                const end = new Date(c.clientInfo.contractEndDate);
+                const end = new Date(c.endDate);
                 const diff = Math.ceil((end - new Date()) / (1000 * 60 * 60 * 24));
                 return { ...c, daysLeft: diff };
               })
               .sort((a, b) => a.daysLeft - b.daysLeft)
               .slice(0, 4)
-              .map(client => {
-                const isCritical = client.daysLeft <= 7;
-                const isExpired = client.daysLeft < 0;
+              .map(contract => {
+                const isCritical = contract.daysLeft <= 7;
+                const isExpired = contract.daysLeft < 0;
+                
+                // Get display logic based on whether it's a client or member
+                const logo = contract.client?.clientInfo?.logoUrl || null;
+                const company = contract.client?.clientInfo?.company || contract.member?.firstName || contract.title;
+                const name = contract.client ? `${contract.client.user?.firstName || ''} ${contract.client.user?.lastName || ''}` : 
+                             contract.member ? `${contract.member.firstName} ${contract.member.lastName}` : '---';
 
                 return (
                   <Link 
-                    key={client.id} 
-                    to={`/admin/clients`}
+                    key={contract.id} 
+                    to={`/admin/contracts`}
                     className={`group relative overflow-hidden p-5 rounded-3xl border transition-all duration-300 hover:-translate-y-1 ${
                       isExpired ? 'bg-rose-50 dark:bg-rose-500/5 border-rose-500/20' :
                       isCritical ? 'bg-amber-50 dark:bg-amber-500/5 border-amber-500/20' :
@@ -434,15 +443,15 @@ const AdminDashboard = () => {
                         isCritical ? 'bg-amber-500 text-white' :
                         'bg-white dark:bg-white/10 dark:text-white text-slate-800 border dark:border-white/10 border-slate-100'
                       }`}>
-                        {client.clientInfo?.logoUrl ? (
-                          <img src={client.clientInfo.logoUrl} alt="" className="w-full h-full object-cover rounded-2xl" />
+                        {logo ? (
+                          <img src={logo} alt="" className="w-full h-full object-cover rounded-2xl" />
                         ) : (
-                          client.clientInfo?.company?.charAt(0) || <Building2 size={20} />
+                          company?.charAt(0) || <Building2 size={20} />
                         )}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-black text-slate-800 dark:text-white truncate">{client.clientInfo?.company}</p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{client.firstName} {client.lastName}</p>
+                        <p className="text-sm font-black text-slate-800 dark:text-white truncate">{company}</p>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{name}</p>
                       </div>
                     </div>
                     
@@ -450,7 +459,7 @@ const AdminDashboard = () => {
                       <div className="space-y-0.5">
                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">ينتهي في</p>
                          <p className={`text-xs font-black ${isExpired ? 'text-rose-500' : isCritical ? 'text-rose-600' : 'text-slate-600 dark:text-slate-400'}`}>
-                           {new Date(client.clientInfo.contractEndDate).toLocaleDateString('ar-EG')}
+                           {new Date(contract.endDate).toLocaleDateString('ar-EG')}
                          </p>
                       </div>
                       <div className={`px-3 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-tighter ${
@@ -458,7 +467,7 @@ const AdminDashboard = () => {
                         isCritical ? 'bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/40' :
                         'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400'
                       }`}>
-                        {isExpired ? 'انتهت الصلاحية' : isCritical ? `⚠️ متبقي ${client.daysLeft} أيام` : `متبقي ${client.daysLeft} يوم`}
+                        {isExpired ? 'انتهت الصلاحية' : isCritical ? `⚠️ متبقي ${contract.daysLeft} أيام` : `متبقي ${contract.daysLeft} يوم`}
                       </div>
                     </div>
 
@@ -469,8 +478,8 @@ const AdminDashboard = () => {
                   </Link>
                 );
               })}
-            {clients.filter(c => c.clientInfo?.contractEndDate).length === 0 && (
-                <p className="text-slate-400 font-bold text-sm">لا يوجد عقود نشطة حالياً</p>
+            {contracts.filter(c => c.endDate).length === 0 && (
+                <p className="text-slate-400 font-bold text-sm">لا يوجد عقود نشطة حالياً للتحذير عنها</p>
             )}
           </div>
         </div>
