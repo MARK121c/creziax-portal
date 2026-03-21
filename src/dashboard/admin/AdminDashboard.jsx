@@ -176,10 +176,10 @@ const AdminDashboard = () => {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl md:text-5xl font-black text-slate-800 dark:text-white tracking-tighter">
-            نظرة عامة على النظام
+            {t('system_overview')}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 font-medium text-base md:text-lg italic mt-2">
-            متابعة أداء الوكالة والوضع المالي
+            {t('system_overview_sub')}
           </p>
         </div>
 
@@ -194,7 +194,7 @@ const AdminDashboard = () => {
               type="month"
               value={exportMonth}
               onChange={(e) => setExportMonth(e.target.value)}
-              title="اختر شهر التقرير"
+              title={t('select_report_month')}
               className="pl-9 pr-4 py-2.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all w-full sm:w-44 cursor-pointer"
             />
           </div>
@@ -204,20 +204,20 @@ const AdminDashboard = () => {
             className="flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 hover:-translate-y-0.5 active:scale-95"
           >
             <Download size={16} />
-            تصدير تقرير إكسيل
+            {t('export_excel_report')}
           </button>
         </div>
       </div>
 
       {/* ─── Top Stats Grid (Restored) ─────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4 md:gap-6 mt-8">
-        <StatCard icon={Users} label="إجمالي العملاء" value={stats?.users?.clients || 0} color="from-sky-500 to-blue-600" loading={loading} />
-        <StatCard icon={Monitor} label="القنوات المدارة" value={stats?.channels?.total || 0} color="from-violet-500 to-purple-600" loading={loading} />
-        <StatCard icon={Briefcase} label="فريق العمل" value={stats?.users?.team || 0} color="from-emerald-500 to-teal-600" loading={loading} />
-        <StatCard icon={Shield} label="المسؤولين" value={stats?.users?.admins || 0} color="from-amber-500 to-orange-500" loading={loading} />
-        <StatCard icon={FolderKanban} label="العقود النشطة" value={stats?.projects?.active || 0} color="from-brand-500 to-brand-700" loading={loading} />
-        <StatCard icon={Receipt} label="فواتير معلقة" value={stats?.invoices?.pending || 0} color="from-rose-500 to-red-600" loading={loading} />
-        <StatCard icon={Activity} label="إجمالي المهام" value={stats?.tasks?.total || 0} color="from-slate-600 to-slate-800" loading={loading} />
+        <StatCard icon={Users} label={t('total_clients')} value={stats?.users?.clients || 0} color="from-sky-500 to-blue-600" loading={loading} />
+        <StatCard icon={Monitor} label={t('managed_channels_total')} value={stats?.channels?.total || 0} color="from-violet-500 to-purple-600" loading={loading} />
+        <StatCard icon={Briefcase} label={t('team_size')} value={stats?.users?.team || 0} color="from-emerald-500 to-teal-600" loading={loading} />
+        <StatCard icon={Shield} label={t('admins_count')} value={stats?.users?.admins || 0} color="from-amber-500 to-orange-500" loading={loading} />
+        <StatCard icon={FolderKanban} label={t('active_contracts')} value={stats?.projects?.active || 0} color="from-brand-500 to-brand-700" loading={loading} />
+        <StatCard icon={Receipt} label={t('pending_invoices_stat')} value={stats?.invoices?.pending || 0} color="from-rose-500 to-red-600" loading={loading} />
+        <StatCard icon={Activity} label={t('total_tasks_stat')} value={stats?.tasks?.total || 0} color="from-slate-600 to-slate-800" loading={loading} />
       </div>
 
       {/* ─── Financial Section ─────────────────── */}
@@ -231,7 +231,7 @@ const AdminDashboard = () => {
                 <Wallet size={22} />
               </div>
               <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">
-                الملخص المالي
+                {t('financial_summary')}
               </h2>
             </div>
 
@@ -242,7 +242,7 @@ const AdminDashboard = () => {
                 className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-2xl shadow-lg shadow-brand-600/20 transition-all hover:-translate-y-0.5 active:scale-95 text-sm"
               >
                 <Plus size={16} />
-                إضافة نفقة / مكافأة
+                {t('add_expense_bonus')}
                 <ChevronDown size={14} className={`transition-transform duration-200 ${showActionMenu ? 'rotate-180' : ''}`} />
               </button>
               
@@ -257,7 +257,7 @@ const AdminDashboard = () => {
                     <div className="w-8 h-8 rounded-xl bg-rose-500/10 flex items-center justify-center flex-shrink-0">
                       <MinusCircle size={15} className="text-rose-500" />
                     </div>
-                    <span className="font-bold text-sm">تسجيل نفقة يدوية</span>
+                    <span className="font-bold text-sm">{t('manual_expense')}</span>
                   </Link>
                   <div className="h-px bg-slate-100 dark:bg-white/5 mx-3" />
                   <Link
@@ -268,7 +268,7 @@ const AdminDashboard = () => {
                     <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
                       <Gift size={15} className="text-amber-500" />
                     </div>
-                    <span className="font-bold text-sm">إضافة مكافأة فريق</span>
+                    <span className="font-bold text-sm">{t('team_bonus')}</span>
                   </Link>
                 </div>
               )}
@@ -278,25 +278,25 @@ const AdminDashboard = () => {
           {/* Top Row: 3 Main Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
             <FinCard
-              label="إجمالي الإيرادات"
+              label={t('stat_gross_revenue')}
               amount={fin?.grossRevenue ?? 0}
               loading={loading}
               variant="revenue"
-              sub={`${stats?.invoices?.paid ?? 0} فاتورة مدفوعة · متأخر: $${(fin?.pendingRevenue ?? 0).toLocaleString()}`}
+              sub={`${stats?.invoices?.paid ?? 0} ${t('paid_amount')} · ${t('remaining_amount')}: $${(fin?.pendingRevenue ?? 0).toLocaleString()}`}
             />
             <FinCard
-              label="إجمالي النفقات"
+              label={t('total_expenses')}
               amount={fin?.totalExpenses ?? 0}
               loading={loading}
               variant="expenses"
-              sub={`رواتب + مستحقات فريق + نفقات + مكافآت`}
+              sub={t('exp_sub_detail')}
             />
             <FinCard
-              label="صافي الربح"
+              label={t('stat_net_profit')}
               amount={fin?.netProfit ?? 0}
               loading={loading}
               variant="profit"
-              sub={(fin?.netProfit ?? 0) >= 0 ? '↑ إيرادات تتجاوز النفقات' : '↓ النفقات تتجاوز الإيرادات'}
+              sub={(fin?.netProfit ?? 0) >= 0 ? t('revenue_gt_expenses') : t('expenses_gt_revenue')}
             />
           </div>
 
@@ -304,7 +304,7 @@ const AdminDashboard = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <BreakdownCard
               icon={Briefcase}
-              label="إجمالي الرواتب"
+              label={t('total_salaries_stat')}
               amount={fin?.salaries ?? 0}
               loading={loading}
               iconColor="bg-gradient-to-tr from-violet-500 to-purple-600"
@@ -312,7 +312,7 @@ const AdminDashboard = () => {
             />
             <BreakdownCard
               icon={Gift}
-              label="مستحقات الفريق"
+              label={t('team_dues_stat')}
               amount={fin?.teamDues ?? 0}
               loading={loading}
               iconColor="bg-gradient-to-tr from-amber-500 to-orange-500"
@@ -320,7 +320,7 @@ const AdminDashboard = () => {
             />
             <BreakdownCard
               icon={TrendingDown}
-              label="النفقات التشغيلية"
+              label={t('operational_expenses_stat')}
               amount={fin?.operationalExpenses ?? 0}
               loading={loading}
               iconColor="bg-gradient-to-tr from-rose-500 to-red-600"
@@ -328,7 +328,7 @@ const AdminDashboard = () => {
             />
             <BreakdownCard
               icon={TrendingUp}
-              label="إجمالي المكافآت"
+              label={t('total_bonuses_stat')}
               amount={fin?.bonuses ?? 0}
               loading={loading}
               iconColor="bg-gradient-to-tr from-sky-500 to-blue-600"
@@ -344,7 +344,7 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         {/* Activity Chart */}
         <div className="col-span-1 lg:col-span-2 bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-6 md:p-8 flex flex-col min-h-[380px]">
-          <h3 className="text-xl font-black text-slate-800 dark:text-white mb-6 uppercase tracking-wider">تحليل النشاط اليومي</h3>
+          <h3 className="text-xl font-black text-slate-800 dark:text-white mb-6 uppercase tracking-wider">{t('daily_activity')}</h3>
           <div className="flex-1 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -366,12 +366,12 @@ const AdminDashboard = () => {
         {/* Audit Log / Recent Activity */}
         <div className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-6 md:p-8 flex flex-col min-h-[380px]">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider">سجل نشاط النظام</h3>
+            <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider">{t('system_activity_log')}</h3>
             <Activity className="text-slate-400" size={20} />
           </div>
           <div className="flex-1 overflow-y-auto pr-1 space-y-3 custom-scrollbar">
             {activityLogs.length === 0 ? (
-              <div className="text-center text-slate-500 text-sm py-10">لا يوجد نشاط حديث</div>
+              <div className="text-center text-slate-500 text-sm py-10">{t('no_recent_activity_found')}</div>
             ) : (
               activityLogs.map((log) => (
                 <div key={log.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
@@ -384,9 +384,9 @@ const AdminDashboard = () => {
                     <span className="text-xs font-bold text-slate-400">{log.entityType}</span>
                   </div>
                   <p className="text-sm text-slate-700 dark:text-slate-300">
-                    <span className="font-bold text-slate-800 dark:text-white">{log.user?.firstName} {log.user?.lastName}</span> قام بإجراء على النظام
+                    <span className="font-bold text-slate-800 dark:text-white">{log.user?.firstName} {log.user?.lastName}</span> {t('user_performed_action')}
                   </p>
-                  <p className="text-[10px] text-slate-400 mt-2">{new Date(log.createdAt).toLocaleString()}</p>
+                  <p className="text-[10px] text-slate-400 mt-2">{new Date(log.createdAt).toLocaleString(t('dashboard') === 'لوحة التحكم' ? 'ar-EG' : 'en-US')}</p>
                 </div>
               ))
             )}
@@ -400,10 +400,10 @@ const AdminDashboard = () => {
               <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500">
                 <Bell size={20} className="animate-swing" />
               </div>
-              <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider">تنبيهات العقود والمواعيد</h3>
+              <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider">{t('contract_alerts')}</h3>
             </div>
             <Link to="/admin/clients" className="text-xs font-black text-brand-500 hover:text-brand-400 uppercase tracking-widest border-b-2 border-brand-500/20 pb-0.5 transition-all">
-              عرض كل العملاء
+              {t('view_all_clients_link')}
             </Link>
           </div>
 
@@ -457,9 +457,9 @@ const AdminDashboard = () => {
                     
                     <div className="flex items-center justify-between mt-auto">
                       <div className="space-y-0.5">
-                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">ينتهي في</p>
+                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('expires_in_label')}</p>
                          <p className={`text-xs font-black ${isExpired ? 'text-rose-500' : isCritical ? 'text-rose-600' : 'text-slate-600 dark:text-slate-400'}`}>
-                           {new Date(contract.endDate).toLocaleDateString('ar-EG')}
+                           {new Date(contract.endDate).toLocaleDateString(t('dashboard') === 'لوحة التحكم' ? 'ar-EG' : 'en-US')}
                          </p>
                       </div>
                       <div className={`px-3 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-tighter ${
@@ -467,7 +467,7 @@ const AdminDashboard = () => {
                         isCritical ? 'bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/40' :
                         'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400'
                       }`}>
-                        {isExpired ? 'انتهت الصلاحية' : isCritical ? `⚠️ متبقي ${contract.daysLeft} أيام` : `متبقي ${contract.daysLeft} يوم`}
+                        {isExpired ? t('expired_label') : isCritical ? t('days_left_critical', { days: contract.daysLeft }) : t('days_left_normal', { days: contract.daysLeft })}
                       </div>
                     </div>
 
@@ -479,21 +479,21 @@ const AdminDashboard = () => {
                 );
               })}
             {contracts.filter(c => c.endDate).length === 0 && (
-                <p className="text-slate-400 font-bold text-sm">لا يوجد عقود نشطة حالياً للتحذير عنها</p>
+                <p className="text-slate-400 font-bold text-sm">{t('no_active_contracts_alerts')}</p>
             )}
           </div>
         </div>
 
         {/* Quick Actions */}
         <div className="col-span-1 lg:col-span-3 bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-6 md:p-8">
-          <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider mb-6">إجراءات سريعة</h3>
+          <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider mb-6">{t('quick_actions_title')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link to={'/admin/clients'} className="flex items-center justify-between p-6 bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5 rounded-[2rem] hover:border-brand-500/30 group transition-all duration-300">
                <div className="flex items-center gap-4">
                  <div className={`w-12 h-12 flex-shrink-0 rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white shadow-lg`}>
                    <Plus size={22} className="flex-shrink-0" />
                  </div>
-                 <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-brand-500 transition-colors uppercase tracking-wider text-sm">إضافة عميل</span>
+                 <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-brand-500 transition-colors uppercase tracking-wider text-sm">{t('add_client_btn')}</span>
                </div>
                <ArrowUpRight size={20} className="text-slate-300 group-hover:text-brand-500 transition-all group-hover:translate-x-1 group-hover:-translate-y-1" />
             </Link>
@@ -502,7 +502,7 @@ const AdminDashboard = () => {
                  <div className={`w-12 h-12 flex-shrink-0 rounded-2xl bg-gradient-to-tr from-violet-500 to-purple-600 flex items-center justify-center text-white shadow-lg`}>
                    <Rocket size={22} className="flex-shrink-0" />
                  </div>
-                 <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-brand-500 transition-colors uppercase tracking-wider text-sm">مشروع جديد</span>
+                 <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-brand-500 transition-colors uppercase tracking-wider text-sm">{t('new_project_btn')}</span>
                </div>
                <ArrowUpRight size={20} className="text-slate-300 group-hover:text-brand-500 transition-all group-hover:translate-x-1 group-hover:-translate-y-1" />
             </Link>
@@ -511,7 +511,7 @@ const AdminDashboard = () => {
                  <div className={`w-12 h-12 flex-shrink-0 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg`}>
                    <Wallet size={22} className="flex-shrink-0" />
                  </div>
-                 <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-brand-500 transition-colors uppercase tracking-wider text-sm">إنشاء فاتورة</span>
+                 <span className="font-bold text-slate-700 dark:text-slate-300 group-hover:text-brand-500 transition-colors uppercase tracking-wider text-sm">{t('create_invoice_btn')}</span>
                </div>
                <ArrowUpRight size={20} className="text-slate-300 group-hover:text-brand-500 transition-all group-hover:translate-x-1 group-hover:-translate-y-1" />
             </Link>

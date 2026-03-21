@@ -151,23 +151,30 @@ const ContractsPage = () => {
   const handleDownload = async (contract) => {
     const loadingToast = toast.loading('جاري تحضير العقد للعرض...');
     try {
-      let url = contract.pdfUrl;
-      // If the URL is external (Canva, etc), handle normally
-      if (url.startsWith('http') && !url.includes(import.meta.env.VITE_API_URL?.replace('/api', '') || 'none')) {
+      const url = contract.pdfUrl;
+      if (!url) {
+        toast.dismiss(loadingToast);
+        toast.error('لا يوجد ملف مرفق بهذا العقد');
+        return;
+      }
+
+      // All absolute URLs (Supabase, Canva, any CDN) → open directly
+      // They are already public; sending Authorization headers to external hosts fails CORS
+      if (url.startsWith('http')) {
         window.open(url, '_blank');
         toast.dismiss(loadingToast);
         return;
       }
-      
+
+      // Relative local path → fetch as blob with auth header
       const res = await api.get(url, { responseType: 'blob' });
       const blobURL = URL.createObjectURL(res.data);
-      
       window.open(blobURL, '_blank');
       toast.dismiss(loadingToast);
     } catch (err) {
       console.error(err);
       toast.dismiss(loadingToast);
-      toast.error('تعذر فتح الملف (تحقق من الصلاحيات)');
+      toast.error('تعذر فتح الملف');
     }
   };
 
