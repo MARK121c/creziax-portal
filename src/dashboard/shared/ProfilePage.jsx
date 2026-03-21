@@ -150,10 +150,10 @@ const ProfilePage = () => {
           <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
             الملف الشخصي
             <span className="px-3 py-1 bg-brand-500/10 text-brand-500 text-[10px] rounded-full border border-brand-500/20 uppercase tracking-widest">
-              Admin Profile
+              {t('admin_profile', 'Admin Profile')}
             </span>
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium mt-2 text-lg">تحكم في بياناتك الشخصية وإعدادات الأمان الخاصة بك</p>
+          <p className="text-slate-500 dark:text-slate-400 font-medium mt-2 text-lg">{t('control_your_data', 'تحكم في بياناتك الشخصية وإعدادات الأمان الخاصة بك')}</p>
         </div>
       </div>
 
@@ -310,7 +310,7 @@ const ProfilePage = () => {
                   <Wallet size={24} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">{t('finance_settings')}</h3>
+                  <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">{t('finance_settings_title', 'الإعدادات المالية')}</h3>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{t('finance_settings_desc')}</p>
                 </div>
               </div>
@@ -372,7 +372,7 @@ const ProfilePage = () => {
                   <Lock size={24} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">إعدادات الأمان</h3>
+                  <h3 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">{t('security_settings_title', 'إعدادات الأمان')}</h3>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Change Account Password</p>
                 </div>
               </div>

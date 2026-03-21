@@ -29,7 +29,7 @@ const InvoicesPage = () => {
   const addNotification = useNotificationStore(state => state.addNotification);
   
   const [invoiceForm, setInvoiceForm] = useState({ 
-    invoiceNumber: '', clientId: '', service: '', amount: '', paymentMethod: '', paymentDetails: '', dueDate: '' 
+    invoiceNumber: '', clientId: '', service: '', amount: '', paymentMethod: '', paymentDetails: '', dueDate: '', currency: 'USD', exchangeRate: '' 
   });
 
   // Printing state
@@ -106,11 +106,16 @@ const InvoicesPage = () => {
     setInvoiceError(null);
     const loadingToast = toast.loading(t('syncing') || 'Syncing...');
     try {
-      await createInvoiceAPI({ ...invoiceForm, amount: parseFloat(invoiceForm.amount), dueDate: invoiceForm.dueDate || undefined });
+      await createInvoiceAPI({ 
+        ...invoiceForm, 
+        amount: parseFloat(invoiceForm.amount), 
+        exchangeRate: invoiceForm.exchangeRate ? parseFloat(invoiceForm.exchangeRate) : 1, 
+        dueDate: invoiceForm.dueDate || undefined 
+      });
       toast.success(t('confirm_issue') || 'Created successfully!', { id: loadingToast });
       addNotification(`${t('confirm_issue')}: ${invoiceForm.invoiceNumber}`, 'success');
       setShowInvoiceModal(false);
-      setInvoiceForm({ invoiceNumber: '', clientId: '', service: '', amount: '', paymentMethod: '', paymentDetails: '', dueDate: '' });
+      setInvoiceForm({ invoiceNumber: '', clientId: '', service: '', amount: '', paymentMethod: '', paymentDetails: '', dueDate: '', currency: 'USD', exchangeRate: '' });
       fetchData();
     } catch (err) {
       const msg = err.response?.data?.message || t('loading');
@@ -557,7 +562,11 @@ const InvoicesPage = () => {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">العميل المرتبط</label>
-                  <select value={invoiceForm.clientId} onChange={e => setInvoiceForm({...invoiceForm, clientId: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 appearance-none font-bold">
+                  <select value={invoiceForm.clientId} onChange={e => {
+                    const selectedClient = clients.find(c => c.id === e.target.value);
+                    const clientCurrency = selectedClient?.clientInfo?.preferredCurrency || 'USD';
+                    setInvoiceForm({...invoiceForm, clientId: e.target.value, currency: clientCurrency});
+                  }} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 appearance-none font-bold">
                     <option value="">اختر العميل المعني...</option>
                     {clients.map(c => <option key={c.id} value={c.id}>{c.user?.firstName} {c.user?.lastName}</option>)}
                   </select>
@@ -580,15 +589,32 @@ const InvoicesPage = () => {
                   <option value="Online Service">خدمات أونلاين</option>
                 </select>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">المبلغ (بـ USD)</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">المبلغ (بـ USD الأساسي)</label>
                   <div className="relative">
                     <DollarSign size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-brand-500" />
                     <input type="number" step="0.01" min="0" value={invoiceForm.amount} onChange={e => setInvoiceForm({...invoiceForm, amount: e.target.value})} required className="w-full pl-12 pr-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-black" placeholder="0.00" />
                   </div>
                 </div>
                 <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">عملة العميل المفضلة</label>
+                  <select value={invoiceForm.currency} onChange={e => setInvoiceForm({...invoiceForm, currency: e.target.value})} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold appearance-none cursor-pointer">
+                    <option value="USD">USD ($)</option>
+                    <option value="EGP">EGP</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="SAR">SAR</option>
+                    <option value="AED">AED</option>
+                    <option value="KWD">KWD</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">سعر الصرف (Exchange Rate)</label>
+                  <input type="number" step="0.0001" min="0" value={invoiceForm.exchangeRate} onChange={e => setInvoiceForm({...invoiceForm, exchangeRate: e.target.value})} disabled={invoiceForm.currency === 'USD'} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 disabled:opacity-50 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-black" placeholder="مثال: 50.5" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="sm:col-span-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">طريقة الدفع (Payment Method)</label>
                   <select value={invoiceForm.paymentMethod} onChange={e => setInvoiceForm({...invoiceForm, paymentMethod: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 appearance-none font-bold">
                     <option value="">اختر بوابة الدفع...</option>
@@ -706,6 +732,8 @@ const InvoicesPage = () => {
             status_label: printingInvoice.status === 'PAID' ? 'تم الدفع PAID' : 'قيد الانتظار PENDING',
             service_name: printingInvoice.service,
             amount: printingInvoice.amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            local_amount: printingInvoice.currency !== 'USD' && printingInvoice.exchangeRate ? (printingInvoice.amount * printingInvoice.exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : null,
+            currency: printingInvoice.currency || 'USD',
             payment_method: printingInvoice.paymentMethod,
             payment_details: printingInvoice.paymentDetails
           }} />}

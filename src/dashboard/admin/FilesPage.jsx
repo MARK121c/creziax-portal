@@ -174,7 +174,7 @@ const FilesPage = () => {
                           className="inline-flex items-center gap-3 px-6 py-3.5 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-brand-600/20 active:scale-95 group/btn"
                         >
                           <Briefcase size={16} />
-                          Open Master Drive
+                          {t('open_master_drive', 'Open Master Drive')}
                         </a>
                       ) : (
                         <span className="text-[10px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-widest italic">رابط غير متوفر</span>

@@ -411,7 +411,7 @@ Availability: ${bookingData.dates}`;
                           >
                             <div className="flex-1 text-right overflow-hidden">
                               <h4 className="text-xs font-black truncate">{p.name}</h4>
-                              <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === p.id ? 'text-white' : 'text-slate-400'}`}>مركز قيادة المشروع</p>
+                              <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === p.id ? 'text-white' : 'text-slate-400'}`}>{t('project_command_center', 'مركز قيادة المشروع')}</p>
                             </div>
                           </button>
                         ))}
@@ -427,7 +427,7 @@ Availability: ${bookingData.dates}`;
                           onClick={() => toggleSection('groups')}
                           className="flex items-center gap-2 hover:text-brand-500 transition-colors group"
                         >
-                          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">قنوات الفريق (Internal)</h3>
+                          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">{t('internal_team_channels', 'قنوات الفريق (Internal)')}</h3>
                           <div className={`text-slate-400 transition-transform duration-300 ${expandedSections.groups ? 'rotate-180' : ''}`}>
                             <ChevronRight size={14} />
                           </div>
@@ -550,7 +550,7 @@ Availability: ${bookingData.dates}`;
                       onClick={() => toggleSection('clients')}
                       className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all group"
                     >
-                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">شات العملاء (DMs)</h3>
+                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">{t('client_dms', 'شات العملاء (DMs)')}</h3>
                       <div className={`text-slate-400 transition-transform duration-300 ${expandedSections.clients ? 'rotate-180' : ''}`}>
                         <ChevronRight size={14} />
                       </div>

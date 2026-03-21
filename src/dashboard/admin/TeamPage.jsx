@@ -267,7 +267,7 @@ const TeamPage = () => {
             {t('team_management')}
             <span className="px-3 py-1 bg-brand-500/10 text-brand-500 text-xs rounded-full border border-brand-500/20">v1.6.0</span>
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium mt-2 text-lg">إدارة القوى العاملة والنظام المالي الموحد</p>
+          <p className="text-slate-500 dark:text-slate-400 font-medium mt-2 text-lg">{t('workforce_management')}</p>
         </div>
         
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -375,15 +375,15 @@ const TeamPage = () => {
               {/* Finance Tracker */}
               <div className="w-full grid grid-cols-3 gap-2 p-5 bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-[2rem] mb-6">
                 <div className="text-center border-r border-slate-200 dark:border-white/5">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">Due</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">{t('due_label')}</p>
                   <p className="text-xs font-black text-slate-800 dark:text-white">${m.finance?.totalSalary || 0}</p>
                 </div>
                 <div className="text-center border-r border-slate-200 dark:border-white/5">
-                  <p className="text-[9px] font-black text-emerald-500 uppercase tracking-tighter mb-1">Paid</p>
+                  <p className="text-[9px] font-black text-emerald-500 uppercase tracking-tighter mb-1">{t('paid_label')}</p>
                   <p className="text-xs font-black text-emerald-500">${m.finance?.paid || 0}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-[9px] font-black text-brand-500 uppercase tracking-tighter mb-1">Rest</p>
+                  <p className="text-[9px] font-black text-brand-500 uppercase tracking-tighter mb-1">{t('rest_label')}</p>
                   <p className="text-xs font-black text-brand-500">${m.finance?.remaining || 0}</p>
                 </div>
               </div>

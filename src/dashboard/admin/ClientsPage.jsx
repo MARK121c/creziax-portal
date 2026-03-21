@@ -62,7 +62,7 @@ const ClientsPage = () => {
   const [form, setForm] = useState({ 
     firstName: '', lastName: '', email: '', password: '', company: '', phone: '',
     tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', telegram: '', managedChannels: '',
-    contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: ''
+    contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: '', preferredCurrency: 'USD'
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [fileError, setFileError] = useState('');
@@ -144,7 +144,8 @@ const ClientsPage = () => {
           contractStartDate: form.contractStartDate,
           contractEndDate: form.contractEndDate,
           healthScore: form.healthScore,
-          internalNotes: form.internalNotes
+          internalNotes: form.internalNotes,
+          preferredCurrency: form.preferredCurrency
         });
         toast.success(t('saved_successfully'), { id: loadingToast });
         addNotification(`${t('saved_successfully')}: ${form.firstName} ${form.lastName}`, 'success');
@@ -154,7 +155,7 @@ const ClientsPage = () => {
         addNotification(`${t('client_added')}: ${form.firstName} ${form.lastName}`, 'success');
       }
       setShowModal(false);
-      setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '', tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', telegram: '', managedChannels: '', contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: '' });
+      setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '', tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', telegram: '', managedChannels: '', contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: '', preferredCurrency: 'USD' });
       setIsEditing(false);
       setEditId(null);
       fetchClients();
@@ -199,7 +200,8 @@ const ClientsPage = () => {
       contractStartDate: formatDate(client.clientInfo?.contractStartDate),
       contractEndDate: formatDate(client.clientInfo?.contractEndDate),
       healthScore: client.clientInfo?.healthScore || 'GOOD',
-      internalNotes: client.clientInfo?.internalNotes || ''
+      internalNotes: client.clientInfo?.internalNotes || '',
+      preferredCurrency: client.clientInfo?.preferredCurrency || 'USD'
     });
     setEditId(client.clientInfo?.id || client.id);
     setIsEditing(true);
@@ -643,6 +645,17 @@ const ClientsPage = () => {
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('tier')}</label>
                     <select name="tier" value={form.tier} onChange={handleChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold">
                       {tiers.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('preferred_curr', 'العملة المفضلة / Currency')}</label>
+                    <select name="preferredCurrency" value={form.preferredCurrency} onChange={handleChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold">
+                      <option value="USD">USD ($)</option>
+                      <option value="EGP">EGP (جنيه مصري)</option>
+                      <option value="EUR">EUR (€)</option>
+                      <option value="SAR">SAR (ريال سعودي)</option>
+                      <option value="AED">AED (درهم إماراتي)</option>
+                      <option value="KWD">KWD (دينار كويتي)</option>
                     </select>
                   </div>
                   <div className="space-y-2">

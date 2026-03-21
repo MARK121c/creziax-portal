@@ -304,7 +304,7 @@ const TasksPage = () => {
               <ListTodo size={32} className="text-brand-500" />
               مركز المهام الشامل
             </h1>
-            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mt-3 opacity-60">محرك الالتزام الموحد - إصدار 3.4</p>
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mt-3 opacity-60">{t('unified_commitment_engine')}</p>
           </div>
 
           <div className="flex items-center bg-slate-100 dark:bg-white/5 p-1.5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm">
@@ -376,10 +376,10 @@ const TasksPage = () => {
             <table className="w-full text-left">
               <thead>
                 <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-black/20">
-                  <th className="px-8 py-6">المشروع</th>
+                  <th className="px-8 py-6">{t('project_col', 'المشروع')}</th>
                   <th className="px-8 py-6 text-right rtl">عنوان الفيديو</th>
-                  <th className="px-4 py-6 text-center">المسؤول</th>
-                  <th className="px-4 py-6 text-center w-20">الاسكربت</th>
+                  <th className="px-4 py-6 text-center">{t('manager_col', 'المسؤول')}</th>
+                  <th className="px-4 py-6 text-center w-20">{t('script_col', 'الاسكربت')}</th>
                   <th className="px-4 py-6 text-center w-20">التصوير</th>
                   <th className="px-4 py-6 text-center w-20">المونتاج</th>
                   <th className="px-4 py-6 text-center w-20">النشر</th>

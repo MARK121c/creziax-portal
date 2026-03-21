@@ -25,7 +25,10 @@ const getDrivePreviewUrl = (url) => {
   return url; // return as-is if format unknown
 };
 
+import { useTranslation } from 'react-i18next';
+
 const ContractsPage = () => {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const initialClientId = searchParams.get('clientId');
 
@@ -146,10 +149,10 @@ const ContractsPage = () => {
       {/* Header with Canva Link */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
         <div>
-          <h1 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter">أرشيف العقود</h1>
+          <h1 className="text-5xl font-black text-slate-900 dark:text-white tracking-tighter">{t('contracts_archive', 'أرشيف العقود')}</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-3 font-bold text-lg uppercase tracking-widest flex items-center gap-3 italic">
             <span className="w-12 h-[2px] bg-brand-500 rounded-full" />
-            إدارة أرشفة العقود السحابية
+            {t('contracts_archive_desc', 'إدارة أرشفة العقود السحابية')}
           </p>
         </div>
         
@@ -164,8 +167,8 @@ const ContractsPage = () => {
               <Plus size={24} />
             </div>
             <div className="text-right">
-              <span className="block text-[10px] opacity-70 uppercase tracking-widest font-bold">استوديو التصميم المتكامل</span>
-              <span className="text-lg">إنشاء عقد جديد - Canva</span>
+              <span className="block text-[10px] opacity-70 uppercase tracking-widest font-bold">{t('integrated_design_studio', 'استوديو التصميم المتكامل')}</span>
+              <span className="text-lg">{t('create_new_contract_canva', 'إنشاء عقد جديد - Canva')}</span>
             </div>
           </a>
         </div>

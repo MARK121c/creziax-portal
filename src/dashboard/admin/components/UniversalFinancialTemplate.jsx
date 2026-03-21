@@ -14,6 +14,8 @@ const UniversalFinancialTemplate = ({ data }) => {
     payment_method,
     payment_details,
     party_label,
+    local_amount,
+    currency,
   } = data || {};
 
   return (
@@ -75,7 +77,14 @@ const UniversalFinancialTemplate = ({ data }) => {
               <div style={{ fontSize: '16px', fontWeight: 700 }}>{service_name}</div>
               <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#666' }}>Transaction processed via Creziax Internal Financial System.</p>
             </td>
-            <td style={{ textAlign: 'right', paddingRight: '20px', fontSize: '20px', fontWeight: 900 }}>${amount}</td>
+            <td style={{ textAlign: 'right', paddingRight: '20px', fontSize: '20px', fontWeight: 900 }}>
+              ${amount}
+              {local_amount && currency && currency !== 'USD' && (
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#666', marginTop: '6px' }}>
+                  ≈ {local_amount} {currency}
+                </div>
+              )}
+            </td>
           </tr>
         </tbody>
       </table>
@@ -85,9 +94,16 @@ const UniversalFinancialTemplate = ({ data }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px', paddingLeft: '15px' }}>
             <span>Final Balance</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '28px', fontWeight: 900, paddingLeft: '15px' }}>
-            <span>Total</span>
-            <span>${amount}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop: '10px', paddingLeft: '15px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '28px', fontWeight: 900 }}>
+              <span>Total</span>
+              <span>${amount}</span>
+            </div>
+            {local_amount && currency && currency !== 'USD' && (
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#aaa', marginTop: '4px' }}>
+                Equivalent of {local_amount} {currency}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -248,7 +248,7 @@ const WorkspaceDetail = () => {
               <div className="space-y-1">
                 <h1 className="text-2xl font-black tracking-tighter text-slate-800 dark:text-white uppercase leading-none">{workspace.name}</h1>
                 <div className="flex items-center gap-2">
-                   <div className="px-2.5 py-0.5 bg-brand-500/10 text-brand-500 text-[8px] font-black uppercase tracking-widest rounded-full border border-brand-500/20">V3.2 ENGINE</div>
+                   <div className="px-2.5 py-0.5 bg-brand-500/10 text-brand-500 text-[8px] font-black uppercase tracking-widest rounded-full border border-brand-500/20">{t('v3_2_engine', 'V3.2 ENGINE')}</div>
                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{workspace.client?.user?.firstName} {workspace.client?.user?.lastName}</p>
                 </div>
               </div>
@@ -292,16 +292,16 @@ const WorkspaceDetail = () => {
           <div>
             <h2 className="text-4xl font-black text-slate-800 dark:text-white uppercase tracking-tighter flex items-center gap-5">
               <Activity size={32} className="text-brand-500" />
-              محرك التشغيل الشهري
+              {t('monthly_operation_engine', 'محرك التشغيل الشهري')}
             </h2>
-            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mt-3 opacity-60">Engine for High-Performance Youtube Operations</p>
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mt-3 opacity-60">{t('high_performance_engine', 'Engine for High-Performance Youtube Operations')}</p>
           </div>
           <button 
             onClick={() => setShowAddPhase(true)}
             className="flex items-center gap-3 px-10 py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-2xl hover:scale-105 transition-all active:scale-95"
           >
             <Plus size={20} />
-             إضافة شهر جديد
+             {t('add_new_month', 'إضافة شهر جديد')}
           </button>
         </div>
 
@@ -422,7 +422,7 @@ const WorkspaceDetail = () => {
            <div className="absolute inset-0 bg-slate-900/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in" onClick={() => setShowAddPhase(false)}></div>
            <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-md shadow-2xl relative z-10 p-10 animate-in zoom-in-95 duration-400">
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">إضافة شهر جديد</h3>
+                <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">{t('add_new_month', 'إضافة شهر جديد')}</h3>
                 <button onClick={() => setShowAddPhase(false)} className="p-3 text-slate-400 hover:text-rose-500 bg-slate-100 dark:bg-white/5 rounded-xl transition-all"><X size={20} /></button>
               </div>
               <form onSubmit={handleAddPhase} className="space-y-8">
@@ -441,7 +441,7 @@ const WorkspaceDetail = () => {
            <div className="absolute inset-0 bg-slate-900/60 dark:bg-black/90 backdrop-blur-md animate-in fade-in" onClick={() => setShowAddTask(null)}></div>
            <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-md shadow-2xl relative z-10 p-10 animate-in zoom-in-95 duration-400">
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">إضافة فيديو جديد</h3>
+                <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">{t('add_new_video', 'إضافة فيديو جديد')}</h3>
                 <button onClick={() => setShowAddTask(null)} className="p-3 text-slate-400 hover:text-rose-500 bg-slate-100 dark:bg-white/5 rounded-xl transition-all"><X size={20} /></button>
               </div>
               <form onSubmit={handleAddTask} className="space-y-8">

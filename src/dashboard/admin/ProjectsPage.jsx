@@ -191,13 +191,13 @@ const ProjectsPage = () => {
                <Briefcase size={22} />
              </div>
              <div className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-[0.15em] rounded-full border border-emerald-500/20">
-               V3.2 BUSINESS FOUNDATION
+               {t('business_foundation', 'V3.2 BUSINESS FOUNDATION')}
              </div>
           </div>
           <h1 className="text-3xl md:text-5xl font-black text-slate-800 dark:text-white tracking-tighter uppercase leading-none">
-             إدارة المشاريع
+             {t('projects_management', 'إدارة المشاريع')}
           </h1>
-          <p className="text-slate-400 dark:text-slate-500 font-bold mt-2 text-sm uppercase tracking-widest leading-relaxed">نظام التشغيل الهندسي للقنوات والمشاريع</p>
+          <p className="text-slate-400 dark:text-slate-500 font-bold mt-2 text-sm uppercase tracking-widest leading-relaxed">{t('projects_management_desc', 'نظام التشغيل الهندسي للقنوات والمشاريع')}</p>
         </div>
         
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
@@ -216,7 +216,7 @@ const ProjectsPage = () => {
             className="flex items-center justify-center gap-2 px-8 py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-brand-600/20 active:scale-95 transition-all duration-300"
           >
             <Plus size={20} />
-            <span>مشروع جديد</span>
+            <span>{t('new_project', 'مشروع جديد')}</span>
           </button>
         </div>
       </div>
@@ -298,7 +298,7 @@ const ProjectsPage = () => {
                     className="w-full py-4 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-2xl transition-all flex items-center justify-center gap-3 text-xs uppercase tracking-widest shadow-xl shadow-brand-600/20 active:scale-95"
                   >
                     <ExternalLink size={16} />
-                    دخول مركز القيادة
+                    {t('enter_command_center', 'دخول مركز القيادة')}
                   </Link>
                 </div>
               </div>
@@ -316,7 +316,7 @@ const ProjectsPage = () => {
             <div className="px-10 py-8 border-b border-slate-100 dark:border-white/5 bg-white/80 dark:bg-[#0a0a0c]/80 backdrop-blur-md flex items-center justify-between sticky top-0 z-20">
               <div className="flex items-center gap-4">
                  <div className="w-2 h-8 bg-brand-500 rounded-full"></div>
-                 <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">إنشاء مشروع جديد</h2>
+                 <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">{t('create_new_project', 'إنشاء مشروع جديد')}</h2>
               </div>
               <button onClick={() => setShowModal(false)} className="p-3 text-slate-400 hover:text-rose-500 bg-slate-100 dark:bg-white/5 rounded-xl transition-all"><X size={20} /></button>
             </div>
@@ -452,7 +452,7 @@ const ProjectsPage = () => {
 
               <div className="pt-6">
                 <button type="submit" disabled={submitting} className="w-full py-5 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-2xl shadow-2xl shadow-brand-600/30 transition-all active:scale-95 text-xs uppercase tracking-[0.2em]">
-                  {submitting ? <Loader2 size={24} className="animate-spin mx-auto" /> : 'تـدشـيـن الـمـشـروع'}
+                  {submitting ? <Loader2 size={24} className="animate-spin mx-auto" /> : t('launch_project', 'تـدشـيـن الـمـشـروع')}
                 </button>
               </div>
             </form>
