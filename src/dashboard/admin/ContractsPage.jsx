@@ -1,27 +1,28 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getContractsAPI, createContractAPI, updateContractAPI, deleteContractAPI, getClientsAPI, getUsersAPI, uploadAttachmentAPI } from '../../store/api';
-import api from '../../store/api';
-import { Plus, X, Trash2, FileText, Search, Loader2, Link as LinkIcon, Download, ExternalLink, UploadCloud, Calendar, User as UserIcon } from 'lucide-react';
+import { getContractsAPI, createContractAPI, updateContractAPI, deleteContractAPI, getClientsAPI, getUsersAPI } from '../../store/api';
+import { Plus, X, Trash2, FileText, Search, Loader2, Link as LinkIcon, ExternalLink, Calendar, User as UserIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const CANVA_LINK = "https://www.canva.com/design/DAG-3cp5x9g/VsK4i4NViBIoYk-0Uij5Vw/edit?utm_content=DAG-3cp5x9g&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton";
 
 const emptyForm = {
   title: '',
-  date: new Date().toLocaleDateString('ar-EG'),
+  date: new Date().toISOString().split('T')[0],
   startDate: '',
   endDate: '',
   clientId: '',
   memberId: '',
-  pdfUrl: '',
+  pdfUrl: '', // stores Google Drive link
 };
 
-const getFullFileUrl = (path) => {
-  if (!path) return '';
-  if (path.startsWith('http')) return path;
-  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || '';
-  return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+// Helper: convert Google Drive share link → direct preview link
+const getDrivePreviewUrl = (url) => {
+  if (!url) return '';
+  // https://drive.google.com/file/d/FILE_ID/view?... → embed preview
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (match) return `https://drive.google.com/file/d/${match[1]}/preview`;
+  return url; // return as-is if format unknown
 };
 
 const ContractsPage = () => {
@@ -36,7 +37,6 @@ const ContractsPage = () => {
   const [editingContract, setEditingContract] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchData = async () => {
@@ -90,30 +90,6 @@ const ContractsPage = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (file.type !== 'application/pdf') {
-      toast.error('يرجى رفع ملف PDF فقط');
-      return;
-    }
-
-    setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const { data } = await uploadAttachmentAPI(formData);
-      setForm(prev => ({ ...prev, pdfUrl: data.url }));
-      toast.success('تم رفع الملف بنجاح');
-    } catch (err) {
-      toast.error('فشل رفع الملف');
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -148,34 +124,15 @@ const ContractsPage = () => {
     }
   };
 
-  const handleDownload = async (contract) => {
-    const loadingToast = toast.loading('جاري تحضير العقد للعرض...');
-    try {
-      const url = contract.pdfUrl;
-      if (!url) {
-        toast.dismiss(loadingToast);
-        toast.error('لا يوجد ملف مرفق بهذا العقد');
-        return;
-      }
-
-      // All absolute URLs (Supabase, Canva, any CDN) → open directly
-      // They are already public; sending Authorization headers to external hosts fails CORS
-      if (url.startsWith('http')) {
-        window.open(url, '_blank');
-        toast.dismiss(loadingToast);
-        return;
-      }
-
-      // Relative local path → fetch as blob with auth header
-      const res = await api.get(url, { responseType: 'blob' });
-      const blobURL = URL.createObjectURL(res.data);
-      window.open(blobURL, '_blank');
-      toast.dismiss(loadingToast);
-    } catch (err) {
-      console.error(err);
-      toast.dismiss(loadingToast);
-      toast.error('تعذر فتح الملف');
+  // Open Google Drive link directly — no auth, no headers needed
+  const handleViewContract = (contract) => {
+    const url = contract.pdfUrl;
+    if (!url) {
+      toast.error('لا يوجد رابط مرفق بهذا العقد');
+      return;
     }
+    const previewUrl = getDrivePreviewUrl(url);
+    window.open(previewUrl, '_blank', 'noopener,noreferrer');
   };
 
   const filtered = contracts.filter(c => 
@@ -232,7 +189,7 @@ const ContractsPage = () => {
             onClick={() => { setEditingContract(null); setForm(emptyForm); setShowModal(true); }}
             className="flex items-center gap-3 px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-black rounded-2xl font-black text-sm hover:scale-105 transition-all shadow-xl shadow-slate-900/10 dark:shadow-white/5"
           >
-            <UploadCloud size={20} />
+            <LinkIcon size={20} />
             إضافة للأرشيف
           </button>
         </div>
@@ -245,10 +202,10 @@ const ContractsPage = () => {
         ) : filtered.length === 0 ? (
           <div className="py-32 flex flex-col items-center justify-center text-center px-6">
             <div className="w-20 h-20 bg-slate-100 dark:bg-white/5 rounded-[2rem] flex items-center justify-center mb-6 border border-slate-200 dark:border-white/10">
-              <UploadCloud size={32} className="text-slate-300 dark:text-slate-600" />
+              <LinkIcon size={32} className="text-slate-300 dark:text-slate-600" />
             </div>
             <h3 className="text-xl font-bold text-slate-800 dark:text-white">الأرشيف فارغ حالياً</h3>
-            <p className="text-sm text-slate-500 mt-2">ابدأ برفع أول عقد PDF قمت بتصميمه</p>
+            <p className="text-sm text-slate-500 mt-2">ابدأ بإضافة رابط عقد من Google Drive</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -299,11 +256,11 @@ const ContractsPage = () => {
                       <div className="flex items-center justify-start gap-4">
                         {contract.pdfUrl && (
                           <button 
-                            onClick={() => handleDownload(contract)}
+                            onClick={() => handleViewContract(contract)}
                             className="flex items-center gap-2 px-6 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl font-black text-xs hover:bg-emerald-500 hover:text-white shadow-lg shadow-emerald-500/10 transition-all active:scale-95"
                           >
                             <ExternalLink size={14} />
-                            <span>عرض الملف (آمن)</span>
+                            <span>فتح العقد</span>
                           </button>
                         )}
                         <button 
@@ -404,45 +361,37 @@ const ContractsPage = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ملف العقد (PDF)</label>
-                <div className="relative group">
-                  <input 
-                    type="file" 
-                    accept=".pdf"
-                    onChange={handleFileUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                    disabled={uploading}
-                  />
-                  <div className={`w-full py-8 border-2 border-dashed rounded-[2rem] flex flex-col items-center justify-center gap-2 transition-all ${form.pdfUrl ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 group-hover:border-brand-500/50'}`}>
-                    {uploading ? (
-                      <Loader2 size={24} className="animate-spin text-brand-500" />
-                    ) : form.pdfUrl ? (
-                      <>
-                        <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 animate-in zoom-in">
-                          <Download size={20} />
-                        </div>
-                        <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest uppercase tracking-tighter">تـم رفـع الـمـلـف</span>
-                      </>
-                    ) : (
-                      <>
-                        <UploadCloud size={24} className="text-slate-300 group-hover:text-brand-500 transition-colors" />
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest uppercase tracking-tighter">اضـغـط لـرفـع مـلـف PDF</span>
-                      </>
-                    )}
-                  </div>
-                </div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <LinkIcon size={12} className="text-emerald-500" />
+                  رابط العقد من Google Drive
+                </label>
+                <input
+                  type="url"
+                  required
+                  value={form.pdfUrl}
+                  onChange={e => setForm({...form, pdfUrl: e.target.value})}
+                  placeholder="https://drive.google.com/file/d/..."
+                  className={`w-full px-5 py-4 bg-slate-50 dark:bg-white/5 border rounded-2xl text-sm focus:outline-none focus:ring-2 font-mono transition-all ${
+                    form.pdfUrl
+                      ? 'border-emerald-500/40 focus:ring-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+                      : 'border-slate-200 dark:border-white/10 focus:ring-brand-500/20'
+                  }`}
+                />
+                <p className="text-[10px] text-slate-400 font-bold pr-1">
+                  ● اذهب للملف في Drive ← Share ← Copy Link ← الصق هنا
+                </p>
               </div>
 
               <div className="pt-4 flex gap-3">
-                <button 
-                  type="submit" 
-                  disabled={submitting || uploading || !form.pdfUrl}
+                <button
+                  type="submit"
+                  disabled={submitting || !form.pdfUrl}
                   className="flex-1 bg-brand-600 hover:bg-brand-500 text-white font-black py-4 rounded-2xl shadow-xl shadow-brand-600/20 disabled:opacity-50 disabled:translate-y-0 hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
                 >
                   {submitting ? <Loader2 size={18} className="animate-spin" /> : 'إضافة للأرشيف'}
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setShowModal(false)}
                   className="px-8 py-4 bg-slate-100 dark:bg-white/5 text-slate-500 font-black rounded-2xl"
                 >
