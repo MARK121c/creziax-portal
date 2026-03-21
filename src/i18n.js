@@ -718,7 +718,19 @@ const resources = {
       "deleting": "Deleting...",
       "account_role_label": "Account Role",
       "system_administrator_role": "System Administrator",
-      "team_member_role": "Team Member"
+      "team_member_role": "Team Member",
+      "admin_permissions_label": "Dashboard Permissions",
+      "admin_permissions_desc": "Choose which sections this admin can access",
+      "manage_clients_perm": "Clients Management",
+      "manage_team_perm": "Team Management",
+      "manage_projects_perm": "Projects & Workspaces",
+      "finances_invoices_perm": "Finance & Invoices",
+      "messages_comm_perm": "Messages",
+      "manage_files_perm": "Files & Assets",
+      "select_all": "Select All",
+      "deselect_all": "Deselect All",
+      "no_permissions_warning": "Warning: No permissions selected. This admin won't see any section.",
+      "system_admin_role": "System Administrator (Admin)"
     }
   },
   ar: {
@@ -1438,7 +1450,19 @@ const resources = {
       "deleting": "جاري الحذف...",
       "account_role_label": "نوع الحساب (الصلاحية)",
       "system_administrator_role": "مدير نظام (System Administrator)",
-      "team_member_role": "عضو فريق (Team Member)"
+      "team_member_role": "عضو فريق (Team Member)",
+      "admin_permissions_label": "صلاحيات لوحة التحكم",
+      "admin_permissions_desc": "اختر الأقسام المتاحة لهذا المسؤول",
+      "manage_clients_perm": "إدارة العملاء",
+      "manage_team_perm": "إدارة الفريق",
+      "manage_projects_perm": "المشاريع ومساحات العمل",
+      "finances_invoices_perm": "المالية والفواتير",
+      "messages_comm_perm": "الرسائل والتواصل",
+      "manage_files_perm": "الملفات والأصول",
+      "select_all": "تحديد الكل",
+      "deselect_all": "إلغاء الكل",
+      "no_permissions_warning": "تحذير: لم تحدد أي صلاحيات. المسؤول لن يرى أي قسم.",
+      "system_admin_role": "مدير نظام (System Administrator)"
     }
   }
 };

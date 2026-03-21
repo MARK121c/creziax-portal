@@ -193,13 +193,17 @@ const TeamPage = () => {
 
   const handleDelete = async (id, name) => {
     if (!confirm(`${t('delete_client_confirm')} ${name}?`)) return;
+    // Optimistic update — remove immediately from UI
+    setMembers(prev => prev.filter(m => m.id !== id));
     const loadingToast = toast.loading(t('syncing'));
     try { 
       await deleteUserAPI(id); 
       toast.success(t('client_removed'), { id: loadingToast });
-      fetchMembers(); 
+      await fetchMembers();
     } catch (err) {
       toast.error(t('failed_remove_client'), { id: loadingToast });
+      // Rollback on failure
+      await fetchMembers();
     }
   };
 
@@ -519,69 +523,153 @@ const TeamPage = () => {
                 </div>
               </div>
 
-              {/* Section 2: Functional Data */}
-              <div className="space-y-8 pt-10 border-t border-slate-100 dark:border-white/5">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10">
-                    <Briefcase size={16} />
+              {/* Section 2: Functional Data — TEAM only */}
+              {form.role === 'TEAM' && (
+                <div className="space-y-8 pt-10 border-t border-slate-100 dark:border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10">
+                      <Briefcase size={16} />
+                    </div>
+                    <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">{t('job_details_label', 'البيانات الوظيفية (Job Details)')}</h3>
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">{t('job_details_label', 'البيانات الوظيفية (Job Details)')}</h3>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('job_position', 'المسمى الوظيفي')}</label>
-                    <select value={form.position} onChange={e => setForm({...form, position: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10">
-                      {jobTitles.filter(jt => jt.value !== 'ALL').map(jt => <option key={jt.value} value={jt.value}>{t(jt.label, jt.label)}</option>)}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('managed_channels_count', 'القنوات المدارة')}</label>
-                    <input type="number" value={form.managedChannels} onChange={e => setForm({...form, managedChannels: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('member_notion_link', 'رابط Notion الخاص بالعضو')}</label>
-                    <input value={form.notionLink} onChange={e => setForm({...form, notionLink: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" placeholder="https://notion.so/..." />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('telegram_link', 'رابط Telegram')}</label>
-                    <input value={form.telegram} onChange={e => setForm({...form, telegram: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" placeholder="@username" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('job_position', 'المسمى الوظيفي')}</label>
+                      <select value={form.position} onChange={e => setForm({...form, position: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10">
+                        {jobTitles.filter(jt => jt.value !== 'ALL').map(jt => <option key={jt.value} value={jt.value}>{t(jt.label, jt.label)}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('managed_channels_count', 'القنوات المدارة')}</label>
+                      <input type="number" value={form.managedChannels} onChange={e => setForm({...form, managedChannels: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('member_notion_link', 'رابط Notion الخاص بالعضو')}</label>
+                      <input value={form.notionLink} onChange={e => setForm({...form, notionLink: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" placeholder="https://notion.so/..." />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('telegram_link', 'رابط Telegram')}</label>
+                      <input value={form.telegram} onChange={e => setForm({...form, telegram: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" placeholder="@username" />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Section 3: Financial Data */}
-              <div className="space-y-8 pt-10 border-t border-slate-100 dark:border-white/5">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-emerald-500 border border-emerald-500/10">
-                    <DollarSign size={16} />
+              {/* Section 3: Financial Data — TEAM only */}
+              {form.role === 'TEAM' && (
+                <div className="space-y-8 pt-10 border-t border-slate-100 dark:border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-emerald-500 border border-emerald-500/10">
+                      <DollarSign size={16} />
+                    </div>
+                    <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">{t('financials_label', 'البيانات المالية (Financials)')}</h3>
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">{t('financials_label', 'البيانات المالية (Financials)')}</h3>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('total_salary_label', 'إجمالي الراتب ($)')}</label>
-                    <input type="number" value={form.monthlySalary} onChange={e => setForm({...form, monthlySalary: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-emerald-600 dark:text-emerald-400 font-black focus:ring-4 focus:ring-emerald-500/10" />
-                  </div>
-                  {isEditing && (
-                    <>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('paid_amount', 'ما تم دفعه')}</label>
-                        <div className="w-full px-6 py-4 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-500 font-bold opacity-60">
-                          ${selectedMember?.finance?.paid || 0}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('total_salary_label', 'إجمالي الراتب ($)')}</label>
+                      <input type="number" value={form.monthlySalary} onChange={e => setForm({...form, monthlySalary: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-emerald-600 dark:text-emerald-400 font-black focus:ring-4 focus:ring-emerald-500/10" />
+                    </div>
+                    {isEditing && (
+                      <>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('paid_amount', 'ما تم دفعه')}</label>
+                          <div className="w-full px-6 py-4 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-500 font-bold opacity-60">
+                            ${selectedMember?.finance?.paid || 0}
+                          </div>
                         </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('remaining_amount', 'المتبقي')}</label>
-                        <div className="w-full px-6 py-4 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-500 font-bold opacity-60">
-                          ${selectedMember?.finance?.remaining || 0}
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('remaining_amount', 'المتبقي')}</label>
+                          <div className="w-full px-6 py-4 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-500 font-bold opacity-60">
+                            ${selectedMember?.finance?.remaining || 0}
+                          </div>
                         </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Section 2B: Admin Permissions Matrix — ADMIN only */}
+              {form.role === 'ADMIN' && (
+                <div className="space-y-8 pt-10 border-t border-slate-100 dark:border-white/5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 border border-indigo-500/20">
+                        <ShieldAlert size={16} />
                       </div>
-                    </>
+                      <div>
+                        <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">{t('admin_permissions_label', 'صلاحيات لوحة التحكم')}</h3>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{t('admin_permissions_desc', 'اختر الأقسام المتاحة لهذا المسؤول')}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allIds = availablePermissions.map(p => p.id);
+                        const allSelected = allIds.every(id => form.permissions.includes(id));
+                        setForm({ ...form, permissions: allSelected ? [] : allIds });
+                      }}
+                      className="text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl border border-indigo-500/30 text-indigo-500 hover:bg-indigo-500/10 transition-all"
+                    >
+                      {availablePermissions.every(p => form.permissions.includes(p.id))
+                        ? t('deselect_all', 'إلغاء الكل')
+                        : t('select_all', 'تحديد الكل')}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {availablePermissions.map(perm => {
+                      const isSelected = form.permissions.includes(perm.id);
+                      const Icon = perm.icon;
+                      return (
+                        <button
+                          key={perm.id}
+                          type="button"
+                          onClick={() => {
+                            const next = isSelected
+                              ? form.permissions.filter(p => p !== perm.id)
+                              : [...form.permissions, perm.id];
+                            setForm({ ...form, permissions: next });
+                          }}
+                          className={`relative flex items-center gap-4 p-5 rounded-2xl border-2 text-left transition-all duration-200 active:scale-95 ${
+                            isSelected
+                              ? 'bg-indigo-500/10 border-indigo-500 shadow-lg shadow-indigo-500/10'
+                              : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/10 hover:border-indigo-500/40'
+                          }`}
+                        >
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
+                            isSelected ? 'bg-indigo-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-400'
+                          }`}>
+                            <Icon size={18} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-xs font-black uppercase tracking-widest ${
+                              isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400'
+                            }`}>{t(perm.label, perm.label)}</p>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-0.5">{perm.id}</p>
+                          </div>
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                            isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300 dark:border-white/20'
+                          }`}>
+                            {isSelected && <ShieldCheck size={10} className="text-white" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {form.permissions.length === 0 && (
+                    <div className="flex items-center gap-3 px-5 py-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl">
+                      <ShieldAlert size={16} className="text-amber-500 flex-shrink-0" />
+                      <p className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                        {t('no_permissions_warning', 'تحذير: لم تحدد أي صلاحيات. المسؤول لن يرى أي قسم.')}
+                      </p>
+                    </div>
                   )}
                 </div>
-              </div>
+              )}
 
               {/* Section 4: Status & Health */}
               <div className="space-y-8 pt-10 border-t border-slate-100 dark:border-white/5">
