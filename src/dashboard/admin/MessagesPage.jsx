@@ -8,15 +8,14 @@ import {
   grantChatAccessAPI,
   createTeamGroupAPI,
   getTeamGroupsAPI,
-  clearMessagesAPI,
-  uploadAttachmentAPI
+  clearMessagesAPI
 } from '../../store/api';
 import useAuthStore from '../../store/authStore';
 import { io } from 'socket.io-client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import { 
-  Send, MessageSquare, Search, MoreHorizontal, Smile, Paperclip, 
+  Send, MessageSquare, Search, MoreHorizontal, Smile, Link as LinkIcon,
   Loader2, UserCircle, Plus, Filter, Clock, CheckCircle2, AlertCircle,
   Tag, ChevronRight, Briefcase, Calendar, ExternalLink, ShieldAlert,
   UserPlus, X, Users, Check, Trash2
@@ -46,9 +45,9 @@ const MessagesPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const emojiRef = useRef(null);
-  const [uploadingFile, setUploadingFile] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const fileInputRef = useRef(null);
+  // Drive link modal
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [driveLink, setDriveLink] = useState('');
   const [expandedSections, setExpandedSections] = useState({
     projects: true,
     groups: true,
@@ -164,41 +163,11 @@ const MessagesPage = () => {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if ((!content.trim() && !selectedFile) || !activeThread || uploadingFile) return;
+    if (!content.trim() || !activeThread) return;
     
     // Privacy Firewall: Admins bypass validation rule
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'OWNER';
     if (content.trim() && !isAdmin && !validateMessage(content)) return;
-
-    if (selectedFile) {
-      setUploadingFile(true);
-      try {
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-        
-        const { data } = await uploadAttachmentAPI(formData);
-        
-        const msgContent = content.trim() ? `[FILE]${data.url}\n${content.trim()}` : `[FILE]${data.url}`;
-        const msgData = {
-          content: msgContent,
-          threadId: activeThread.id,
-          receiverId: activeThread.type === 'DM' || activeThread.type === 'TEAM' ? activeThread.userId : null
-        };
-
-        const res = await sendMessageAPI(msgData);
-        setMessages(prev => [...prev, { ...res.data, sender: user }]);
-        socketRef.current.emit('send_message', { ...res.data, threadId: activeThread.id });
-        toast.success('تم إرسال المرفق بنجاح');
-      } catch (err) {
-        toast.error('فشل رفع الملف، يرجى المحاولة مرة أخرى');
-        setUploadingFile(false);
-        return;
-      }
-      setUploadingFile(false);
-      setSelectedFile(null);
-      setContent('');
-      return;
-    }
 
     try {
       const { data } = await sendMessageAPI({ 
@@ -218,6 +187,30 @@ const MessagesPage = () => {
     }
   };
 
+  // Send Google Drive link as a special message
+  const handleSendDriveLink = async () => {
+    if (!driveLink.trim() || !activeThread) return;
+    if (!driveLink.startsWith('http')) {
+      toast.error('يرجى إدخال رابط صحيح');
+      return;
+    }
+    try {
+      const msgContent = `[DRIVE_LINK]${driveLink.trim()}`;
+      const { data } = await sendMessageAPI({
+        content: msgContent,
+        threadId: activeThread.id,
+        receiverId: activeThread.type === 'DM' || activeThread.type === 'TEAM' ? activeThread.userId : null
+      });
+      socketRef.current.emit('send_message', { ...data, threadId: activeThread.id });
+      setMessages(prev => [...prev, { ...data, sender: user }]);
+      setDriveLink('');
+      setShowLinkModal(false);
+      toast.success('تم إرسال رابط الملف بنجاح');
+    } catch (err) {
+      toast.error('فشل إرسال الرابط');
+    }
+  };
+
   const handleClearChat = async () => {
     if (!activeThread) return;
     if (!window.confirm("تحذير: هل أنت متأكد من مسح جميع رسائل هذه المحادثة؟ سيتم حذفها نهائياً ولن يمكن استرجاعها.")) return;
@@ -230,19 +223,6 @@ const MessagesPage = () => {
     }
   };
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file || !activeThread) return;
-
-    if (file.size > 100 * 1024 * 1024) {
-      toast.error('حجم الملف كبير جداً، الحد الأقصى هو 100 ميجا بايت');
-      e.target.value = '';
-      return;
-    }
-
-    setSelectedFile(file);
-    e.target.value = '';
-  };
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -605,12 +585,16 @@ Availability: ${bookingData.dates}`;
                        <p className="font-black text-[10px] uppercase tracking-[0.2em] max-w-xs leading-loose italic">ابدأ المحادثة الآن. جميع البيانات محمية بفلتر الخصوصية التلقائي.</p>
                      </div>
                   ) : messages.map((m, i) => {
+                      const isDriveLink = m.content?.startsWith('[DRIVE_LINK]');
                       const isBookingCard = m.content?.startsWith('[MEETING_BOOKING]');
                       const isFileCard = m.content?.startsWith('[FILE]');
                       let bookingDetails = null;
+                      let driveUrl = null;
                       let fileDetails = null;
                       
-                      if (isBookingCard) {
+                      if (isDriveLink) {
+                        driveUrl = m.content.replace('[DRIVE_LINK]', '').trim();
+                      } else if (isBookingCard) {
                         const lines = m.content.split('\n');
                         bookingDetails = {
                           topic: lines[1]?.replace('Topic: ', ''),
@@ -636,8 +620,25 @@ Availability: ${bookingData.dates}`;
                                   {m.sender?.firstName} {m.sender?.lastName} {m.senderId === user?.id && '(أنت)'}
                                 </span>
                              </div>
-                            <div className={`px-6 py-4 rounded-[1rem] md:rounded-[1.5rem] text-sm font-bold leading-relaxed shadow-xl ${m.senderId === user?.id ? 'bg-brand-600 text-white rounded-tr-none shadow-brand-600/10' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-none border border-slate-100 dark:border-white/5'} ${isBookingCard ? 'border-2 border-brand-500/30 ring-4 ring-brand-500/10' : ''} ${isFileCard && fileDetails.isImage ? 'p-2' : ''}`}>
-                              {isBookingCard ? (
+                            <div className={`px-6 py-4 rounded-[1rem] md:rounded-[1.5rem] text-sm font-bold leading-relaxed shadow-xl ${m.senderId === user?.id ? 'bg-brand-600 text-white rounded-tr-none shadow-brand-600/10' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-none border border-slate-100 dark:border-white/5'} ${isBookingCard ? 'border-2 border-brand-500/30 ring-4 ring-brand-500/10' : ''}`}>
+                              {isDriveLink ? (
+                                <a
+                                  href={driveUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-3 min-w-[180px] hover:opacity-80 transition-opacity"
+                                  dir="rtl"
+                                >
+                                  <div className="w-10 h-10 rounded-xl bg-white/20 dark:bg-white/10 flex items-center justify-center flex-shrink-0">
+                                    <LinkIcon size={18} />
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-[10px] uppercase tracking-widest opacity-70 font-black">ملف من Google Drive</p>
+                                    <p className="text-xs underline underline-offset-4 truncate max-w-[180px]" style={{direction: 'ltr'}}>{driveUrl.replace('https://', '').substring(0, 40)}...</p>
+                                  </div>
+                                  <ExternalLink size={14} className="opacity-60 flex-shrink-0" />
+                                </a>
+                              ) : isBookingCard ? (
                                 <div className="space-y-4 min-w-[200px] text-right" dir="rtl">
                                    <div className="flex items-center gap-3 pb-3 border-b border-white/20">
                                       <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
@@ -692,25 +693,37 @@ Availability: ${bookingData.dates}`;
                 </div>
 
                 <div className="p-4 md:p-8 bg-white dark:bg-[#0a0a0c] border-t border-slate-100 dark:border-white/5 relative">
-                  {/* Upload Preview Widget */}
-                  {selectedFile && (
-                    <div className="absolute bottom-full mb-4 left-0 w-full animate-in fade-in slide-in-from-bottom-4 duration-300">
-                      <div className="bg-slate-800 dark:bg-white/10 text-white rounded-2xl p-4 flex items-center justify-between shadow-2xl backdrop-blur-md border border-white/5 mx-4 md:mx-8">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                            <Paperclip size={20} />
-                          </div>
-                          <div className="text-right">
-                            <h4 className="text-sm font-black truncate max-w-[200px]" dir="ltr">{selectedFile.name}</h4>
-                            <p className="text-[10px] uppercase tracking-widest opacity-60 mt-1">سيتم إرسال هذا المرفق</p>
-                          </div>
+                  {/* Drive Link Modal */}
+                  {showLinkModal && (
+                    <div className="absolute bottom-full mb-4 left-0 w-full animate-in fade-in slide-in-from-bottom-4 duration-300" dir="rtl">
+                      <div className="bg-white dark:bg-[#121215] border border-slate-200 dark:border-white/10 rounded-[2rem] p-5 shadow-2xl mx-4 md:mx-8 flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-black text-slate-700 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                            <LinkIcon size={14} className="text-brand-500" />
+                            إرسال رابط ملف من Google Drive
+                          </p>
+                          <button type="button" onClick={() => { setShowLinkModal(false); setDriveLink(''); }} className="text-slate-400 hover:text-rose-500">
+                            <X size={18} />
+                          </button>
                         </div>
-                        <button 
-                          type="button" 
-                          onClick={() => setSelectedFile(null)} 
-                          className="w-10 h-10 rounded-xl hover:bg-rose-500/20 text-rose-500 flex items-center justify-center transition-all bg-white/5"
+                        <input
+                          type="url"
+                          autoFocus
+                          value={driveLink}
+                          onChange={e => setDriveLink(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && handleSendDriveLink()}
+                          placeholder="https://drive.google.com/file/d/..."
+                          className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                        />
+                        <p className="text-[10px] text-slate-400 font-bold">افتح الملف في Drive ← Share ← Copy Link ← الصق هنا</p>
+                        <button
+                          type="button"
+                          onClick={handleSendDriveLink}
+                          disabled={!driveLink.trim()}
+                          className="flex items-center justify-center gap-2 w-full py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-black text-sm disabled:opacity-50 transition"
                         >
-                          <X size={20} />
+                          <Send size={16} className="rotate-180" />
+                          إرسال الرابط
                         </button>
                       </div>
                     </div>
@@ -720,7 +733,6 @@ Availability: ${bookingData.dates}`;
                     <div className="flex-1 relative transition-all">
                       {showEmojiPicker && (
                         <div ref={emojiRef} className="absolute bottom-20 left-6 z-50 shadow-2xl rounded-2xl overflow-hidden border border-slate-100 dark:border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-300">
-
                           <EmojiPicker 
                             onEmojiClick={(emojiData) => setContent(prev => prev + emojiData.emoji)}
                             theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
@@ -732,17 +744,16 @@ Availability: ${bookingData.dates}`;
                         value={content} 
                         onChange={e => setContent(e.target.value)} 
                         onClick={() => setShowEmojiPicker(false)}
-                        placeholder={uploadingFile ? "جاري رفع المرفق..." : "اكتب رسالتك داخل بيئة العمل الآمنة..."} 
-                        disabled={uploadingFile}
-                        className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/10 rounded-[1.5rem] px-6 py-5 text-sm text-slate-800 dark:text-white font-black focus:outline-none focus:ring-4 focus:ring-brand-500/10 transition-all font-bold placeholder:opacity-50 text-right disabled:opacity-50" 
+                        placeholder="اكتب رسالتك داخل بيئة العمل الآمنة..."
+                        className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/10 rounded-[1.5rem] px-6 py-5 text-sm text-slate-800 dark:text-white font-black focus:outline-none focus:ring-4 focus:ring-brand-500/10 transition-all font-bold placeholder:opacity-50 text-right" 
                         dir="rtl"
                       />
                       <div className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center gap-4 opacity-50">
-                        <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
-                        <Paperclip 
+                        <LinkIcon 
                           size={20} 
-                          onClick={() => fileInputRef.current?.click()}
-                          className={`cursor-pointer transition-all active:scale-95 ${uploadingFile ? 'animate-pulse text-brand-500 opacity-100 rotate-12 scale-110' : 'hover:text-brand-500 hover:opacity-100'}`} 
+                          onClick={() => { setShowLinkModal(prev => !prev); setShowEmojiPicker(false); }}
+                          className={`cursor-pointer transition-all active:scale-95 ${showLinkModal ? 'text-brand-500 opacity-100' : 'hover:text-brand-500 hover:opacity-100'}`} 
+                          title="إرسال رابط من Google Drive"
                         />
                         <Smile 
                           size={20} 
@@ -753,14 +764,10 @@ Availability: ${bookingData.dates}`;
                     </div>
                     <button 
                       type="submit" 
-                      disabled={(!content.trim() && !selectedFile) || uploadingFile}
+                      disabled={!content.trim()}
                       className="bg-brand-600 text-white w-[60px] h-[60px] rounded-full hover:bg-brand-500 flex items-center justify-center transition-all shadow-xl shadow-brand-600/30 disabled:opacity-50 active:scale-90 flex-shrink-0"
                     >
-                      {uploadingFile ? (
-                        <Loader2 size={24} className="animate-spin" />
-                      ) : (
-                        <Send size={24} className="transform rotate-180 mr-1" />
-                      )}
+                      <Send size={24} className="transform rotate-180 mr-1" />
                     </button>
                   </form>
                 </div>
