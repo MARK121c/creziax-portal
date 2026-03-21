@@ -206,6 +206,14 @@ const AdminDashboard = () => {
         </div>
       </div>
 
+      {/* ─── Top Stats Grid (Restored) ─────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mt-8">
+        <StatCard icon={Users} label="العملاء (Clients)" value={stats?.users?.clients || 0} color="from-sky-500 to-blue-600" loading={loading} />
+        <StatCard icon={Monitor} label="القنوات المدارة (Channels)" value={stats?.channels?.total || 0} color="from-violet-500 to-purple-600" loading={loading} />
+        <StatCard icon={Briefcase} label="فريق العمل (Team)" value={stats?.users?.team || 0} color="from-emerald-500 to-teal-600" loading={loading} />
+        <StatCard icon={Shield} label="المسؤولين (Admins)" value={stats?.users?.admins || 0} color="from-amber-500 to-orange-500" loading={loading} />
+      </div>
+
       {/* ─── Financial Section ─────────────────── */}
       {hasFinancialAccess && (
         <div className="bg-slate-50 dark:bg-[#0a0a0c]/20 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-6 md:p-8 relative overflow-hidden mt-8">
@@ -386,10 +394,10 @@ const AdminDashboard = () => {
               <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500">
                 <Bell size={20} className="animate-swing" />
               </div>
-              <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider">{t('contract_alerts')}</h3>
+              <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider">تنبيهات العقود والمواعيد</h3>
             </div>
             <Link to="/admin/clients" className="text-xs font-black text-brand-500 hover:text-brand-400 uppercase tracking-widest border-b-2 border-brand-500/20 pb-0.5 transition-all">
-              {t('view_all_clients')}
+              عرض كل العملاء
             </Link>
           </div>
 
@@ -437,17 +445,17 @@ const AdminDashboard = () => {
                     
                     <div className="flex items-center justify-between mt-auto">
                       <div className="space-y-0.5">
-                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('ends_on')}</p>
-                         <p className={`text-xs font-black ${isExpired ? 'text-rose-500' : isCritical ? 'text-amber-600' : 'text-slate-600 dark:text-slate-400'}`}>
-                           {new Date(client.clientInfo.contractEndDate).toLocaleDateString()}
+                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">ينتهي في</p>
+                         <p className={`text-xs font-black ${isExpired ? 'text-rose-500' : isCritical ? 'text-rose-600' : 'text-slate-600 dark:text-slate-400'}`}>
+                           {new Date(client.clientInfo.contractEndDate).toLocaleDateString('ar-EG')}
                          </p>
                       </div>
                       <div className={`px-3 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-tighter ${
-                        isExpired ? 'bg-rose-500 text-white' :
-                        isCritical ? 'bg-amber-500 text-white' :
+                        isExpired ? 'bg-rose-500 text-white animate-pulse' :
+                        isCritical ? 'bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/40' :
                         'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400'
                       }`}>
-                        {isExpired ? t('expired_badge') : `${client.daysLeft} ${t('days_remaining')}`}
+                        {isExpired ? 'انتهت الصلاحية' : isCritical ? `⚠️ متبقي ${client.daysLeft} أيام` : `متبقي ${client.daysLeft} يوم`}
                       </div>
                     </div>
 
@@ -459,7 +467,7 @@ const AdminDashboard = () => {
                 );
               })}
             {clients.filter(c => c.clientInfo?.contractEndDate).length === 0 && (
-                <p className="text-slate-400 font-bold text-sm">{t('no_active_contracts')}</p>
+                <p className="text-slate-400 font-bold text-sm">لا يوجد عقود نشطة حالياً</p>
             )}
           </div>
         </div>

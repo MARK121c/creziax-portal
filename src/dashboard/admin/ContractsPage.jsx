@@ -148,26 +148,12 @@ const ContractsPage = () => {
     }
   };
 
-  const handleDownload = async (contract) => {
-    const id = toast.loading('جاري تجهيز الملف للتحميل الآمن...');
+  const handleDownload = (contract) => {
     try {
       const url = getFullFileUrl(contract.pdfUrl);
-      // Remove Authorization header to avoid Supabase 401 Unauthorized errors 
-      // (our internal JWT format is invalid for Supabase public buckets).
-      // We also use basic fetch to bypass Axios interceptors completely.
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch file');
-      const blobData = await response.blob();
-      const blobURL = window.URL.createObjectURL(blobData);
-      const link = document.createElement('a');
-      link.href = blobURL;
-      link.setAttribute('download', `${contract.title}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      toast.success('تم تحميل الملف بنجاح', { id });
+      window.open(url, '_blank', 'noopener,noreferrer');
     } catch (err) {
-      toast.error('فشل تحميل الملف، قد تحتاج لتسجيل الدخول مرة أخرى', { id });
+      toast.error('تعذر فتح الملف');
     }
   };
 
@@ -295,8 +281,8 @@ const ContractsPage = () => {
                             onClick={() => handleDownload(contract)}
                             className="flex items-center gap-2 px-6 py-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl font-black text-xs hover:bg-emerald-500 hover:text-white shadow-lg shadow-emerald-500/10 transition-all active:scale-95"
                           >
-                            <Download size={14} />
-                            <span>تنزيل (آمن)</span>
+                            <ExternalLink size={14} />
+                            <span>عرض الملف (آمن)</span>
                           </button>
                         )}
                         <button 
