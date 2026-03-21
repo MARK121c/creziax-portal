@@ -151,19 +151,16 @@ const ContractsPage = () => {
   const handleDownload = async (contract) => {
     const loadingToast = toast.loading('جاري تحضير العقد للعرض...');
     try {
-      const url = getFullFileUrl(contract.pdfUrl);
-      const token = localStorage.getItem('token');
+      let url = contract.pdfUrl;
+      // If the URL is external (Canva, etc), handle normally
+      if (url.startsWith('http') && !url.includes(import.meta.env.VITE_API_URL?.replace('/api', '') || 'none')) {
+        window.open(url, '_blank');
+        toast.dismiss(loadingToast);
+        return;
+      }
       
-      const res = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!res.ok) throw new Error('غير مصرح أو الملف غير موجود');
-      
-      const blob = await res.blob();
-      const blobURL = URL.createObjectURL(blob);
+      const res = await api.get(url, { responseType: 'blob' });
+      const blobURL = URL.createObjectURL(res.data);
       
       window.open(blobURL, '_blank');
       toast.dismiss(loadingToast);
