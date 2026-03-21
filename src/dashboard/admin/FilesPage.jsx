@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { 
   getProjectsAPI, 
-  updateProjectAPI 
+  updateProjectAPI,
+  deleteProjectAPI 
 } from '../../store/api';
 import { 
   Briefcase, 
@@ -10,6 +11,7 @@ import {
   Layout, 
   FileText, 
   Edit3, 
+  Trash2,
   X, 
   Loader2, 
   Link as LinkIcon,
@@ -79,6 +81,20 @@ const FilesPage = () => {
       toast.error(t('update_error') || 'خطأ في التحديث', { id: loadingToast });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteProject = async (id, name) => {
+    if (!window.confirm(`${t('confirm_delete_project', 'هل أنت متأكد من حذف هذا المشروع؟')} (${name})`)) return;
+    
+    const loadingToast = toast.loading(t('deleting') || 'جاري الحذف...');
+    try {
+      await deleteProjectAPI(id);
+      toast.success(t('delete_success') || 'تم الحذف بنجاح', { id: loadingToast });
+      addNotification(`${t('project_deleted') || 'تم حذف المشروع'}: ${name}`, 'error');
+      fetchData();
+    } catch (err) {
+      toast.error(t('delete_error') || 'خطأ في الحذف', { id: loadingToast });
     }
   };
 
@@ -201,12 +217,22 @@ const FilesPage = () => {
                        </p>
                     </td>
                     <td className="px-10 py-8 text-center">
-                       <button 
-                         onClick={() => handleQuickEdit(p)}
-                         className="p-3.5 text-slate-400 hover:text-brand-500 hover:bg-brand-500/10 bg-slate-100 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl transition-all active:scale-90"
-                       >
-                         <Edit3 size={18} />
-                       </button>
+                       <div className="flex items-center justify-center gap-2">
+                         <button 
+                           onClick={() => handleQuickEdit(p)}
+                           className="p-3.5 text-slate-400 hover:text-brand-500 hover:bg-brand-500/10 bg-slate-100 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl transition-all active:scale-90"
+                           title={t('edit', 'تعديل')}
+                         >
+                           <Edit3 size={18} />
+                         </button>
+                         <button 
+                           onClick={() => handleDeleteProject(p.id, p.name)}
+                           className="p-3.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 bg-slate-100 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl transition-all active:scale-90"
+                           title={t('delete', 'حذف')}
+                         >
+                           <Trash2 size={18} />
+                         </button>
+                       </div>
                     </td>
                   </tr>
                 ))}

@@ -124,17 +124,21 @@ const TeamPage = () => {
       };
       
       if (isEditing) {
-        await updateUserAPI(editId, payload);
+        const res = await updateUserAPI(editId, payload);
+        console.log("TeamPage: Update Member Success", res.data);
         toast.success(t('saved_successfully'), { id: loadingToast });
       } else {
-        await createUserAPI(payload);
+        const res = await createUserAPI(payload);
+        console.log("TeamPage: Create Member Success", res.data);
         toast.success(t('onboard_specialist'), { id: loadingToast });
       }
       
       setShowModal(false);
       resetForm();
-      fetchMembers();
+      console.log("TeamPage: Re-fetching members list...");
+      await fetchMembers();
     } catch (err) {
+      console.error("TeamPage: Member Action Error", err);
       toast.error(err.response?.data?.message || t('loading'), { id: loadingToast });
     } finally {
       setSubmitting(false);
@@ -482,7 +486,19 @@ const TeamPage = () => {
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('password', 'كلمة المرور')}</label>
                     <input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required={!isEditing} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all" placeholder={isEditing ? "••••••••" : ""} />
                   </div>
-                  <div className="space-y-2 md:col-span-2 lg:col-span-3">
+                  <div className="space-y-2 md:col-span-1 border-brand-500/20">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('account_role', 'نوع الحساب (Role)')}</label>
+                    <select 
+                      value={form.role} 
+                      onChange={e => setForm({...form, role: e.target.value})} 
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all appearance-none cursor-pointer"
+                    >
+                      <option value="TEAM">{t('team_member_role', 'عضو فريق عمل')}</option>
+                      <option value="ADMIN">{t('system_admin_role', 'مسؤول نظام (Admin)')}</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2 md:col-span-1 lg:col-span-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('phone_number', 'رقم الهاتف (WhatsApp)')}</label>
                     <div className="flex gap-2">
                       <select value={countryCode} onChange={e => setCountryCode(e.target.value)} className="w-24 px-3 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold focus:ring-4 focus:ring-brand-500/10">

@@ -309,15 +309,15 @@ const InvoicesPage = () => {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 md:gap-6">
         <div>
-          <h1 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white tracking-tight">المالية والفواتير</h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium mt-2 text-base md:text-lg">إدارة التحصيل ومستحقات فريق العمل</p>
+          <h1 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white tracking-tight">{t('finance_invoices_title', 'المالية والفواتير')}</h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium mt-2 text-base md:text-lg">{t('finance_invoices_desc', 'إدارة التحصيل ومستحقات فريق العمل')}</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={18} />
             <input 
               type="text"
-              placeholder="البحث في السجلات..."
+              placeholder={t('search_records', "البحث في السجلات...")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-11 pr-6 py-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all w-full sm:w-72 md:w-80 shadow-sm font-bold"
@@ -326,13 +326,13 @@ const InvoicesPage = () => {
           {activeTab === 'client' && (
             <button onClick={() => setShowInvoiceModal(true)} className="flex items-center justify-center gap-2 px-6 py-3.5 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-bold shadow-lg shadow-brand-600/20 hover:-translate-y-0.5 active:scale-95 transition-all duration-300">
               <Plus size={18} />
-              <span>إصدار فاتورة</span>
+              <span>{t('issue_invoice', 'إصدار فاتورة')}</span>
             </button>
           )}
           {activeTab === 'team' && (
             <button onClick={() => setShowDueModal(true)} className="flex items-center justify-center gap-2 px-6 py-3.5 bg-amber-500 hover:bg-amber-400 text-white rounded-2xl font-bold shadow-lg shadow-amber-500/20 hover:-translate-y-0.5 active:scale-95 transition-all duration-300">
               <Plus size={18} />
-              <span>تسجيل مستحق</span>
+              <span>{t('record_due', 'تسجيل مستحق')}</span>
             </button>
           )}
         </div>
@@ -345,14 +345,14 @@ const InvoicesPage = () => {
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'client' ? 'bg-white dark:bg-[#0a0a0c] text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
         >
           <Receipt size={16} />
-          فواتير العملاء (التحصيل)
+          {t('client_invoices_tab', 'فواتير العملاء (التحصيل)')}
         </button>
         <button
           onClick={() => setActiveTab('team')}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'team' ? 'bg-white dark:bg-[#0a0a0c] text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
         >
           <Gift size={16} />
-          مستحقات الفريق (الإنفاق)
+          {t('team_dues_tab', 'مستحقات الفريق (الإنفاق)')}
         </button>
       </div>
 
@@ -362,27 +362,27 @@ const InvoicesPage = () => {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-32">
               <Loader2 size={44} className="animate-spin text-brand-500 mb-6" />
-              <p className="font-bold tracking-widest uppercase text-xs text-slate-400">جاري التحميل...</p>
+              <p className="font-bold tracking-widest uppercase text-xs text-slate-400">{t('loading_dots', 'جاري التحميل...')}</p>
             </div>
           ) : filteredInvoices.length === 0 ? (
             <div className="text-center py-24 md:py-32">
               <div className="w-20 h-20 bg-slate-50 dark:bg-white/5 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 border border-slate-100 dark:border-white/5">
                 <Receipt size={36} className="text-slate-300 dark:text-slate-600" />
               </div>
-              <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3">لا توجد فواتير</h3>
-              <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto font-medium px-6">لا توجد فواتير تم إصدارها للعملاء حتى الآن.</p>
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3">{t('no_invoices', 'لا توجد فواتير')}</h3>
+              <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto font-medium px-6">{t('no_invoices_desc', 'لا توجد فواتير تم إصدارها للعملاء حتى الآن.')}</p>
             </div>
           ) : (
             <div className="overflow-x-auto font-bold">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b border-slate-100 dark:border-white/5">
-                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">الخدمة / الوصف</th>
-                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em] hidden md:table-cell">العميل</th>
-                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">طريقة الدفع</th>
-                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">المبلغ</th>
-                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">الحالة</th>
-                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em] text-right">الإجراءات</th>
+                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{t('service_col', 'الخدمة / الوصف')}</th>
+                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em] hidden md:table-cell">{t('client_col', 'العميل')}</th>
+                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{t('payment_method_col', 'طريقة الدفع')}</th>
+                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{t('amount_col', 'المبلغ')}</th>
+                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{t('status_col', 'الحالة')}</th>
+                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em] text-right">{t('actions', 'الإجراءات')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -470,20 +470,20 @@ const InvoicesPage = () => {
               <div className="w-20 h-20 bg-amber-50 dark:bg-amber-500/10 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 border border-amber-100 dark:border-amber-500/20">
                 <Gift size={36} className="text-amber-500" />
               </div>
-              <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3">دفتر المستحقات فارغ</h3>
-              <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto font-medium px-6">سجل التزاماتك المالية ومستحقات فريق العمل هنا لسهولة التتبع.</p>
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3">{t('empty_dues_title', 'دفتر المستحقات فارغ')}</h3>
+              <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto font-medium px-6">{t('empty_dues_desc', 'سجل التزاماتك المالية ومستحقات فريق العمل هنا لسهولة التتبع.')}</p>
             </div>
           ) : (
             <div className="overflow-x-auto font-bold">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/50 dark:bg-white/[0.02] border-b border-slate-100 dark:border-white/5">
-                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">العضو المرتبط</th>
-                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">الوصف</th>
-                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">المبلغ</th>
-                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">طريقة التحويل</th>
-                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">الحالة</th>
-                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em] text-right">الإجراءات</th>
+                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{t('linked_member_col', 'العضو المرتبط')}</th>
+                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{t('description_col', 'الوصف')}</th>
+                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{t('amount_col', 'المبلغ')}</th>
+                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{t('transfer_method_col', 'طريقة التحويل')}</th>
+                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{t('status_col', 'الحالة')}</th>
+                    <th className="px-6 md:px-10 py-5 text-xs font-black text-slate-400 uppercase tracking-[0.2em] text-right">{t('actions', 'الإجراءات')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-white/5">
@@ -532,7 +532,7 @@ const InvoicesPage = () => {
                       </td>
                       <td className="px-6 md:px-10 py-5 md:py-7 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => handleDownloadDuePDF(due)} className="p-3 text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 rounded-2xl transition-all" title="تحميل إيصال الدفع">
+                          <button onClick={() => handleDownloadDuePDF(due)} className="p-3 text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 rounded-2xl transition-all" title={t('download_receipt', 'تحميل إيصال الدفع')}>
                             <FileText size={18} />
                           </button>
                           <button onClick={() => handleDeleteDue(due.id)} className="p-3 text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 rounded-2xl transition-all">
@@ -556,8 +556,8 @@ const InvoicesPage = () => {
           <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative z-10 overflow-hidden max-h-[90vh] overflow-y-auto">
             <div className="px-8 py-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/30 dark:bg-white/[0.01] sticky top-0 z-10">
               <div>
-                <h2 className="text-xl font-black text-slate-800 dark:text-white">إصدار فاتورة جديدة</h2>
-                <p className="text-sm font-medium text-slate-500 mt-1">توليد PDF عالي الجودة لعملائك</p>
+                <h2 className="text-xl font-black text-slate-800 dark:text-white">{t('issue_new_invoice_title', 'إصدار فاتورة جديدة')}</h2>
+                <p className="text-sm font-medium text-slate-500 mt-1">{t('issue_new_invoice_desc', 'توليد PDF عالي الجودة لعملائك')}</p>
               </div>
               <button onClick={() => setShowInvoiceModal(false)} className="p-3 text-slate-400 hover:text-slate-800 dark:hover:text-white bg-slate-100 dark:bg-white/5 rounded-2xl transition-all">
                 <X size={20} />
@@ -567,48 +567,48 @@ const InvoicesPage = () => {
               {invoiceError && <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-sm font-bold">{invoiceError}</div>}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">رقم الفاتورة (تلقائي/يدوي)</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('invoice_number_label', 'رقم الفاتورة (تلقائي/يدوي)')}</label>
                   <input value={invoiceForm.invoiceNumber} onChange={e => setInvoiceForm({...invoiceForm, invoiceNumber: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-mono font-bold" placeholder="INV-2026-001" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">العميل المرتبط</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('linked_client_label', 'العميل المرتبط')}</label>
                   <select value={invoiceForm.clientId} onChange={e => {
                     const selectedClient = clients.find(c => c.id === e.target.value);
                     const clientCurrency = selectedClient?.clientInfo?.preferredCurrency || 'USD';
                     setInvoiceForm({...invoiceForm, clientId: e.target.value, currency: clientCurrency});
                   }} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 appearance-none font-bold">
-                    <option value="">اختر العميل المعني...</option>
+                    <option value="">{t('select_client_placeholder', 'اختر العميل المعني...')}</option>
                     {clients.map(c => <option key={c.id} value={c.id}>{c.user?.firstName} {c.user?.lastName}</option>)}
                   </select>
                 </div>
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">نوع الخدمة / Service Type</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('service_type_label', 'نوع الخدمة / Service Type')}</label>
                 <select 
                   value={invoiceForm.service} 
                   onChange={e => setInvoiceForm({...invoiceForm, service: e.target.value})} 
                   required 
                   className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold appearance-none cursor-pointer"
                 >
-                  <option value="">اختر نوع الخدمة...</option>
+                  <option value="">{t('select_service_placeholder', 'اختر نوع الخدمة...')}</option>
                   <option value="Video Editing / تعديل فيديو">Video Editing / تعديل فيديو</option>
                   <option value="YouTube Management / إدارة قناة">YouTube Management / إدارة قناة</option>
                   <option value="Graphic Design / تصميم جرافيك">Graphic Design / تصميم جرافيك</option>
                   <option value="Voice Over / تعليق صوتي">Voice Over / تعليق صوتي</option>
                   <option value="Consultation / استشارة">Consultation / استشارة</option>
-                  <option value="Online Service">خدمات أونلاين</option>
+                  <option value="Online Service">{t('online_service', 'خدمات أونلاين')}</option>
                 </select>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">المبلغ الأساسي (USD)</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('base_amount_usd', 'المبلغ الأساسي (USD)')}</label>
                   <div className="relative">
                     <DollarSign size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-brand-500" />
                     <input type="number" step="0.01" min="0" value={invoiceForm.amount} onChange={e => setInvoiceForm({...invoiceForm, amount: e.target.value})} required className="w-full pl-12 pr-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-black" placeholder="0.00" />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">العملة الموازية (للفاتورة)</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('parallel_currency_label', 'العملة الموازية (للفاتورة)')}</label>
                   <select value={invoiceForm.currency} onChange={e => {
                     const newCurrency = e.target.value;
                     // Reset exchange rate to 1 if switched back to USD
@@ -627,7 +627,7 @@ const InvoicesPage = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">سعر الصرف (Exchange Rate)</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('exchange_rate_label', 'سعر الصرف (Exchange Rate)')}</label>
                   <input type="number" step="0.0001" min="0" value={invoiceForm.exchangeRate} onChange={e => setInvoiceForm({...invoiceForm, exchangeRate: e.target.value})} disabled={invoiceForm.currency === 'USD'} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 disabled:opacity-50 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-black" placeholder={invoiceForm.currency === 'USD' ? '1.00' : "مثال: 50.5"} />
                 </div>
               </div>
@@ -636,13 +636,13 @@ const InvoicesPage = () => {
               {invoiceForm.amount && invoiceForm.currency !== 'USD' && (
                 <div className="p-5 rounded-2xl bg-brand-500/5 border border-brand-500/10 flex items-center justify-between">
                   <div className="space-y-1">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">معاينة الحساب الرياضي (Math Preview)</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('math_preview', 'معاينة الحساب الرياضي (Math Preview)')}</p>
                     <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
                       {Number(invoiceForm.amount)} USD × {invoiceForm.exchangeRate || 1}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-black text-brand-500 uppercase">القيمة النهائية المقدرة</p>
+                    <p className="text-xs font-black text-brand-500 uppercase">{t('final_estimated_value', 'القيمة النهائية المقدرة')}</p>
                     <p className="text-2xl font-black text-slate-800 dark:text-white">
                       {Number(Number(invoiceForm.amount) * (invoiceForm.exchangeRate || 1)).toLocaleString()} {invoiceForm.currency}
                     </p>
@@ -651,9 +651,9 @@ const InvoicesPage = () => {
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="sm:col-span-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">طريقة الدفع (Payment Method)</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('payment_method_label', 'طريقة الدفع (Payment Method)')}</label>
                   <select value={invoiceForm.paymentMethod} onChange={e => setInvoiceForm({...invoiceForm, paymentMethod: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 appearance-none font-bold">
-                    <option value="">اختر بوابة الدفع...</option>
+                    <option value="">{t('select_payment_gateway', 'اختر بوابة الدفع...')}</option>
                     {paymentMethods.map(method => <option key={method} value={method}>{method}</option>)}
                   </select>
                 </div>
@@ -675,9 +675,9 @@ const InvoicesPage = () => {
                 </div>
               )}
               <div className="pt-4 flex gap-4 border-t border-slate-100 dark:border-white/5">
-                <button type="button" onClick={() => setShowInvoiceModal(false)} className="flex-1 py-4 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all">إلغاء</button>
+                <button type="button" onClick={() => setShowInvoiceModal(false)} className="flex-1 py-4 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all">{t('cancel', 'إلغاء')}</button>
                 <button type="submit" disabled={submittingInvoice} className="flex-1 py-4 bg-brand-600 hover:bg-brand-500 disabled:bg-slate-300 text-white font-bold rounded-2xl shadow-lg shadow-brand-600/20 transition-all active:scale-95">
-                  {submittingInvoice ? <Loader2 className="animate-spin mx-auto" size={24} /> : 'تأكيد وإصدار الفاتورة'}
+                  {submittingInvoice ? <Loader2 className="animate-spin mx-auto" size={24} /> : t('confirm_issue_invoice', 'تأكيد وإصدار الفاتورة')}
                 </button>
               </div>
             </form>
@@ -692,8 +692,8 @@ const InvoicesPage = () => {
           <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-xl shadow-2xl relative z-10 overflow-hidden max-h-[90vh] overflow-y-auto">
             <div className="px-8 py-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-slate-50/30 dark:bg-white/[0.01] sticky top-0 z-10">
               <div>
-                <h2 className="text-xl font-black text-slate-800 dark:text-white">تسجيل مستحق مالي</h2>
-                <p className="text-sm font-medium text-slate-500 mt-1">توثيق رواتب ومستحقات فريق العمل</p>
+                <h2 className="text-xl font-black text-slate-800 dark:text-white">{t('record_financial_due_title', 'تسجيل مستحق مالي')}</h2>
+                <p className="text-sm font-medium text-slate-500 mt-1">{t('record_financial_due_desc', 'توثيق رواتب ومستحقات فريق العمل')}</p>
               </div>
               <button onClick={() => setShowDueModal(false)} className="p-3 text-slate-400 hover:text-slate-800 dark:hover:text-white bg-slate-100 dark:bg-white/5 rounded-2xl transition-all">
                 <X size={20} />
@@ -702,28 +702,28 @@ const InvoicesPage = () => {
             <form onSubmit={handleCreateDue} className="p-8 space-y-6">
               {dueError && <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-sm font-bold">{dueError}</div>}
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">العضو المرتبط</label>
-                <select value={dueForm.userId} onChange={e => setDueForm({...dueForm, userId: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 appearance-none font-bold">
-                  <option value="">اختر العضو من الفريق...</option>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('linked_member_label', 'العضو المرتبط')}</label>
+                <select value={dueForm.userId} onChange={e => setForm({...dueForm, userId: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 appearance-none font-bold">
+                  <option value="">{t('select_member_placeholder', 'اختر العضو من الفريق...')}</option>
                   {teamMembers.map(u => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">وصف المستحق</label>
-                <textarea value={dueForm.description} onChange={e => setDueForm({...dueForm, description: e.target.value})} required rows={2} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold resize-none" placeholder="مثال: راتب شهر مارس / حساب فيديو كذا..." />
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('due_description_label', 'وصف المستحق')}</label>
+                <textarea value={dueForm.description} onChange={e => setForm({...dueForm, description: e.target.value})} required rows={2} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold resize-none" placeholder={t('due_description_placeholder', 'راتب شهر مارس / حساب فيديو كذا...')} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">المبلغ المالي</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('amount_label', 'المبلغ المالي')}</label>
                   <div className="relative">
                     <DollarSign size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-amber-500" />
-                    <input type="number" step="0.01" min="0" value={dueForm.amount} onChange={e => setDueForm({...dueForm, amount: e.target.value})} required className="w-full pl-12 pr-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-black" placeholder="0.00" />
+                    <input type="number" step="0.01" min="0" value={dueForm.amount} onChange={e => setForm({...dueForm, amount: e.target.value})} required className="w-full pl-12 pr-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-black" placeholder="0.00" />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">طريقة التحويل (Transfer Method)</label>
-                  <select value={dueForm.transferMethod} onChange={e => setDueForm({...dueForm, transferMethod: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 appearance-none font-bold">
-                    <option value="">كيف ستقوم بالدفع له...</option>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('transfer_method_label', 'طريقة التحويل (Transfer Method)')}</label>
+                  <select value={dueForm.transferMethod} onChange={e => setForm({...dueForm, transferMethod: e.target.value})} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 appearance-none font-bold">
+                    <option value="">{t('select_transfer_method_placeholder', 'كيف ستقوم بالدفع له...')}</option>
                     {transferMethods.map(method => <option key={method} value={method}>{method}</option>)}
                   </select>
                 </div>
@@ -745,9 +745,9 @@ const InvoicesPage = () => {
                 </div>
               )}
               <div className="pt-4 flex gap-4 border-t border-slate-100 dark:border-white/5">
-                <button type="button" onClick={() => setShowDueModal(false)} className="flex-1 py-4 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all">إلغاء</button>
+                <button type="button" onClick={() => setShowDueModal(false)} className="flex-1 py-4 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all">{t('cancel', 'إلغاء')}</button>
                 <button type="submit" disabled={submittingDue} className="flex-1 py-4 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 text-white font-bold rounded-2xl shadow-lg shadow-amber-500/20 transition-all active:scale-95">
-                  {submittingDue ? <Loader2 className="animate-spin mx-auto" size={24} /> : 'تسجيل وتوثيق المستحق'}
+                  {submittingDue ? <Loader2 className="animate-spin mx-auto" size={24} /> : t('confirm_record_due', 'تسجيل وتوثيق المستحق')}
                 </button>
               </div>
             </form>
