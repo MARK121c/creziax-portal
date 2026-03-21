@@ -205,7 +205,7 @@ const ProjectsPage = () => {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={18} />
             <input 
               type="text"
-              placeholder="ابحث عن مشروع أو عميل..."
+              placeholder={t('search_project_client', "Search for project or client")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-11 pr-6 py-4 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 w-full sm:w-72 md:w-80 shadow-sm font-bold"
@@ -289,7 +289,7 @@ const ProjectsPage = () => {
                     </div>
                     <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                        <Layout size={14} className="text-brand-500" />
-                       {p.tasks?.length || 0} مهام
+                       {t('tasks_count', { count: p.tasks?.length || 0 })}
                     </div>
                   </div>
 

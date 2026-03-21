@@ -207,8 +207,8 @@ const DashboardLayout = () => {
                 <Megaphone size={20} className="text-amber-500" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-white">رسالة النظام الإعلانية</h3>
-                <p className="text-xs text-slate-400">ستظهر للجميع عند دخولهم للنظام</p>
+                <h3 className="text-lg font-black text-slate-800 dark:text-white">{t('system_broadcast_title', 'رسالة النظام الإعلانية')}</h3>
+                <p className="text-xs text-slate-400">{t('system_broadcast_subtitle', 'ستظهر للجميع عند دخولهم للنظام')}</p>
               </div>
               <button 
                 onClick={() => setIsEditingBroadcast(false)} 

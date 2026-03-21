@@ -163,7 +163,7 @@ const ClientsPage = () => {
       const msg = err.response?.data?.message || t('error_general');
       setError(msg);
       toast.error(msg, { id: loadingToast });
-      addNotification(`فشل العملية: ${msg}`, 'error');
+      addNotification(`${t('operation_failed')}: ${msg}`, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -214,11 +214,11 @@ const ClientsPage = () => {
     try { 
       await deleteUserAPI(id); 
       toast.success(t('loading'), { id: loadingToast });
-      addNotification(`تم حذف العميل: ${name}`, 'success');
+      addNotification(`${t('client_deleted')}: ${name}`, 'success');
       fetchClients(); 
     } catch (err) {
       toast.error(t('loading'), { id: loadingToast });
-      addNotification(`فشل حذف العميل: ${name}`, 'error');
+      addNotification(`${t('client_delete_failed')}: ${name}`, 'error');
     }
   };
 
@@ -227,7 +227,7 @@ const ClientsPage = () => {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("حجم اللوجو يجب أن يكون أقل من 5 ميجا");
+      toast.error(t('image_too_large_5mb', "حجم اللوجو يجب أن يكون أقل من 5 ميجا"));
       return;
     }
 
@@ -349,7 +349,7 @@ const ClientsPage = () => {
               onChange={(e) => setActiveFilter({...activeFilter, tier: e.target.value})}
               className="bg-transparent text-xs font-bold text-slate-600 dark:text-slate-400 focus:outline-none px-2 py-1.5 cursor-pointer"
             >
-              <option value="ALL">{t('tier')}: الكل</option>
+              <option value="ALL">{t('tier')}: {t('all_filter')}</option>
               {tiers.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
             <select 
@@ -357,7 +357,7 @@ const ClientsPage = () => {
               onChange={(e) => setActiveFilter({...activeFilter, health: e.target.value})}
               className="bg-transparent text-xs font-bold text-slate-600 dark:text-slate-400 focus:outline-none px-2 py-1.5 cursor-pointer"
             >
-              <option value="ALL">{t('health_score')}: الكل</option>
+              <option value="ALL">{t('health_score')}: {t('all_filter')}</option>
               {healthScores.map(h => <option key={h.value} value={h.value}>{h.emoji} {t(h.label)}</option>)}
             </select>
           </div>
@@ -433,7 +433,7 @@ const ClientsPage = () => {
                             </div>
                             <div className="flex items-center gap-2 mt-1.5">
                                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1.5 uppercase tracking-wide">
-                                <Building2 size={12} className="text-brand-500 flex-shrink-0" /> {c.clientInfo?.company || 'Creziax Partner'}
+                                <Building2 size={12} className="text-brand-500 flex-shrink-0" /> {c.clientInfo?.company || t('creziax_partner', 'Creziax Partner')}
                               </p>
                               {c.clientInfo?.tier && c.clientInfo.tier !== 'REGULAR' && (
                                 <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 text-[9px] font-black uppercase tracking-tighter border border-slate-200 dark:border-white/10">
@@ -456,7 +456,7 @@ const ClientsPage = () => {
                               </div>
                             </div>
                           ) : (
-                            <span className="text-xs font-bold text-slate-400 italic">No Active Contract</span>
+                            <span className="text-xs font-bold text-slate-400 italic">{t('no_active_contract', 'No Active Contract')}</span>
                           )}
                           <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">
                             {c.clientInfo?.contractEndDate ? new Date(c.clientInfo.contractEndDate).toLocaleDateString() : '--'}
@@ -741,7 +741,7 @@ const ClientsPage = () => {
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('total_paid')}</label>
                        <div className="w-full px-5 py-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-sm font-black text-emerald-600 flex items-center justify-between">
                           <span>$ {(clients.find(c => (c.clientInfo?.id || c.id) === editId)?.totalPaid || 0).toLocaleString()}</span>
-                          <span className="text-[9px] uppercase tracking-tighter">Verified Ledger</span>
+                          <span className="text-[9px] uppercase tracking-tighter">{t('verified_ledger', 'Verified Ledger')}</span>
                       </div>
                     </div>
                   )}

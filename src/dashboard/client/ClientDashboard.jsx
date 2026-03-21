@@ -185,28 +185,28 @@ const ClientDashboard = () => {
               <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-lg shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95">
                 <div className="p-8 md:p-10">
                   <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">إثبات الدفع</h2>
+                    <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">{t('payment_proof', 'إثبات الدفع')}</h2>
                     <button onClick={() => setShowPayModal(false)} className="text-slate-400 hover:text-slate-600"><X size={24} /></button>
                   </div>
                   <form onSubmit={handlePaySubmit} className="space-y-6">
                     <div className="p-6 bg-slate-50 dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/10">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">قيمة الفاتورة المستحقة</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{t('amount_due_label', 'قيمة الفاتورة المستحقة')}</p>
                       <p className="text-3xl font-black text-brand-600 tracking-tighter" dir="ltr">
                         {selectedInvoice?.currency !== 'USD' && selectedInvoice?.exchangeRate && selectedInvoice?.exchangeRate > 1
                           ? `${Number(selectedInvoice.amount * selectedInvoice.exchangeRate).toLocaleString()} ${selectedInvoice.currency}`
                           : `$${selectedInvoice?.amount.toLocaleString()} USD`}
                       </p>
                       {selectedInvoice?.currency !== 'USD' && selectedInvoice?.exchangeRate && selectedInvoice?.exchangeRate > 1 && (
-                        <p className="text-xs font-bold text-slate-400 mt-2">يعادل بالدولار: ${selectedInvoice?.amount.toLocaleString()} USD</p>
+                        <p className="text-xs font-bold text-slate-400 mt-2">{t('equivalent_in_usd', 'يعادل بالدولار')}: ${selectedInvoice?.amount.toLocaleString()} USD</p>
                       )}
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">كود المعاملة أو المرجع</label>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('transaction_id_label', 'كود المعاملة أو المرجع')}</label>
                       <input 
                         required
                         value={transactionId}
                         onChange={(e) => setTransactionId(e.target.value)}
-                        placeholder="أدخل كود التحويل هنا..."
+                        placeholder={t('transaction_id_placeholder', 'أدخل كود التحويل هنا...')}
                         className="w-full px-6 py-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all font-mono"
                       />
                     </div>
@@ -215,7 +215,7 @@ const ClientDashboard = () => {
                       disabled={submittingPayment}
                       className="w-full py-5 bg-black dark:bg-brand-600 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50"
                     >
-                      {submittingPayment ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'تأكيد الإرسال للتحقق'}
+                      {submittingPayment ? <Loader2 className="animate-spin mx-auto" size={20} /> : t('confirm_submission', 'تأكيد الإرسال للتحقق')}
                     </button>
                   </form>
                 </div>

@@ -14,13 +14,13 @@ import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
 
 const jobTitles = [
-  { value: 'ALL', label: 'الكل (All Roles)' },
+  { value: 'ALL', label: 'all_roles' },
   { value: 'Video Editor', label: 'Video Editor' },
   { value: 'Media Buyer', label: 'Media Buyer' },
   { value: 'Graphic Designer', label: 'Graphic Designer' },
   { value: 'Account Manager', label: 'Account Manager' },
   { value: 'Copywriter', label: 'Copywriter' },
-  { value: 'Custom', label: 'أخرى (Custom)' },
+  { value: 'Custom', label: 'other_custom' },
 ];
 
 const healthScores = [
@@ -82,12 +82,12 @@ const TeamPage = () => {
   const addNotification = useNotificationStore(state => state.addNotification);
   
   const availablePermissions = [
-    { id: 'CLIENTS', label: 'إدارة العملاء', icon: ShieldCheck },
-    { id: 'TEAM', label: 'إدارة الفريق', icon: ShieldAlert },
-    { id: 'PROJECTS', label: 'إدارة المشاريع', icon: ShieldCheck },
-    { id: 'FINANCES', label: 'المالية والفواتير', icon: ShieldAlert },
-    { id: 'MESSAGES', label: 'الرسائل والتواصل', icon: Mail },
-    { id: 'FILES', label: 'إدارة الملفات', icon: ShieldCheck },
+    { id: 'CLIENTS', label: 'manage_clients_perm', icon: ShieldCheck },
+    { id: 'TEAM', label: 'manage_team_perm', icon: ShieldAlert },
+    { id: 'PROJECTS', label: 'manage_projects_perm', icon: ShieldCheck },
+    { id: 'FINANCES', label: 'finances_invoices_perm', icon: ShieldAlert },
+    { id: 'MESSAGES', label: 'messages_comm_perm', icon: Mail },
+    { id: 'FILES', label: 'manage_files_perm', icon: ShieldCheck },
   ];
 
   const fetchMembers = async () => {
@@ -203,7 +203,7 @@ const TeamPage = () => {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("حجم الصورة يجب أن يكون أقل من 5 ميجا");
+      toast.error(t('image_size_limit', "حجم الصورة يجب أن يكون أقل من 5 ميجا"));
       return;
     }
     setUploadingAvatar(true);
@@ -212,24 +212,24 @@ const TeamPage = () => {
     try {
       const { data } = await uploadImageAPI(formData);
       setForm({ ...form, avatarUrl: data.url });
-      toast.success("تم رفع الصورة بنجاح");
+      toast.success(t('image_upload_success', "تم رفع الصورة بنجاح"));
     } catch (err) {
-      toast.error("فشل رفع الصورة");
+      toast.error(t('image_upload_failed', "فشل رفع الصورة"));
     } finally {
       setUploadingAvatar(false);
     }
   };
 
   const handleResetPassword = async () => {
-    if (!newPassword) return toast.error("أدخل كلمة المرور الجديدة");
-    const loadingToast = toast.loading("جاري التحديث...");
+    if (!newPassword) return toast.error(t('enter_new_password', "أدخل كلمة المرور الجديدة"));
+    const loadingToast = toast.loading(t('updating_ellipsis', "جاري التحديث..."));
     try {
       await resetPasswordAPI(selectedMember.id, newPassword);
-      toast.success("تم تغيير كلمة المرور بنجاح", { id: loadingToast });
+      toast.success(t('password_changed_success', "تم تغيير كلمة المرور بنجاح"), { id: loadingToast });
       setShowPasswordModal(false);
       setNewPassword('');
     } catch (err) {
-      toast.error("فشل التغيير", { id: loadingToast });
+      toast.error(t('password_change_failed', "فشل التغيير"), { id: loadingToast });
     }
   };
 
@@ -276,7 +276,7 @@ const TeamPage = () => {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={18} />
             <input 
               type="text"
-              placeholder="بحث بالاسم، البريد، أو الوظيفة..."
+              placeholder={t('search_team_placeholder', "بحث بالاسم، البريد، أو الوظيفة...")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-11 pr-6 py-3.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-[1.25rem] text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all w-full sm:w-72 md:w-80 shadow-sm font-bold"
@@ -293,16 +293,16 @@ const TeamPage = () => {
               onChange={(e) => setActiveFilter({...activeFilter, position: e.target.value})}
               className="bg-transparent text-xs font-black text-slate-600 dark:text-slate-400 focus:outline-none px-2 py-1.5 cursor-pointer appearance-none"
             >
-              {jobTitles.map(jt => <option key={jt.value} value={jt.value}>{jt.label}</option>)}
+              {jobTitles.map(jt => <option key={jt.value} value={jt.value}>{t(jt.label, jt.label)}</option>)}
             </select>
             <select 
               value={activeFilter.status}
               onChange={(e) => setActiveFilter({...activeFilter, status: e.target.value})}
               className="bg-transparent text-xs font-black text-slate-600 dark:text-slate-400 focus:outline-none px-2 py-1.5 cursor-pointer appearance-none"
             >
-              <option value="ALL">Status: All</option>
-              <option value="ACTIVE">Active Only</option>
-              <option value="INACTIVE">Inactive Only</option>
+              <option value="ALL">Status: {t('all_label', 'الكل')}</option>
+              <option value="ACTIVE">{t('active_status', 'نشط')}</option>
+              <option value="INACTIVE">{t('inactive_status', 'غير نشط')}</option>
             </select>
           </div>
 
@@ -327,8 +327,8 @@ const TeamPage = () => {
             <div className="w-20 h-20 bg-slate-50 dark:bg-white/5 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
                <UserX className="text-slate-300" size={32} />
             </div>
-            <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">No members found</h3>
-            <p className="text-slate-500 font-medium mt-2">جرب تعديل الفلترة أو البحث باسم آخر</p>
+            <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight">{t('no_members_found', 'No members found')}</h3>
+            <p className="text-slate-500 font-medium mt-2">{t('adjust_filters_search', 'جرب تعديل الفلترة أو البحث باسم آخر')}</p>
           </div>
         ) : filteredMembers.map(m => (
           <div key={m.id} className={`group relative bg-white dark:bg-[#0a0a0c]/40 border rounded-[2.5rem] p-8 shadow-xl transition-all duration-500 hover:-translate-y-2 ${
@@ -395,14 +395,14 @@ const TeamPage = () => {
                   className="w-full py-3.5 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-2xl transition-all flex items-center justify-center gap-2 text-sm shadow-xl shadow-brand-600/20 active:scale-95 group-hover:-translate-y-1"
                 >
                   <ExternalLink size={18} />
-                  فتح بروفايل العضو المستقل
+                  {t('open_freelancer_profile', 'فتح بروفايل العضو المستقل')}
                 </Link>
                 <div className="flex gap-2 w-full">
                   <button 
                     onClick={() => openEditModal(m)}
                     className="flex-1 p-2.5 bg-slate-50 dark:bg-white/5 text-slate-500 hover:text-brand-500 hover:bg-slate-100 dark:hover:bg-white/10 rounded-xl transition-all font-bold text-xs flex items-center justify-center gap-2"
                   >
-                    <Settings size={14} /> تعديل
+                    <Settings size={14} /> {t('edit_label', 'تعديل')}
                   </button>
                   <button 
                     onClick={() => { setSelectedMember(m); setShowPasswordModal(true); }}
@@ -440,7 +440,7 @@ const TeamPage = () => {
                 </div>
                 <div>
                   <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight uppercase">
-                    {isEditing ? 'تعديل بيانات العضو' : 'إضافة عضو جديد للفريق'}
+                    {isEditing ? t('edit_member_data', 'تعديل بيانات العضو') : t('add_new_team_member', 'إضافة عضو جديد للفريق')}
                   </h2>
                   <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-[0.2em]">{isEditing ? 'UPDATE PARTNER ACCESS' : 'CREATE TEAM MEMBER PROFILE'}</p>
                 </div>
@@ -458,32 +458,32 @@ const TeamPage = () => {
                   <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10">
                     <User size={16} />
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">البيانات الأساسية (Basic Info)</h3>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">{t('basic_info_label', 'البيانات الأساسية (Basic Info)')}</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">الاسم الأول</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('first_name', 'الاسم الأول')}</label>
                     <input value={form.firstName} onChange={e => setForm({...form, firstName: e.target.value})} required className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">الاسم الأخير</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('last_name', 'الاسم الأخير')}</label>
                     <input value={form.lastName} onChange={e => setForm({...form, lastName: e.target.value})} required className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">اسم الشركة (Work Entity)</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('work_entity', 'اسم الشركة (Work Entity)')}</label>
                     <input value={form.company} onChange={e => setForm({...form, company: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all" placeholder="Creziax Associate" />
                   </div>
                   <div className="space-y-2 lg:col-span-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">البريد الإلكتروني</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('email_address', 'البريد الإلكتروني')}</label>
                     <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">كلمة المرور</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('password', 'كلمة المرور')}</label>
                     <input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required={!isEditing} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all" placeholder={isEditing ? "••••••••" : ""} />
                   </div>
                   <div className="space-y-2 md:col-span-2 lg:col-span-3">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">رقم الهاتف (WhatsApp)</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('phone_number', 'رقم الهاتف (WhatsApp)')}</label>
                     <div className="flex gap-2">
                       <select value={countryCode} onChange={e => setCountryCode(e.target.value)} className="w-24 px-3 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold focus:ring-4 focus:ring-brand-500/10">
                         {Object.entries(COUNTRY_FLAGS).map(([code, iso]) => (
@@ -509,26 +509,26 @@ const TeamPage = () => {
                   <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10">
                     <Briefcase size={16} />
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">البيانات الوظيفية (Job Details)</h3>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">{t('job_details_label', 'البيانات الوظيفية (Job Details)')}</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">المسمى الوظيفي</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('job_position', 'المسمى الوظيفي')}</label>
                     <select value={form.position} onChange={e => setForm({...form, position: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10">
-                      {jobTitles.filter(jt => jt.value !== 'ALL').map(jt => <option key={jt.value} value={jt.value}>{jt.label}</option>)}
+                      {jobTitles.filter(jt => jt.value !== 'ALL').map(jt => <option key={jt.value} value={jt.value}>{t(jt.label, jt.label)}</option>)}
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">القنوات المدارة</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('managed_channels_count', 'القنوات المدارة')}</label>
                     <input type="number" value={form.managedChannels} onChange={e => setForm({...form, managedChannels: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">رابط Notion الخاص بالعضو</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('member_notion_link', 'رابط Notion الخاص بالعضو')}</label>
                     <input value={form.notionLink} onChange={e => setForm({...form, notionLink: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" placeholder="https://notion.so/..." />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">رابط Telegram</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('telegram_link', 'رابط Telegram')}</label>
                     <input value={form.telegram} onChange={e => setForm({...form, telegram: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10" placeholder="@username" />
                   </div>
                 </div>
@@ -540,24 +540,24 @@ const TeamPage = () => {
                   <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-emerald-500 border border-emerald-500/10">
                     <DollarSign size={16} />
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">البيانات المالية (Financials)</h3>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">{t('financials_label', 'البيانات المالية (Financials)')}</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">إجمالي الراتب ($)</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('total_salary_label', 'إجمالي الراتب ($)')}</label>
                     <input type="number" value={form.monthlySalary} onChange={e => setForm({...form, monthlySalary: e.target.value})} className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-emerald-600 dark:text-emerald-400 font-black focus:ring-4 focus:ring-emerald-500/10" />
                   </div>
                   {isEditing && (
                     <>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ما تم دفعه</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('paid_amount', 'ما تم دفعه')}</label>
                         <div className="w-full px-6 py-4 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-500 font-bold opacity-60">
                           ${selectedMember?.finance?.paid || 0}
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">المتبقي</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('remaining_amount', 'المتبقي')}</label>
                         <div className="w-full px-6 py-4 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-500 font-bold opacity-60">
                           ${selectedMember?.finance?.remaining || 0}
                         </div>
@@ -573,18 +573,18 @@ const TeamPage = () => {
                   <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center text-brand-500 border border-slate-100 dark:border-white/10">
                     <Heart size={16} />
                   </div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">حالة الحساب والصحة (Vitals)</h3>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-[0.2em]">{t('vitals_label', 'حالة الحساب والصحة (Vitals)')}</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">الحالة (Account Status)</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('account_status_label', 'الحالة (Account Status)')}</label>
                     <button type="button" onClick={() => setForm({...form, isActive: !form.isActive})} className={`w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl border-2 transition-all font-black text-xs ${form.isActive ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600' : 'bg-rose-500/10 border-rose-500/20 text-rose-600'}`}>
-                      {form.isActive ? 'ACTIVE / مُفعل' : 'INACTIVE / مُعطل'}
+                      {form.isActive ? t('active_muaffal', 'ACTIVE / مُفعل') : t('inactive_muattal', 'INACTIVE / مُعطل')}
                     </button>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">الحالة الصحية (Health Score)</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('health_score_label', 'الحالة الصحية (Health Score)')}</label>
                     <div className="flex gap-2">
                       {healthScores.map(score => (
                         <button key={score.value} type="button" onClick={() => setForm({...form, healthScore: score.value})} className={`flex-1 py-4 rounded-2xl border-2 transition-all text-xl ${form.healthScore === score.value ? 'bg-white dark:bg-white/5 border-brand-500 shadow-lg' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 opacity-40'}`}>
@@ -594,7 +594,7 @@ const TeamPage = () => {
                     </div>
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ملاحظات داخلية</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('internal_notes_hint', 'ملاحظات داخلية')}</label>
                     <textarea value={form.internalNotes} onChange={e => setForm({...form, internalNotes: e.target.value})} rows="3" className="w-full px-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-slate-800 dark:text-white font-bold focus:ring-4 focus:ring-brand-500/10 transition-all resize-none" />
                   </div>
                 </div>
@@ -603,10 +603,10 @@ const TeamPage = () => {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 pt-8 sticky bottom-0 bg-white dark:bg-[#0a0a0c] z-10 transition-all">
                 <button type="submit" disabled={submitting} className="flex-[3] py-5 bg-brand-600 hover:bg-brand-500 text-white font-black rounded-[1.5rem] shadow-2xl shadow-brand-600/30 hover:-translate-y-1 active:scale-95 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3">
-                  {submitting ? <Loader2 className="animate-spin" /> : (isEditing ? 'حفظ التعديلات' : 'إضافة عضو جديد')}
+                  {submitting ? <Loader2 className="animate-spin" /> : (isEditing ? t('save_member_changes', 'حفظ التعديلات') : t('add_new_member', 'إضافة عضو جديد'))}
                 </button>
                 <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-5 bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 font-black rounded-[1.5rem] hover:bg-slate-200 dark:hover:bg-white/10 transition-all text-xs uppercase tracking-[0.2em]">
-                  {t('cancel')}
+                  {t('cancel', 'إلغاء')}
                 </button>
               </div>
             </form>
@@ -623,13 +623,13 @@ const TeamPage = () => {
                 <div className="w-16 h-16 bg-brand-500/10 text-brand-500 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-brand-500/10 shadow-inner">
                    <Key size={32} />
                 </div>
-                <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">إعادة تعيين كلمة المرور</h3>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-black uppercase tracking-widest">RESET ACCESS FOR: {selectedMember?.firstName}</p>
+                <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">{t('reset_password_label', 'إعادة تعيين كلمة المرور')}</h3>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 font-black uppercase tracking-widest">{t('reset_access_for', 'RESET ACCESS FOR')}: {selectedMember?.firstName}</p>
              </div>
              
              <div className="space-y-6">
                 <div className="space-y-2">
-                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">كلمة المرور الجديدة</label>
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('new_password_label', 'كلمة المرور الجديدة')}</label>
                    <input 
                      type="password" 
                      value={newPassword} 
@@ -642,9 +642,9 @@ const TeamPage = () => {
                   onClick={handleResetPassword}
                   className="w-full py-5 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl shadow-xl shadow-indigo-600/30 transition-all active:scale-95"
                 >
-                  تغيير كلمة المرور فوراً
+                  {t('change_password_now', 'تغيير كلمة المرور فوراً')}
                 </button>
-                <button onClick={() => setShowPasswordModal(false)} className="w-full py-4 text-slate-400 font-black text-[10px] hover:text-slate-600 uppercase tracking-widest transition-colors">إلغاء العملية</button>
+                <button onClick={() => setShowPasswordModal(false)} className="w-full py-4 text-slate-400 font-black text-[10px] hover:text-slate-600 uppercase tracking-widest transition-colors">{t('cancel_operation', 'إلغاء العملية')}</button>
              </div>
           </div>
         </div>

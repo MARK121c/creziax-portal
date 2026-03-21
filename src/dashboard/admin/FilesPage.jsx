@@ -101,16 +101,16 @@ const FilesPage = () => {
         <div>
           <h1 className="text-4xl font-black text-slate-800 dark:text-white tracking-tight uppercase flex items-center gap-4">
             <span className="w-2 h-10 bg-brand-500 rounded-full"></span>
-            دليل الملفات الذكي
+            {t('file_management_title', 'دليل الملفات الذكي')}
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 font-black text-[10px] uppercase tracking-[0.3em] mt-3 opacity-60">Zero-Upload Assets Hub - إصدار 3.5</p>
+          <p className="text-slate-500 dark:text-slate-400 font-black text-[10px] uppercase tracking-[0.3em] mt-3 opacity-60">{t('file_management_desc', 'Zero-Upload Assets Hub - إصدار 3.5')}</p>
         </div>
         
         <div className="relative group">
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={20} />
           <input 
             type="text"
-            placeholder="بحث عن مشروع أو عميل..."
+            placeholder={t('search_project_client', "بحث عن مشروع أو عميل...")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-16 pr-8 py-5 bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-[2rem] text-xs font-black uppercase tracking-widest focus:outline-none focus:ring-4 focus:ring-brand-500/10 transition-all w-full sm:w-96 shadow-xl"
@@ -123,26 +123,26 @@ const FilesPage = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-48">
             <Loader2 size={48} className="animate-spin text-brand-500 mb-6" />
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse">جاري الوصول للملفات...</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse">{t('syncing', 'جاري الوصول للملفات...')}</p>
           </div>
         ) : filteredProjects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-48 text-center px-10">
             <div className="w-24 h-24 bg-slate-50 dark:bg-white/5 rounded-[2.5rem] flex items-center justify-center mb-8 border border-slate-100 dark:border-white/10">
               <Search size={40} className="text-slate-200 dark:text-slate-800" />
             </div>
-            <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight mb-3">لا يوجد نتائج</h3>
-            <p className="text-slate-500 dark:text-slate-400 font-bold text-sm">تأكد من اسم المشروع أو العميل وحاول مرة أخرى</p>
+            <h3 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight mb-3">{t('no_results', 'لا يوجد نتائج')}</h3>
+            <p className="text-slate-500 dark:text-slate-400 font-bold text-sm">{t('check_project_name_hint', 'تأكد من اسم المشروع أو العميل وحاول مرة أخرى')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto overflow-y-visible">
             <table className="w-full text-right" dir="rtl">
               <thead>
                 <tr className="bg-slate-50/50 dark:bg-black/20 border-b border-slate-100 dark:border-white/5">
-                  <th className="px-10 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none">المشروع</th>
-                  <th className="px-10 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none text-center">رابط الدرايف الشامل</th>
+                  <th className="px-10 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none">{t('project_col', 'المشروع')}</th>
+                  <th className="px-10 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none text-center">{t('google_drive_link_label', 'رابط الدرايف الشامل')}</th>
                   <th className="px-10 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none text-center">Brand Kit</th>
-                  <th className="px-10 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none text-right">ملاحظات</th>
-                  <th className="px-10 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none text-center">الإجراءات</th>
+                  <th className="px-10 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none text-right">{t('notes', 'ملاحظات')}</th>
+                  <th className="px-10 py-8 text-[11px] font-black text-slate-400 uppercase tracking-widest leading-none text-center">{t('actions', 'الإجراءات')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 dark:divide-white/5">
@@ -177,7 +177,7 @@ const FilesPage = () => {
                           {t('open_master_drive', 'Open Master Drive')}
                         </a>
                       ) : (
-                        <span className="text-[10px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-widest italic">رابط غير متوفر</span>
+                        <span className="text-[10px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-widest italic">{t('link_not_available', 'رابط غير متوفر')}</span>
                       )}
                     </td>
                     <td className="px-10 py-8">
@@ -197,7 +197,7 @@ const FilesPage = () => {
                     </td>
                     <td className="px-10 py-8 text-right max-w-xs">
                        <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 leading-relaxed italic line-clamp-2">
-                         {p.description || "لا يوجد ملاحظات إدارية مثبتة لهذا المشروع."}
+                         {p.description || t('no_notes_found', "لا يوجد ملاحظات إدارية مثبتة لهذا المشروع.")}
                        </p>
                     </td>
                     <td className="px-10 py-8 text-center">
@@ -290,7 +290,7 @@ const FilesPage = () => {
                 className="w-full py-5 bg-brand-600 hover:bg-brand-500 text-white font-black uppercase text-xs tracking-widest rounded-2xl shadow-xl shadow-brand-600/20 transition-all active:scale-95 flex items-center justify-center gap-3"
               >
                 {submitting ? <Loader2 size={20} className="animate-spin" /> : <Edit3 size={20} />}
-                تحديث البيانات الآن
+                {t('update_data_now', 'تحديث البيانات الآن')}
               </button>
             </form>
           </div>

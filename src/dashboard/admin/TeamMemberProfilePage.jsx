@@ -57,7 +57,7 @@ const TeamMemberProfilePage = () => {
         setProjects(projectsRes.data.filter(proj => proj.team?.some(tm => String(tm.id) === String(id))));
         setActivities(activityRes.data.filter(log => String(log.userId) === String(memberData?.id)));
       } catch (err) {
-        toast.error("فشل تحميل بيانات العضو");
+        toast.error(t('failed_load_member', "فشل تحميل بيانات العضو"));
         console.error(err);
       } finally {
         setLoading(false);
@@ -91,7 +91,7 @@ const TeamMemberProfilePage = () => {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("حجم الصورة يجب أن يكون أقل من 5 ميجا");
+      toast.error(t('image_too_large_5mb', "حجم الصورة يجب أن يكون أقل من 5 ميجا"));
       return;
     }
 
@@ -103,10 +103,10 @@ const TeamMemberProfilePage = () => {
       if (data.url) {
         await updateUserAPI(id, { avatarUrl: data.url });
         setMember({ ...member, avatarUrl: data.url });
-        toast.success("تم تحديث الصورة بنجاح");
+        toast.success(t('image_updated_success', "تم تحديث الصورة بنجاح"));
       }
     } catch (err) {
-      toast.error("فشل تحديث الصورة");
+      toast.error(t('upload_failed', "فشل تحديث الصورة"));
     } finally {
       setUploadingAvatar(false);
     }
@@ -209,7 +209,7 @@ const TeamMemberProfilePage = () => {
                  <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                    member?.isActive === false ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
                  }`}>
-                   {member?.isActive === false ? 'Inactive Account' : 'Active Member'}
+                   {member?.isActive === false ? t('inactive_account', 'Inactive Account') : t('active_member', 'Active Member')}
                  </div>
                  <div className="text-xl" title="Health Status">
                     {getHealthEmoji(member?.healthScore)}
@@ -284,7 +284,7 @@ const TeamMemberProfilePage = () => {
               
               <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider mb-10 flex items-center gap-3 relative z-10">
                 <ShieldCheck size={24} className="text-brand-500" />
-                Partner Verification Details
+                {t('partner_verification_details', 'Partner Verification Details')}
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
@@ -294,7 +294,7 @@ const TeamMemberProfilePage = () => {
                           <User size={20} />
                        </div>
                        <div>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Full Legal Name</p>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('full_legal_name', 'Full Legal Name')}</p>
                           <p className="font-bold text-slate-800 dark:text-slate-200">{member?.firstName} {member?.lastName}</p>
                        </div>
                     </div>
@@ -303,7 +303,7 @@ const TeamMemberProfilePage = () => {
                           <Mail size={20} />
                        </div>
                        <div>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Official Portal Email</p>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('official_portal_email', 'Official Portal Email')}</p>
                           <p className="font-bold text-slate-800 dark:text-slate-200">{member?.email || 'N/A'}</p>
                        </div>
                     </div>
@@ -312,7 +312,7 @@ const TeamMemberProfilePage = () => {
                           <Phone size={20} />
                        </div>
                        <div>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">WhatsApp Primary</p>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('whatsapp_primary', 'WhatsApp Primary')}</p>
                           <p className="font-bold text-slate-800 dark:text-slate-200">{member?.phone || 'N/A'}</p>
                        </div>
                     </div>
@@ -324,7 +324,7 @@ const TeamMemberProfilePage = () => {
                           <JobIcon size={20} />
                        </div>
                        <div>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Production Position</p>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('production_position', 'Production Position')}</p>
                           <p className="font-bold text-slate-800 dark:text-slate-200">{member?.position || 'Creative Specialist'}</p>
                        </div>
                     </div>
@@ -333,7 +333,7 @@ const TeamMemberProfilePage = () => {
                           <Building2 size={20} />
                        </div>
                        <div>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Company / Entity</p>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('company_entity', 'Company / Entity')}</p>
                           <p className="font-bold text-slate-800 dark:text-slate-200">{member?.company || 'Internal Team'}</p>
                        </div>
                     </div>
@@ -342,7 +342,7 @@ const TeamMemberProfilePage = () => {
                           <Calendar size={20} />
                        </div>
                        <div>
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Onboarding Date</p>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('onboarding_date', 'Onboarding Date')}</p>
                           <p className="font-bold text-slate-800 dark:text-slate-200">{member?.createdAt ? new Date(member.createdAt).toLocaleDateString() : 'N/A'}</p>
                        </div>
                     </div>
@@ -352,11 +352,11 @@ const TeamMemberProfilePage = () => {
               {/* Status Note Box */}
               <div className="mt-12 p-8 bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-[2rem] relative z-10">
                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Internal Associate Notes</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('internal_associate_notes', 'Internal Associate Notes')}</p>
                     <Star size={14} className="text-amber-500 fill-amber-500" />
                  </div>
                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
-                   {member?.internalNotes || 'No internal notes documented for this partner.'}
+                   {member?.internalNotes || t('no_internal_notes', 'No internal notes documented for this partner.')}
                  </p>
               </div>
            </div>
@@ -366,10 +366,10 @@ const TeamMemberProfilePage = () => {
              <div className="flex items-center justify-between mb-10">
                <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-3">
                  <Activity size={24} className="text-indigo-500" />
-                 Managed Channels & Projects
+                 {t('managed_channels_projects', 'Managed Channels & Projects')}
                </h3>
                <span className="px-3 py-1 bg-indigo-500/10 text-indigo-500 text-[10px] font-black rounded-full border border-indigo-500/20">
-                 {member?.managedChannels || 0} CHANNELS
+                 {member?.managedChannels || 0} {t('channels_count', 'CHANNELS')}
                </span>
              </div>
              
@@ -377,7 +377,7 @@ const TeamMemberProfilePage = () => {
                {projects.length === 0 ? (
                  <div className="col-span-full py-16 text-center border-2 border-dashed border-slate-100 dark:border-white/5 rounded-[2rem]">
                    <FolderKanban className="text-slate-200 mx-auto mb-4" size={40} />
-                   <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">No project assignments active</p>
+                   <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">{t('no_project_assignments', 'No project assignments active')}</p>
                  </div>
                ) : (
                  projects.map(proj => (
@@ -406,13 +406,13 @@ const TeamMemberProfilePage = () => {
               
               <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-wider mb-8 flex items-center gap-3">
                 <Activity size={20} className="text-brand-500 animate-pulse" />
-                Audit Trail History
+                {t('audit_trail_history', 'Audit Trail History')}
               </h3>
               
               <div className="flex-1 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
                 {activities.length === 0 ? (
                   <div className="py-20 text-center">
-                     <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No recent audit logs</p>
+                     <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">{t('no_recent_audit_logs', 'No recent audit logs')}</p>
                   </div>
                 ) : (
                  activities.map(log => (
@@ -431,7 +431,7 @@ const TeamMemberProfilePage = () => {
               
               <div className="mt-8 pt-6 border-t border-slate-100 dark:border-white/5">
                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Portal Access Privileges</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('portal_access_privileges', 'Portal Access Privileges')}</p>
                     <Shield size={14} className="text-brand-500" />
                  </div>
                  <div className="flex flex-wrap gap-2">
@@ -440,7 +440,7 @@ const TeamMemberProfilePage = () => {
                         {p}
                       </span>
                     )) : (
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Standard Associate Access</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">{t('standard_associate_access', 'Standard Associate Access')}</span>
                     )}
                  </div>
               </div>

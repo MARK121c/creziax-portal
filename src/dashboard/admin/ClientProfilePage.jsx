@@ -187,7 +187,7 @@ const ClientProfilePage = () => {
 
   const handleConfirmLogo = async () => {
     if (selectedFile.size > 5 * 1024 * 1024) {
-      toast.error(i18n.language === 'ar' ? "الصورة كبيرة جداً (الحد الأقصى 5 ميجا)" : "Image too large (Max 5MB)");
+      toast.error(t('image_too_large_5mb', i18n.language === 'ar' ? "الصورة كبيرة جداً (الحد الأقصى 5 ميجا)" : "Image too large (Max 5MB)"));
       return;
     }
 
@@ -218,12 +218,12 @@ const ClientProfilePage = () => {
         setSelectedFile(null);
         setPreviewUrl(null);
       }
-    } catch (err) { toast.error(i18n.language === 'ar' ? 'فشل التحميل' : 'Upload failed'); }
+    } catch (err) { toast.error(t('upload_failed', i18n.language === 'ar' ? 'فشل التحميل' : 'Upload failed')); }
     finally { setUploadingLogo(false); }
   };
 
   const handleDeleteLogo = async () => {
-    if (!confirm(i18n.language === 'ar' ? 'هل أنت متأكد من حذف اللوجو؟' : 'Are you sure you want to delete the logo?')) return;
+    if (!confirm(t('confirm_delete_logo', i18n.language === 'ar' ? 'هل أنت متأكد من حذف اللوجو؟' : 'Are you sure you want to delete the logo?'))) return;
     setUploadingLogo(true);
     try {
       const updateId = getClientId(client);
@@ -282,7 +282,7 @@ const ClientProfilePage = () => {
                 {uploadingLogo ? (
                    <div className="flex items-center gap-2 px-6 py-3 bg-white/50 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/10">
                       <Loader2 size={18} className="animate-spin text-brand-500" />
-                      <span className="text-[10px] font-black uppercase text-slate-500">{i18n.language === 'ar' ? 'جاري التحميل...' : 'UPLOADING...'}</span>
+                      <span className="text-[10px] font-black uppercase text-slate-500">{t('uploading_ellipsis', i18n.language === 'ar' ? 'جاري التحميل...' : 'UPLOADING...')}</span>
                    </div>
                 ) : selectedFile ? (
                   <div className="flex items-center gap-3 animate-in slide-in-from-top-2">
@@ -291,26 +291,26 @@ const ClientProfilePage = () => {
                       className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl shadow-xl shadow-emerald-600/20 transition-all font-black text-[10px] uppercase tracking-widest flex items-center gap-2"
                     >
                       <Shield size={14} />
-                      {i18n.language === 'ar' ? 'تأكيد الحفظ' : 'CONFIRM SAVE'}
+                      {t('confirm_save', i18n.language === 'ar' ? 'تأكيد الحفظ' : 'CONFIRM SAVE')}
                     </button>
                     <button 
                       onClick={() => { setSelectedFile(null); setPreviewUrl(null); }}
                       className="px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl shadow-xl shadow-rose-600/20 transition-all font-black text-[10px] uppercase tracking-widest flex items-center gap-2"
                     >
                       <X size={14} />
-                      {i18n.language === 'ar' ? 'إلغاء' : 'CANCEL'}
+                      {t('cancel', i18n.language === 'ar' ? 'إلغاء' : 'CANCEL')}
                     </button>
                   </div>
                 ) : (
                   <div className="flex items-center gap-3">
                     <label className="px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl shadow-lg shadow-brand-600/20 cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-2 font-black text-[10px] uppercase tracking-widest">
                       <Plus size={16} />
-                      {i18n.language === 'ar' ? 'ارفع الصورة' : 'UPLOAD LOGO'}
+                      {t('upload_logo', i18n.language === 'ar' ? 'ارفع الصورة' : 'UPLOAD LOGO')}
                       <input type="file" className="hidden" accept="image/*" onChange={(e) => {
                         const file = e.target.files[0];
                         if (!file) return;
                         if (file.size > 5 * 1024 * 1024) {
-                          toast.error(i18n.language === 'ar' ? "الصورة كبيرة جداً" : "File too large");
+                          toast.error(t('image_too_large_5mb', i18n.language === 'ar' ? "الصورة كبيرة جداً" : "File too large"));
                           return;
                         }
                         setSelectedFile(file);
@@ -323,7 +323,7 @@ const ClientProfilePage = () => {
                         className="px-6 py-3 bg-rose-600/10 text-rose-600 hover:bg-rose-600 hover:text-white rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest flex items-center gap-2"
                       >
                         <Trash2 size={14} />
-                        {i18n.language === 'ar' ? 'حذف اللوجو' : 'DELETE LOGO'}
+                        {t('delete_logo', i18n.language === 'ar' ? 'حذف اللوجو' : 'DELETE LOGO')}
                       </button>
                     )}
                   </div>
@@ -342,12 +342,12 @@ const ClientProfilePage = () => {
                 {client.clientInfo?.isVip && (
                   <div className="bg-amber-400/10 text-amber-500 px-3 py-1 rounded-full border border-amber-400/20 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
                     <Star size={12} className="fill-amber-500" />
-                    VIP PARTNER
+                    {t('vip_partner', 'VIP PARTNER')}
                   </div>
                 )}
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-bold mt-1 uppercase tracking-widest text-[10px]">
-                {getClientCompany(client) || t('creziax_partner')} • {getClientTier(client)} • v1.5.5
+                {getClientCompany(client) || t('creziax_partner', 'Creziax Partner')} • {getClientTier(client)} • v1.5.5
               </p>
             </div>
           </div>

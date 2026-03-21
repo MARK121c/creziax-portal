@@ -60,21 +60,21 @@ const ProfilePage = () => {
     // Security Validation
     if (formData.newPassword) {
       if (!formData.currentPassword) {
-        toast.error('كلمة المرور الحالية مطلوبة لتغييرها');
+        toast.error(t('current_password_required', 'كلمة المرور الحالية مطلوبة لتغييرها'));
         return;
       }
       if (formData.newPassword !== formData.confirmPassword) {
-        toast.error('كلمات المرور الجديدة غير متطابقة');
+        toast.error(t('passwords_not_match', 'كلمات المرور الجديدة غير متطابقة'));
         return;
       }
       if (formData.newPassword.length < 6) {
-        toast.error('كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل');
+        toast.error(t('password_too_short', 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل'));
         return;
       }
     }
 
     setLoading(true);
-    const loadingToast = toast.loading('جاري حفظ التعديلات...');
+    const loadingToast = toast.loading(t('saving_changes', 'جاري حفظ التعديلات...'));
     try {
       if (formData.paypal) localStorage.setItem('creziax_pay_paypal', formData.paypal);
       if (formData.vodafone) localStorage.setItem('creziax_pay_vodafone', formData.vodafone);
@@ -88,7 +88,7 @@ const ProfilePage = () => {
         currentPassword: formData.currentPassword,
         newPassword: formData.newPassword,
       });
-      toast.success('تم تحديث الملف الشخصي بنجاح', { id: loadingToast });
+      toast.success(t('profile_updated_success', 'تم تحديث الملف الشخصي بنجاح'), { id: loadingToast });
       setFormData(prev => ({
         ...prev,
         currentPassword: '',
@@ -96,7 +96,7 @@ const ProfilePage = () => {
         confirmPassword: '',
       }));
     } catch (error) {
-      toast.error(error.message || 'فشل التحديث', { id: loadingToast });
+      toast.error(error.message || t('update_failed', 'فشل التحديث'), { id: loadingToast });
     } finally {
       setLoading(false);
     }
@@ -106,12 +106,12 @@ const ProfilePage = () => {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("حجم الصورة يجب أن يكون أقل من 5 ميجا");
+      toast.error(t('image_too_large', "حجم الصورة يجب أن يكون أقل من 5 ميجا"));
       return;
     }
 
     setUploading(true);
-    const loadingToast = toast.loading('جاري رفع الصورة...');
+    const loadingToast = toast.loading(t('uploading_image', 'جاري رفع الصورة...'));
     const uploadFormData = new FormData();
     uploadFormData.append('image', file);
 
@@ -119,24 +119,24 @@ const ProfilePage = () => {
       const { uploadImageAPI } = await import('../../store/api');
       const { data } = await uploadImageAPI(uploadFormData);
       await updateProfile({ avatarUrl: data.url });
-      toast.success("تم تحديث الصورة بنجاح", { id: loadingToast });
+      toast.success(t('image_updated_success', "تم تحديث الصورة بنجاح"), { id: loadingToast });
     } catch (err) {
-      toast.error("فشل رفع الصورة", { id: loadingToast });
+      toast.error(t('image_upload_failed', "فشل رفع الصورة"), { id: loadingToast });
     } finally {
       setUploading(false);
     }
   };
 
   const handleDeleteAvatar = async () => {
-    if (!confirm('هل أنت متأكد من حذف الصورة الشخصية؟')) return;
+    if (!confirm(t('confirm_delete_avatar', 'هل أنت متأكد من حذف الصورة الشخصية؟'))) return;
     
     setUploading(true);
-    const loadingToast = toast.loading('جاري حذف الصورة...');
+    const loadingToast = toast.loading(t('deleting_image', 'جاري حذف الصورة...'));
     try {
       await updateProfile({ avatarUrl: null });
-      toast.success("تم حذف الصورة بنجاح", { id: loadingToast });
+      toast.success(t('image_deleted_success', "تم حذف الصورة بنجاح"), { id: loadingToast });
     } catch (err) {
-      toast.error("فشل حذف الصورة", { id: loadingToast });
+      toast.error(t('image_delete_failed', "فشل حذف الصورة"), { id: loadingToast });
     } finally {
       setUploading(false);
     }
@@ -148,7 +148,7 @@ const ProfilePage = () => {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
         <div>
           <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
-            الملف الشخصي
+            {t('profile_title', 'الملف الشخصي')}
             <span className="px-3 py-1 bg-brand-500/10 text-brand-500 text-[10px] rounded-full border border-brand-500/20 uppercase tracking-widest">
               {t('admin_profile', 'Admin Profile')}
             </span>
@@ -185,7 +185,7 @@ const ProfilePage = () => {
               <button 
                 onClick={() => fileInputRef.current?.click()}
                 className="absolute -bottom-2 -right-2 p-3 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl shadow-xl shadow-brand-500/30 transition-all active:scale-95"
-                title="تغيير الصورة"
+                title={t('change_image', 'تغيير الصورة')}
               >
                 <Camera size={20} />
               </button>
@@ -198,7 +198,7 @@ const ProfilePage = () => {
               <div className="flex items-center justify-center gap-2">
                  <Shield size={14} className="text-brand-500" />
                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                   {user?.role === 'OWNER' ? 'المالك العام - SYSTEM CEO' : `مسؤول - ${user?.role}`}
+                   {user?.role === 'OWNER' ? t('owner_role_desc', 'المالك العام - SYSTEM CEO') : `${t('admin_role_fixed', 'مسؤول')} - ${user?.role}`}
                  </span>
               </div>
             </div>
@@ -210,7 +210,7 @@ const ProfilePage = () => {
                 className="flex items-center justify-center gap-2 px-4 py-3.5 bg-slate-50 dark:bg-white/5 hover:bg-brand-50 dark:hover:bg-brand-500/10 text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 rounded-2xl font-black text-xs transition-all border border-slate-100 dark:border-white/5"
               >
                 <UploadCloud size={16} />
-                رفع صورة
+                {t('upload_photo', 'رفع صورة')}
               </button>
               <button 
                 onClick={handleDeleteAvatar}
@@ -218,7 +218,7 @@ const ProfilePage = () => {
                 className="flex items-center justify-center gap-2 px-4 py-3.5 bg-slate-50 dark:bg-white/5 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-400 dark:text-slate-500 hover:text-rose-500 rounded-2xl font-black text-xs transition-all border border-slate-100 dark:border-white/5"
               >
                 <Trash2 size={16} />
-                حذف
+                {t('delete', 'حذف')}
               </button>
             </div>
             <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleAvatarUpload} />
@@ -229,8 +229,8 @@ const ProfilePage = () => {
              <div className="absolute top-0 right-0 p-6 opacity-10">
                 <ShieldCheck size={120} />
              </div>
-             <h3 className="text-lg font-black uppercase tracking-tight mb-2">حالة الحساب</h3>
-             <p className="text-white/70 text-sm font-bold leading-relaxed">أنت الآن تستخدم لوحة التحكم بصلاحيات كاملة. تأكد دائماً من تأمين حسابك بكلمة مرور قوية.</p>
+             <h3 className="text-lg font-black uppercase tracking-tight mb-2">{t('account_status', 'حالة الحساب')}</h3>
+             <p className="text-white/70 text-sm font-bold leading-relaxed">{t('account_status_desc', 'أنت الآن تستخدم لوحة التحكم بصلاحيات كاملة. تأكد دائماً من تأمين حسابك بكلمة مرور قوية.')}</p>
              <div className="mt-6 flex items-center gap-2">
                 <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
                 <span className="text-[10px] font-black uppercase tracking-widest">متصل الآن - SECURE SESSION</span>
@@ -256,7 +256,7 @@ const ProfilePage = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">الاسم الأول</label>
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">{t('first_name_label', 'الاسم الأول')}</label>
                   <input
                     type="text"
                     name="firstName"
@@ -267,7 +267,7 @@ const ProfilePage = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">الاسم الأخير</label>
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">{t('last_name_label', 'الاسم الأخير')}</label>
                   <input
                     type="text"
                     name="lastName"
@@ -279,9 +279,9 @@ const ProfilePage = () => {
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2 flex items-center justify-between">
-                    البريد الإلكتروني
+                    {t('email_label_profile', 'البريد الإلكتروني')}
                     {user?.role !== 'OWNER' && (
-                       <span className="text-[9px] text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-md">تواصل مع الإدارة للتغيير</span>
+                       <span className="text-[9px] text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-md">{t('contact_admin_to_change', 'تواصل مع الإدارة للتغيير')}</span>
                     )}
                   </label>
                   <div className="relative group">
@@ -379,7 +379,7 @@ const ProfilePage = () => {
               
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">كلمة المرور الحالية</label>
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">{t('current_password_label', 'كلمة المرور الحالية')}</label>
                   <div className="relative group">
                     <Key className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={20} />
                     <input
@@ -396,7 +396,7 @@ const ProfilePage = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">كلمة المرور الجديدة</label>
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">{t('new_password_label', 'كلمة المرور الجديدة')}</label>
                     <input
                       type="password"
                       name="newPassword"
@@ -408,7 +408,7 @@ const ProfilePage = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">تأكيد كلمة المرور</label>
+                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-2">{t('confirm_password_label', 'تأكيد كلمة المرور')}</label>
                     <input
                       type="password"
                       name="confirmPassword"
@@ -434,7 +434,7 @@ const ProfilePage = () => {
                 ) : (
                   <>
                     <CheckCircle2 size={20} />
-                    حفظ التغييرات النهائية
+                    {t('save_final_changes', 'حفظ التغييرات النهائية')}
                   </>
                 )}
               </button>
