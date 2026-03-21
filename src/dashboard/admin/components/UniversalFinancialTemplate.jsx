@@ -81,10 +81,10 @@ const UniversalFinancialTemplate = ({ data }) => {
               <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#666' }}>Transaction processed via Creziax Internal Financial System.</p>
             </td>
             <td style={{ textAlign: 'right', paddingRight: '20px', fontSize: '20px', fontWeight: 900 }}>
-              {amount} USD
+              {local_amount && currency && currency !== 'USD' ? `${local_amount} ${currency}` : `${amount} USD`}
               {local_amount && currency && currency !== 'USD' && (
                 <div style={{ fontSize: '13px', fontWeight: 700, color: '#666', marginTop: '6px' }}>
-                  ≈ {local_amount} {currency}
+                  Base: {amount} USD
                 </div>
               )}
             </td>
@@ -100,11 +100,15 @@ const UniversalFinancialTemplate = ({ data }) => {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop: '10px', paddingLeft: '15px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '28px', fontWeight: 900 }}>
               <span>Total</span>
-              <span>{amount} USD</span>
+              <span>
+                {local_amount && currency && currency !== 'USD' 
+                  ? `${local_amount} ${currency}` 
+                  : `${amount} USD`}
+              </span>
             </div>
             {local_amount && currency && currency !== 'USD' && (
               <div style={{ fontSize: '14px', fontWeight: 700, color: '#aaa', marginTop: '4px' }}>
-                Equivalent of {local_amount} {currency}
+                Base Amount: {amount} USD
               </div>
             )}
           </div>

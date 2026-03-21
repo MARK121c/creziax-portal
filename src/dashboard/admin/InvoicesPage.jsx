@@ -409,13 +409,17 @@ const InvoicesPage = () => {
                       </td>
                       <td className="px-6 md:px-10 py-5 md:py-7">
                         <div className="flex flex-col">
-                          <div className="inline-flex items-center gap-1 text-lg font-black text-slate-800 dark:text-white">
-                            <span className="text-brand-500 text-sm">USD </span>
-                            {Number(inv.amount)}
+                          <div className="inline-flex items-center justify-start gap-1 text-lg font-black text-slate-800 dark:text-white" dir="ltr">
+                            <span className="text-brand-500 text-sm">
+                              {inv.currency !== 'USD' && inv.exchangeRate && inv.exchangeRate > 1 ? inv.currency : 'USD'}
+                            </span>
+                            {inv.currency !== 'USD' && inv.exchangeRate && inv.exchangeRate > 1 
+                              ? Number(inv.amount * inv.exchangeRate) 
+                              : Number(inv.amount)}
                           </div>
                           {inv.currency !== 'USD' && inv.exchangeRate && inv.exchangeRate > 1 && (
                             <div className="text-xs font-bold text-slate-400 mt-1" dir="ltr">
-                              ≈ {Number(inv.amount * inv.exchangeRate)} {inv.currency}
+                              Base: {Number(inv.amount)} USD
                             </div>
                           )}
                         </div>
