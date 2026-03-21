@@ -152,13 +152,13 @@ const ContractsPage = () => {
     const id = toast.loading('جاري تجهيز الملف للتحميل الآمن...');
     try {
       const url = getFullFileUrl(contract.pdfUrl);
-      const response = await api.get(url, { 
-        responseType: 'blob',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const blobURL = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      // Remove Authorization header to avoid Supabase 401 Unauthorized errors 
+      // (our internal JWT format is invalid for Supabase public buckets).
+      // We also use basic fetch to bypass Axios interceptors completely.
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch file');
+      const blobData = await response.blob();
+      const blobURL = window.URL.createObjectURL(blobData);
       const link = document.createElement('a');
       link.href = blobURL;
       link.setAttribute('download', `${contract.title}.pdf`);
