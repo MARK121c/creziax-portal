@@ -137,7 +137,18 @@ const ClientDashboard = () => {
                           <td className="px-6 md:px-10 py-5 md:py-7 font-black text-slate-800 dark:text-white font-mono tracking-tighter group-hover:text-brand-500 transition-colors uppercase text-sm">#{inv.invoiceNumber}</td>
                           <td className="px-6 md:px-10 py-5 md:py-7 text-sm font-bold text-slate-500 dark:text-slate-400 hidden sm:table-cell">{inv.service}</td>
                           <td className="px-6 md:px-10 py-5 md:py-7">
-                            <span className="text-lg md:text-xl font-black text-slate-800 dark:text-white tracking-tighter">${inv.amount.toLocaleString()}</span>
+                            <div className="flex flex-col">
+                              <span className="text-lg md:text-xl font-black text-slate-800 dark:text-white tracking-tighter" dir="ltr">
+                                {inv.currency !== 'USD' && inv.exchangeRate && inv.exchangeRate > 1 
+                                  ? `${Number(inv.amount * inv.exchangeRate).toLocaleString()} ${inv.currency}` 
+                                  : `$${inv.amount.toLocaleString()}`}
+                              </span>
+                              {inv.currency !== 'USD' && inv.exchangeRate && inv.exchangeRate > 1 && (
+                                <span className="text-[10px] font-bold text-slate-400 mt-1" dir="ltr">
+                                  Base: ${inv.amount.toLocaleString()} USD
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-6 md:px-10 py-5 md:py-7 text-right">
                             {inv.status !== 'PAID' ? (
@@ -179,8 +190,15 @@ const ClientDashboard = () => {
                   </div>
                   <form onSubmit={handlePaySubmit} className="space-y-6">
                     <div className="p-6 bg-slate-50 dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/10">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">قيمة الفاتورة</p>
-                      <p className="text-3xl font-black text-brand-600 tracking-tighter">${selectedInvoice?.amount.toLocaleString()}</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">قيمة الفاتورة المستحقة</p>
+                      <p className="text-3xl font-black text-brand-600 tracking-tighter" dir="ltr">
+                        {selectedInvoice?.currency !== 'USD' && selectedInvoice?.exchangeRate && selectedInvoice?.exchangeRate > 1
+                          ? `${Number(selectedInvoice.amount * selectedInvoice.exchangeRate).toLocaleString()} ${selectedInvoice.currency}`
+                          : `$${selectedInvoice?.amount.toLocaleString()} USD`}
+                      </p>
+                      {selectedInvoice?.currency !== 'USD' && selectedInvoice?.exchangeRate && selectedInvoice?.exchangeRate > 1 && (
+                        <p className="text-xs font-bold text-slate-400 mt-2">يعادل بالدولار: ${selectedInvoice?.amount.toLocaleString()} USD</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">كود المعاملة أو المرجع</label>

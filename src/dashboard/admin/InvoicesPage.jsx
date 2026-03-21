@@ -609,7 +609,15 @@ const InvoicesPage = () => {
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">العملة الموازية (للفاتورة)</label>
-                  <select value={invoiceForm.currency} onChange={e => setInvoiceForm({...invoiceForm, currency: e.target.value})} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold appearance-none cursor-pointer">
+                  <select value={invoiceForm.currency} onChange={e => {
+                    const newCurrency = e.target.value;
+                    // Reset exchange rate to 1 if switched back to USD
+                    setInvoiceForm({
+                      ...invoiceForm, 
+                      currency: newCurrency, 
+                      exchangeRate: newCurrency === 'USD' ? '' : invoiceForm.exchangeRate
+                    });
+                  }} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold appearance-none cursor-pointer">
                     <option value="USD">USD ($)</option>
                     <option value="EGP">EGP</option>
                     <option value="EUR">EUR (€)</option>
@@ -620,9 +628,27 @@ const InvoicesPage = () => {
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">سعر الصرف (Exchange Rate)</label>
-                  <input type="number" step="0.0001" min="0" value={invoiceForm.exchangeRate} onChange={e => setInvoiceForm({...invoiceForm, exchangeRate: e.target.value})} disabled={invoiceForm.currency === 'USD'} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 disabled:opacity-50 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-black" placeholder="مثال: 50.5" />
+                  <input type="number" step="0.0001" min="0" value={invoiceForm.exchangeRate} onChange={e => setInvoiceForm({...invoiceForm, exchangeRate: e.target.value})} disabled={invoiceForm.currency === 'USD'} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 disabled:opacity-50 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-black" placeholder={invoiceForm.currency === 'USD' ? '1.00' : "مثال: 50.5"} />
                 </div>
               </div>
+
+              {/* LIVE CALCULATION PREVIEW */}
+              {invoiceForm.amount && invoiceForm.currency !== 'USD' && (
+                <div className="p-5 rounded-2xl bg-brand-500/5 border border-brand-500/10 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">معاينة الحساب الرياضي (Math Preview)</p>
+                    <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
+                      {Number(invoiceForm.amount)} USD × {invoiceForm.exchangeRate || 1}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-black text-brand-500 uppercase">القيمة النهائية المقدرة</p>
+                    <p className="text-2xl font-black text-slate-800 dark:text-white">
+                      {Number(Number(invoiceForm.amount) * (invoiceForm.exchangeRate || 1)).toLocaleString()} {invoiceForm.currency}
+                    </p>
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="sm:col-span-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">طريقة الدفع (Payment Method)</label>

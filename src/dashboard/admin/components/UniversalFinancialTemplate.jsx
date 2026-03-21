@@ -70,20 +70,28 @@ const UniversalFinancialTemplate = ({ data }) => {
       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '40px' }}>
         <thead>
           <tr style={{ borderBottom: '2px solid #111' }}>
-            <th style={{ textAlign: 'left', padding: '15px 0 15px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px' }}>Description of Service/Task</th>
+            <th style={{ textAlign: 'left', padding: '15px 0 15px 20px', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px' }}>Service Description</th>
             <th style={{ textAlign: 'right', padding: '15px 20px 15px 0', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px' }}>Amount (USD)</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td style={{ textAlign: 'left', padding: '30px 0 30px 20px' }}>
-              <div style={{ fontSize: '16px', fontWeight: 700 }}>{service_name}</div>
-              <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#666' }}>Transaction processed via Creziax Internal Financial System.</p>
+              <div style={{ fontSize: '16px', fontWeight: 700 }}>
+                {/* Auto-translate service name if it matches common patterns */}
+                {service_name?.includes('تعديل فيديو') ? 'Video Editing / Post-Production' : 
+                 service_name?.includes('إدارة قناة') ? 'YouTube Channel Management' : 
+                 service_name?.includes('تصميم جرافيك') ? 'Graphic & Visual Design' : 
+                 service_name?.includes('تعليق صوتي') ? 'Professional Voice-Over' : 
+                 service_name?.includes('استشارة') ? 'Professional Consultation' : 
+                 service_name}
+              </div>
+              <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#666' }}>Document processed via Creziax Internal Financial Network.</p>
             </td>
             <td style={{ textAlign: 'right', paddingRight: '20px', fontSize: '20px', fontWeight: 900 }}>
               {local_amount && currency && currency !== 'USD' ? `${local_amount} ${currency}` : `${amount} USD`}
               {local_amount && currency && currency !== 'USD' && (
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#666', marginTop: '6px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#666', marginTop: '6px', textAlign: 'right' }}>
                   Base: {amount} USD
                 </div>
               )}
@@ -94,12 +102,12 @@ const UniversalFinancialTemplate = ({ data }) => {
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '50px' }}>
         <div style={{ width: '280px', background: '#111', color: '#fff', padding: '25px', borderRadius: '12px', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px', paddingLeft: '15px' }}>
-            <span>Final Balance</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '1px' }}>
+            <span>Final Settlement</span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop: '10px', paddingLeft: '15px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginTop: '10px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '28px', fontWeight: 900 }}>
-              <span>Total</span>
+              <span style={{ fontSize: '18px', alignSelf: 'center', opacity: 0.8 }}>TOTAL</span>
               <span>
                 {local_amount && currency && currency !== 'USD' 
                   ? `${local_amount} ${currency}` 
@@ -107,7 +115,7 @@ const UniversalFinancialTemplate = ({ data }) => {
               </span>
             </div>
             {local_amount && currency && currency !== 'USD' && (
-              <div style={{ fontSize: '14px', fontWeight: 700, color: '#aaa', marginTop: '4px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#aaa', marginTop: '4px' }}>
                 Base Amount: {amount} USD
               </div>
             )}
