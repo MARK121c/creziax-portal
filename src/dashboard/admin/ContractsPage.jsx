@@ -152,10 +152,12 @@ const ContractsPage = () => {
     const id = toast.loading('جاري تجهيز الملف للتحميل الآمن...');
     try {
       const url = getFullFileUrl(contract.pdfUrl);
-      // Ensure we hit the backend API (if url doesn't start with /api, adjust it or hit directly)
-      // Wait, api.get will automatically prepend baseURL. 
-      // getFullFileUrl returns absolute URL if it starts with http. If it's absolute, api.get will work!
-      const response = await api.get(url, { responseType: 'blob' });
+      const response = await api.get(url, { 
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
       const blobURL = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = blobURL;

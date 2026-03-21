@@ -196,7 +196,7 @@ const InvoicesPage = () => {
     e.preventDefault();
     setSubmittingDue(true);
     setDueError(null);
-    const loadingToast = toast.loading('Syncing...');
+    const loadingToast = toast.loading('جاري حفظ المستحق...');
     try {
       await createExpenseAPI({ 
         amount: parseFloat(dueForm.amount), 
@@ -206,13 +206,13 @@ const InvoicesPage = () => {
         transferDetails: dueForm.transferDetails,
         userId: dueForm.userId 
       });
-      toast.success('Due created successfully!', { id: loadingToast });
-      addNotification(`New Team Due created for $${dueForm.amount}`, 'success');
+      toast.success('تم تسجيل المستحق بنجاح!', { id: loadingToast });
+      addNotification(`تم تسجيل مستحق جديد بقيمة $${dueForm.amount}`, 'success');
       setShowDueModal(false);
       setDueForm({ userId: '', description: '', amount: '', transferMethod: '', transferDetails: '' });
       fetchData();
     } catch (err) {
-      const msg = err.response?.data?.message || 'Error saving due';
+      const msg = err.response?.data?.message || 'خطأ في الحفظ';
       setDueError(msg);
       toast.error(msg, { id: loadingToast });
     } finally {
@@ -696,14 +696,14 @@ const InvoicesPage = () => {
       <div className="absolute top-[100%] left-[-9999px] opacity-0 pointer-events-none" style={{ width: '800px', backgroundColor: '#fff', margin: 0, padding: 0 }}>
         <div ref={invoiceRef} style={{ width: '800px', backgroundColor: '#fff', margin: 0, padding: 0 }}>
           {printingInvoice && <UniversalFinancialTemplate data={{
-            document_type: 'INVOICE / PAYMENT REQUEST',
+            document_type: 'فاتورة / طلب تحصيل',
             transaction_id: printingInvoice.invoiceNumber,
             date: new Date(printingInvoice.createdAt || Date.now()).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
-            party_label: 'CLIENT / BILL TO',
-            party_name: `${printingInvoice.client?.user?.firstName || ''} ${printingInvoice.client?.user?.lastName || ''}`.trim() || 'Valued Client',
+            party_label: 'العميل / مطلوب من',
+            party_name: `${printingInvoice.client?.user?.firstName || ''} ${printingInvoice.client?.user?.lastName || ''}`.trim() || 'عميل مميز',
             status_bg: printingInvoice.status === 'PAID' ? '#dcfce7' : '#fef3c7',
             status_color: printingInvoice.status === 'PAID' ? '#166534' : '#92400e',
-            status_label: printingInvoice.status === 'PAID' ? 'PAID' : 'PENDING',
+            status_label: printingInvoice.status === 'PAID' ? 'تم الدفع PAID' : 'قيد الانتظار PENDING',
             service_name: printingInvoice.service,
             amount: printingInvoice.amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             payment_method: printingInvoice.paymentMethod,
@@ -712,14 +712,14 @@ const InvoicesPage = () => {
         </div>
         <div ref={dueRef} style={{ width: '800px', backgroundColor: '#fff', margin: 0, padding: 0 }}>
           {printingDue && <UniversalFinancialTemplate data={{
-            document_type: 'PAYMENT TRANSFER ADVICE',
+            document_type: 'إيصال تحويل مالي',
             transaction_id: printingDue.id?.slice(0, 8).toUpperCase(),
             date: new Date(printingDue.createdAt || Date.now()).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
-            party_label: 'RECIPIENT / TEAM MEMBER',
-            party_name: `${printingDue.user?.firstName || ''} ${printingDue.user?.lastName || ''}`.trim() || 'Team Member',
+            party_label: 'المستلم / عضو الفريق',
+            party_name: `${printingDue.user?.firstName || ''} ${printingDue.user?.lastName || ''}`.trim() || 'عضو فريق',
             status_bg: printingDue.status === 'SENT' ? '#dcfce7' : '#fef3c7',
             status_color: printingDue.status === 'SENT' ? '#166534' : '#92400e',
-            status_label: printingDue.status === 'SENT' ? 'SENT' : 'PROCESSING',
+            status_label: printingDue.status === 'SENT' ? 'تم التحويل SENT' : 'قيد المعالجة PROCESSING',
             service_name: printingDue.description,
             amount: printingDue.amount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             payment_method: printingDue.transferMethod,

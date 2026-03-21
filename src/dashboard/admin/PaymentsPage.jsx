@@ -19,6 +19,44 @@ import {
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 
+// ── Finance Card — large visual ───────────────────────────────────────────────
+const FinCard = ({ label, amount, loading, variant = 'default', sub }) => {
+  const variants = {
+    revenue: 'bg-white dark:bg-[#0a0a0c]/60 border border-emerald-500/25',
+    expenses: 'bg-white dark:bg-[#0a0a0c]/60 border border-rose-500/25',
+    profit: amount >= 0 
+      ? 'bg-gradient-to-br from-brand-600 to-violet-700 text-white border-0 shadow-2xl shadow-brand-600/30'
+      : 'bg-gradient-to-br from-rose-600 to-red-700 text-white border-0 shadow-2xl shadow-rose-600/30',
+    default: 'bg-white dark:bg-[#0a0a0c]/60 border border-slate-200 dark:border-white/5'
+  };
+  const isPrimary = variant === 'profit';
+  const labelColor = variant === 'revenue' ? 'text-emerald-600 dark:text-emerald-400' :
+                     variant === 'expenses' ? 'text-rose-500' : 
+                     isPrimary ? 'text-white/70' : 'text-slate-500';
+  const amountColor = isPrimary ? 'text-white' : 'text-slate-800 dark:text-white';
+
+  return (
+    <div className={`rounded-3xl p-6 md:p-8 relative overflow-hidden transition-all duration-300 hover:-translate-y-0.5 ${variants[variant]}`}>
+      {/* Glow blob */}
+      {!isPrimary && <div className={`absolute -right-8 -top-8 w-28 h-28 rounded-full blur-3xl pointer-events-none opacity-40 ${variant === 'revenue' ? 'bg-emerald-400' : variant === 'expenses' ? 'bg-rose-400' : 'bg-slate-300'}`} />}
+      {isPrimary && <div className="absolute -right-8 -top-8 w-28 h-28 bg-white/10 rounded-full blur-3xl pointer-events-none" />}
+      
+      <p className={`text-[10px] font-black uppercase tracking-[0.25em] mb-3 ${labelColor}`}>{label}</p>
+      {loading ? (
+        <div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin opacity-50" />
+      ) : (
+        <>
+          <p className={`text-4xl md:text-5xl font-black tracking-tighter leading-none ${amountColor}`}>
+            ${Math.abs(amount ?? 0).toLocaleString()}
+            {amount < 0 && <span className="text-2xl ml-1 opacity-70">-</span>}
+          </p>
+          {sub && <p className={`text-[10px] font-bold mt-3 ${isPrimary ? 'text-white/60' : 'text-slate-400'}`}>{sub}</p>}
+        </>
+      )}
+    </div>
+  );
+};
+
 const PaymentsPage = () => {
   const { t } = useTranslation();
   const [invoices, setInvoices] = useState([]);
@@ -27,7 +65,7 @@ const PaymentsPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('revenue'); // 'revenue' or 'expenses'
-  const [dateFilter, setDateFilter] = useState('all'); // 'all', 'thisMonth', 'lastMonth'
+  const [exportMonth, setExportMonth] = useState(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`);
 
   const fetchData = async () => {
     setLoading(true);
@@ -64,20 +102,12 @@ const PaymentsPage = () => {
 
       if (!matchesSearch) return false;
 
-      if (dateFilter === 'all') return true;
+      if (!exportMonth) return true;
       const date = new Date(inv.createdAt);
-      const now = new Date();
-      if (dateFilter === 'thisMonth') {
-        return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-      }
-      if (dateFilter === 'lastMonth') {
-        const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
-        const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-        return date.getMonth() === lastMonth && date.getFullYear() === year;
-      }
-      return true;
+      const [year, month] = exportMonth.split('-');
+      return date.getFullYear() === parseInt(year) && date.getMonth() + 1 === parseInt(month);
     });
-  }, [invoices, searchQuery, dateFilter]);
+  }, [invoices, searchQuery, exportMonth]);
 
   // Combined Expense Data (Dues + Operational + Bonuses)
   const expenseData = useMemo(() => {
@@ -112,37 +142,24 @@ const PaymentsPage = () => {
 
       if (!matchesSearch) return false;
 
-      if (dateFilter === 'all') return true;
+      if (!exportMonth) return true;
       const date = new Date(item.date);
-      const now = new Date();
-      if (dateFilter === 'thisMonth') {
-        return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-      }
-      if (dateFilter === 'lastMonth') {
-        const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
-        const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-        return date.getMonth() === lastMonth && date.getFullYear() === year;
-      }
-      return true;
+      const [year, month] = exportMonth.split('-');
+      return date.getFullYear() === parseInt(year) && date.getMonth() + 1 === parseInt(month);
     });
-  }, [expenses, bonuses, searchQuery, dateFilter]);
+  }, [expenses, bonuses, searchQuery, exportMonth]);
 
-  // Statistics (Aggregated)
+  // Statistics (Aggregated from local filtered data)
   const stats = useMemo(() => {
-    const totalRev = invoices.filter(i => i.status === 'PAID').reduce((sum, i) => sum + (i.amount || 0), 0);
-    
-    // Expenses include: Sent Dues + Operational Expenses + Bonuses
-    const expTotal = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-    const bonusTotal = bonuses.reduce((sum, b) => sum + (b.amount || 0), 0);
-    
-    const totalExp = expTotal + bonusTotal;
+    const totalRev = revenueData.reduce((sum, i) => sum + (i.amount || 0), 0);
+    const totalExp = expenseData.reduce((sum, e) => sum + (e.amount || 0), 0);
     
     return {
       totalRevenue: totalRev,
       totalExpenses: totalExp,
       netProfit: totalRev - totalExp
     };
-  }, [invoices, expenses, bonuses]);
+  }, [revenueData, expenseData]);
 
   return (
     <div className="space-y-8 md:space-y-12 pb-12">
@@ -158,77 +175,61 @@ const PaymentsPage = () => {
         </div>
         
         <div className="flex flex-wrap items-center gap-4">
-          <div className="relative group flex-grow sm:flex-grow-0">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={18} />
+          <div className="relative group flex-grow sm:flex-grow-0 min-w-[250px]">
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={18} />
             <input 
               type="text"
               placeholder={t('search_ledger_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-11 pr-6 py-4 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all w-full sm:w-64 md:w-80 shadow-sm font-bold"
+              className="pr-11 pl-6 py-4 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500/50 transition-all w-full shadow-sm font-bold placeholder-slate-400"
             />
           </div>
-          <div className="flex items-center bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200 dark:border-white/10">
-             <button onClick={() => setDateFilter('all')} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${dateFilter === 'all' ? 'bg-white dark:bg-brand-500 text-brand-600 dark:text-white shadow-sm' : 'text-slate-500'}`}>{t('filter_all')}</button>
-             <button onClick={() => setDateFilter('thisMonth')} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${dateFilter === 'thisMonth' ? 'bg-white dark:bg-brand-500 text-brand-600 dark:text-white shadow-sm' : 'text-slate-500'}`}>{t('filter_this_month')}</button>
-             <button onClick={() => setDateFilter('lastMonth')} className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${dateFilter === 'lastMonth' ? 'bg-white dark:bg-brand-500 text-brand-600 dark:text-white shadow-sm' : 'text-slate-500'}`}>{t('filter_last_month')}</button>
+          <div className="relative flex items-center group w-full sm:w-auto">
+            <div className="absolute left-3 pointer-events-none text-slate-400 group-focus-within:text-brand-500 transition-colors">
+              <Calendar size={18} />
+            </div>
+            <input
+              type="month"
+              value={exportMonth}
+              onChange={(e) => setExportMonth(e.target.value)}
+              className="pl-10 pr-4 py-4 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all w-full min-w-[150px] shadow-sm cursor-pointer"
+            />
           </div>
+          {exportMonth && (
+            <button
+              onClick={() => setExportMonth('')}
+              className="px-4 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 rounded-2xl font-bold transition-all text-xs"
+            >
+              عرض الكل
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Stats Widgets - High End Dash Style */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-[#0c0c0e]/80 p-8 rounded-[2.5rem] border border-emerald-500/20 shadow-xl shadow-emerald-500/5 dark:shadow-none relative overflow-hidden group">
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/5 rounded-full blur-3xl opacity-50 group-hover:scale-110 transition-transform"></div>
-          <div className="absolute top-6 right-6 p-4 rounded-2xl bg-emerald-500/10 text-emerald-500">
-             <TrendingUp size={24} />
-          </div>
-          <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-[0.25em] mb-4">{t('stat_gross_revenue')}</p>
-          <div className="flex items-baseline gap-2">
-            <h3 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter">${stats.totalRevenue.toLocaleString()}</h3>
-            <span className="text-xs font-bold text-emerald-500/60 uppercase">USD</span>
-          </div>
-          <p className="text-[10px] font-bold text-slate-400 mt-4 flex items-center gap-2">
-             <CheckCircle2 size={12} className="text-emerald-500" />
-             {t('rev_sub_detail')}
-          </p>
-        </div>
-
-        <div className="bg-white dark:bg-[#0c0c0e]/80 p-8 rounded-[2.5rem] border border-rose-500/20 shadow-xl shadow-rose-500/5 dark:shadow-none relative overflow-hidden group">
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-rose-500/5 rounded-full blur-3xl opacity-50 group-hover:scale-110 transition-transform"></div>
-          <div className="absolute top-6 right-6 p-4 rounded-2xl bg-rose-500/10 text-rose-500">
-             <TrendingDown size={24} />
-          </div>
-          <p className="text-[10px] font-black text-rose-600 dark:text-rose-500 uppercase tracking-[0.25em] mb-4">{t('total_expenses')}</p>
-          <div className="flex items-baseline gap-2">
-            <h3 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter">${stats.totalExpenses.toLocaleString()}</h3>
-            <span className="text-xs font-bold text-rose-500/60 uppercase">USD</span>
-          </div>
-          <p className="text-[10px] font-bold text-slate-400 mt-4 flex items-center gap-2">
-             <ArrowDownRight size={12} className="text-rose-500" />
-             {t('exp_sub_detail')}
-          </p>
-        </div>
-
-        <div className={`p-8 rounded-[2.5rem] relative overflow-hidden group shadow-2xl transition-all ${
-          stats.netProfit >= 0 
-          ? 'bg-gradient-to-br from-brand-600 to-indigo-700 shadow-brand-600/30' 
-          : 'bg-gradient-to-br from-rose-600 to-red-700 shadow-rose-600/30'
-        }`}>
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl opacity-50 group-hover:scale-110 transition-transform"></div>
-          <div className="absolute top-6 right-6 p-4 rounded-2xl bg-white/10 text-white">
-             <Wallet size={24} />
-          </div>
-          <p className="text-[10px] font-black text-white/70 uppercase tracking-[0.25em] mb-4">{t('stat_net_profit')}</p>
-          <div className="flex items-baseline gap-2">
-            <h3 className="text-4xl md:text-5xl font-black text-white tracking-tighter">${stats.netProfit.toLocaleString()}</h3>
-            <span className="text-xs font-bold text-white/60 uppercase">USD</span>
-          </div>
-          <p className="text-[10px] font-bold text-white/40 mt-4 flex items-center gap-2">
-             <CheckCircle2 size={12} />
-             {t('profit_sub_detail')}
-          </p>
-        </div>
+      {/* Stats Widgets - Same FinCard style as Dashboard */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <FinCard
+          label={t('stat_gross_revenue')}
+          amount={stats.totalRevenue}
+          loading={loading}
+          variant="revenue"
+          sub={t('rev_sub_detail')}
+        />
+        <FinCard
+          label={t('total_expenses')}
+          amount={stats.totalExpenses}
+          loading={loading}
+          variant="expenses"
+          sub={t('exp_sub_detail')}
+        />
+        <FinCard
+          label={t('stat_net_profit')}
+          amount={stats.netProfit}
+          loading={loading}
+          variant="profit"
+          sub={stats.netProfit >= 0 ? '↑ إيرادات تتجاوز النفقات' : '↓ النفقات تتجاوز الإيرادات'}
+        />
       </div>
 
       {/* Tabs Section */}
@@ -307,7 +308,7 @@ const PaymentsPage = () => {
                           </div>
                           <div>
                             <div className="text-base font-black text-slate-900 dark:text-white group-hover:text-brand-600 transition-colors tracking-tighter uppercase">
-                              {activeTab === 'revenue' ? (item.client?.user ? `${item.client.user.firstName} ${item.client.user.lastName}` : 'Client') : item.name}
+                              {activeTab === 'revenue' ? (item.client?.user ? `${item.client.user.firstName} ${item.client.user.lastName}` : 'عميل') : item.name}
                             </div>
                             <div className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest flex items-center gap-2">
                               {activeTab === 'revenue' ? item.service : item.purpose}
@@ -318,10 +319,10 @@ const PaymentsPage = () => {
                       <td className="px-10 py-8 hidden md:table-cell">
                         <div className="flex flex-col gap-1">
                           <span className="text-[10px] font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest">
-                            {activeTab === 'revenue' ? 'INVOICE' : item.type}
+                            {activeTab === 'revenue' ? 'فاتورة' : item.type === 'BONUS' ? 'مكافأة' : item.type === 'DUE' ? 'مستحق' : 'تشغيل'}
                           </span>
                           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight">
-                             {activeTab === 'revenue' ? (item.paymentMethod || 'Wire Transfer') : (item.transferMethod || 'Agency Account')}
+                             {activeTab === 'revenue' ? (item.paymentMethod || 'حوالة بنكية') : (item.transferMethod || 'حساب الوكالة')}
                           </span>
                         </div>
                       </td>
