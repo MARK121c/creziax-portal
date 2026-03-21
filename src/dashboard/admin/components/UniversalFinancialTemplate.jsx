@@ -21,7 +21,7 @@ const UniversalFinancialTemplate = ({ data }) => {
   return (
     <div style={{ 
       direction: 'ltr',
-      fontFamily: "'Inter', Arial, sans-serif", 
+      fontFamily: "'Cairo', 'Inter', Arial, sans-serif", 
       padding: '40px', 
       background: '#fff', 
       color: '#111', 
@@ -33,6 +33,9 @@ const UniversalFinancialTemplate = ({ data }) => {
       textAlign: 'left',
       lineHeight: 'normal'
     }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+      `}</style>
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '4px solid #111', paddingBottom: '25px', marginBottom: '40px' }}>
         <div>

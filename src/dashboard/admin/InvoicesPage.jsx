@@ -727,15 +727,15 @@ const InvoicesPage = () => {
       <div className="absolute top-[100%] left-[-9999px] opacity-0 pointer-events-none" style={{ width: '800px', backgroundColor: '#fff', margin: 0, padding: 0 }}>
         <div ref={invoiceRef} style={{ width: '800px', backgroundColor: '#fff', margin: 0, padding: 0 }}>
           {printingInvoice && <UniversalFinancialTemplate data={{
-            document_type: 'فاتورة / طلب تحصيل',
+            document_type: 'INVOICE / PAYMENT REQUEST',
             transaction_id: printingInvoice.invoiceNumber,
             date: new Date(printingInvoice.createdAt || Date.now()).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
-            party_label: 'العميل / مطلوب من',
-            party_name: `${printingInvoice.client?.user?.firstName || ''} ${printingInvoice.client?.user?.lastName || ''}`.trim() || 'عميل مميز',
+            party_label: 'BILLED TO',
+            party_name: `${printingInvoice.client?.user?.firstName || ''} ${printingInvoice.client?.user?.lastName || ''}`.trim() || 'Valued Client',
             status_bg: printingInvoice.status === 'PAID' ? '#dcfce7' : '#fef3c7',
             status_color: printingInvoice.status === 'PAID' ? '#166534' : '#92400e',
-            status_label: printingInvoice.status === 'PAID' ? 'تم الدفع PAID' : 'قيد الانتظار PENDING',
-            service_name: printingInvoice.service,
+            status_label: printingInvoice.status === 'PAID' ? 'PAID' : 'PENDING',
+            service_name: printingInvoice.service ? printingInvoice.service.split(' / ')[0] : 'Professional Service',
             amount: Number(printingInvoice.amount),
             local_amount: printingInvoice.currency !== 'USD' && printingInvoice.exchangeRate ? Number(printingInvoice.amount * printingInvoice.exchangeRate) : null,
             currency: printingInvoice.currency || 'USD',
@@ -745,15 +745,15 @@ const InvoicesPage = () => {
         </div>
         <div ref={dueRef} style={{ width: '800px', backgroundColor: '#fff', margin: 0, padding: 0 }}>
           {printingDue && <UniversalFinancialTemplate data={{
-            document_type: 'إيصال تحويل مالي',
+            document_type: 'PAYMENT RECEIPT',
             transaction_id: printingDue.id?.slice(0, 8).toUpperCase(),
             date: new Date(printingDue.createdAt || Date.now()).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
-            party_label: 'المستلم / عضو الفريق',
-            party_name: `${printingDue.user?.firstName || ''} ${printingDue.user?.lastName || ''}`.trim() || 'عضو فريق',
+            party_label: 'ISSUED TO / TEAM MEMBER',
+            party_name: `${printingDue.user?.firstName || ''} ${printingDue.user?.lastName || ''}`.trim() || 'Team Member',
             status_bg: printingDue.status === 'SENT' ? '#dcfce7' : '#fef3c7',
             status_color: printingDue.status === 'SENT' ? '#166534' : '#92400e',
-            status_label: printingDue.status === 'SENT' ? 'تم التحويل SENT' : 'قيد المعالجة PROCESSING',
-            service_name: printingDue.description,
+            status_label: printingDue.status === 'SENT' ? 'SENT' : 'PROCESSING',
+            service_name: printingDue.description ? printingDue.description.split(' / ')[0] : 'Team Due',
             amount: Number(printingDue.amount),
             payment_method: printingDue.transferMethod,
             payment_details: printingDue.transferDetails
