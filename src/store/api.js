@@ -76,6 +76,8 @@ export const sendMessageAPI = (data) => api.post('/messages', data);
 export const getThreadsAPI = () => api.get('/messages/threads');
 export const createTeamGroupAPI = (data) => api.post('/messages/groups', data);
 export const getTeamGroupsAPI = () => api.get('/messages/groups');
+export const deleteTeamGroupAPI = (groupId) => api.delete(`/messages/groups/${groupId}`);
+export const removeGroupMemberAPI = (groupId, userId) => api.delete(`/messages/groups/${groupId}/members/${userId}`);
 export const clearMessagesAPI = (threadId) => api.delete(threadId ? `/messages/clear?threadId=${threadId}` : '/messages/clear');
 
 // Invoices

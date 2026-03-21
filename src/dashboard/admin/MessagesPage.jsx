@@ -8,7 +8,9 @@ import {
   grantChatAccessAPI,
   createTeamGroupAPI,
   getTeamGroupsAPI,
-  clearMessagesAPI
+  clearMessagesAPI,
+  deleteTeamGroupAPI,
+  removeGroupMemberAPI
 } from '../../store/api';
 import useAuthStore from '../../store/authStore';
 import { io } from 'socket.io-client';
@@ -18,7 +20,7 @@ import {
   Send, MessageSquare, Search, MoreHorizontal, Smile, Link as LinkIcon,
   Loader2, UserCircle, Plus, Filter, Clock, CheckCircle2, AlertCircle,
   Tag, ChevronRight, Briefcase, Calendar, ExternalLink, ShieldAlert,
-  UserPlus, X, Users, Check, Trash2
+  UserPlus, X, Users, Check, Trash2, UserMinus
 } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 
@@ -48,6 +50,8 @@ const MessagesPage = () => {
   // Drive link modal
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [driveLink, setDriveLink] = useState('');
+  // Group management
+  const [expandedGroupId, setExpandedGroupId] = useState(null); // show members of this group
   const [expandedSections, setExpandedSections] = useState({
     projects: true,
     groups: true,
@@ -223,6 +227,33 @@ const MessagesPage = () => {
     }
   };
 
+
+  // Handle delete entire group
+  const handleDeleteGroup = async (groupId) => {
+    if (!window.confirm('تحذير: سيتم حذف الجروب وجميع رسائله نهائياً. متأكد?')) return;
+    try {
+      await deleteTeamGroupAPI(groupId);
+      setTeamGroups(prev => prev.filter(g => g.id !== groupId));
+      if (activeThread?.id === groupId) setActiveThread(null);
+      toast.success('تم حذف الجروب بنجاح');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'فشل حذف الجروب');
+    }
+  };
+
+  // Handle remove single member from group
+  const handleRemoveMember = async (groupId, memberId) => {
+    if (!window.confirm('إزالة هذا العضو من الجروب?')) return;
+    try {
+      await removeGroupMemberAPI(groupId, memberId);
+      setTeamGroups(prev => prev.map(g =>
+        g.id === groupId ? { ...g, members: g.members.filter(m => m.id !== memberId) } : g
+      ));
+      toast.success('تم إزالة العضو');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'فشل إزالة العضو');
+    }
+  };
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -426,16 +457,56 @@ Availability: ${bookingData.dates}`;
 
                           {/* Custom Team Groups */}
                           {teamGroups.map(tg => (
-                            <button 
-                              key={tg.id} 
-                              onClick={() => selectThread(tg, 'TEAM_GROUP')}
-                              className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === tg.id ? 'bg-brand-600 text-white shadow-lg' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
-                            >
-                              <div className="flex-1 text-right overflow-hidden">
-                                <h4 className="text-xs font-black truncate">{tg.name}</h4>
-                                <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === tg.id ? 'text-white' : 'text-slate-400'}`}>{tg.members?.length} أعضاء</p>
+                            <div key={tg.id} className="space-y-1">
+                              <div className={`w-full flex items-center gap-2 p-4 rounded-2xl transition-all ${activeThread?.id === tg.id ? 'bg-brand-600 text-white shadow-lg' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}>
+                                <button
+                                  onClick={() => selectThread(tg, 'TEAM_GROUP')}
+                                  className="flex-1 text-right overflow-hidden"
+                                >
+                                  <h4 className="text-xs font-black truncate">{tg.name}</h4>
+                                  <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === tg.id ? 'text-white' : 'text-slate-400'}`}>{tg.members?.length} أعضاء</p>
+                                </button>
+                                {(user.role === 'ADMIN' || user.role === 'OWNER') && (
+                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                    <button
+                                      onClick={() => setExpandedGroupId(expandedGroupId === tg.id ? null : tg.id)}
+                                      className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all text-xs font-black ${
+                                        expandedGroupId === tg.id
+                                          ? 'bg-white/20 text-white'
+                                          : 'bg-slate-100 dark:bg-white/10 text-slate-400 hover:text-brand-500'
+                                      }`}
+                                      title="إدارة الأعضاء"
+                                    >
+                                      <Users size={12} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteGroup(tg.id)}
+                                      className="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all"
+                                      title="حذف الجروب"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                            </button>
+                              {/* Members list (expandable) */}
+                              {expandedGroupId === tg.id && (
+                                <div className="pr-4 space-y-1 animate-in fade-in duration-200">
+                                  {tg.members?.map(m => (
+                                    <div key={m.id} className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/5">
+                                      <button
+                                        onClick={() => handleRemoveMember(tg.id, m.id)}
+                                        className="w-6 h-6 rounded-lg text-rose-400 hover:bg-rose-500/10 flex items-center justify-center transition-all flex-shrink-0"
+                                        title="إزالة من الجروب"
+                                      >
+                                        <UserMinus size={12} />
+                                      </button>
+                                      <span className="text-[10px] font-black text-slate-600 dark:text-slate-300 flex-1 text-right mr-2 truncate">{m.firstName} {m.lastName}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           ))}
                         </div>
                       )}
@@ -796,10 +867,11 @@ Availability: ${bookingData.dates}`;
               </button>
             </div>
 
-            <div className="p-8 space-y-6" dir="rtl">
+          <div className="p-8 space-y-6" dir="rtl">
+              {/* Team members */}
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">اختر عضو الفريق</label>
-                <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto custom-scrollbar">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">أعضاء الفريق</label>
+                <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto custom-scrollbar">
                   {teamMembers.map(tm => (
                     <button 
                       key={tm.id}
@@ -815,16 +887,43 @@ Availability: ${bookingData.dates}`;
                       <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${selectedTeamMembers.includes(tm.id) ? 'bg-brand-500 border-brand-500 text-white' : 'border-slate-300 dark:border-white/10'}`}>
                         {selectedTeamMembers.includes(tm.id) && <Check size={12} strokeWidth={4} />}
                       </div>
-                      <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-white/5 flex items-center justify-center text-xs font-black text-slate-400 overflow-hidden shadow-sm">
-                        {tm.avatarUrl ? <img src={tm.avatarUrl} className="w-full h-full object-cover" /> : (tm.firstName?.[0] || 'T')}
-                      </div>
                       <div className="flex-1 text-right">
                         <h4 className="text-[11px] font-black text-slate-700 dark:text-white uppercase tracking-widest">{tm.firstName} {tm.lastName}</h4>
                         <p className="text-[9px] font-bold text-slate-400">{tm.position || 'فريق العمل'}</p>
                       </div>
                     </button>
                   ))}
-                  {teamMembers.length === 0 && <p className="text-center py-10 text-xs font-bold text-slate-400 italic">لا يوجد أعضاء متاحين حالياً</p>}
+                  {teamMembers.length === 0 && <p className="text-center py-6 text-xs font-bold text-slate-400 italic">لا يوجد أعضاء</p>}
+                </div>
+              </div>
+
+              {/* Clients - so they can be given chat access to their project */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">العملاء</label>
+                <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto custom-scrollbar">
+                  {clients.map(c => (
+                    <button
+                      key={c.user?.id || c.id}
+                      onClick={() => {
+                        const uid = c.user?.id || c.id;
+                        if (selectedTeamMembers.includes(uid)) {
+                          setSelectedTeamMembers(prev => prev.filter(id => id !== uid));
+                        } else {
+                          setSelectedTeamMembers(prev => [...prev, uid]);
+                        }
+                      }}
+                      className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${selectedTeamMembers.includes(c.user?.id || c.id) ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-slate-50 dark:bg-white/[0.02] border-slate-100 dark:border-white/5 hover:border-emerald-500/20'}`}
+                    >
+                      <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${selectedTeamMembers.includes(c.user?.id || c.id) ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 dark:border-white/10'}`}>
+                        {selectedTeamMembers.includes(c.user?.id || c.id) && <Check size={12} strokeWidth={4} />}
+                      </div>
+                      <div className="flex-1 text-right">
+                        <h4 className="text-[11px] font-black text-slate-700 dark:text-white">{c.user?.firstName} {c.user?.lastName}</h4>
+                        <p className="text-[9px] font-bold text-slate-400">{c.company || 'عميل'}</p>
+                      </div>
+                    </button>
+                  ))}
+                  {clients.length === 0 && <p className="text-center py-6 text-xs font-bold text-slate-400 italic">لا يوجد عملاء</p>}
                 </div>
               </div>
 
