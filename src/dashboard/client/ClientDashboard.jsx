@@ -67,12 +67,20 @@ const ClientDashboard = () => {
         }
       });
 
-      // Calculate Contract End Date based on latest paid invoice
+      // Calculate Contract End Date based on latest paid invoice OR user profile fallback
       const activeContracts = invoicesList.filter(inv => inv && inv.status === 'PAID' && inv.contractEnd);
       let daysLeft = 0;
+      
+      let targetEndDate = null;
       if (activeContracts.length > 0) {
-        const latestDate = new Date(Math.max(...activeContracts.map(c => new Date(c.contractEnd))));
-        const diff = latestDate - new Date();
+        targetEndDate = new Date(Math.max(...activeContracts.map(c => new Date(c.contractEnd))));
+      } else if (user?.clientInfo?.contractEnd) {
+        // Fallback to user profile contract date if no paid invoice has it
+        targetEndDate = new Date(user.clientInfo.contractEnd);
+      }
+
+      if (targetEndDate && !isNaN(targetEndDate.getTime())) {
+        const diff = targetEndDate - new Date();
         daysLeft = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
       }
 

@@ -10,6 +10,8 @@ import { uploadImageAPI, updateProfileAPI } from '../../store/api'; // Ensure AP
 
 const getFormattedUrl = (url) => {
   if (!url || typeof url !== 'string') return null;
+  // Branding Guard: If legacy "shahwa" is in the URL, return null to show default Creziax icon
+  if (url.toLowerCase().includes('shahwa')) return null;
   if (url.startsWith('http') || url.startsWith('blob:')) return url;
   const baseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api$/, '');
   return `${baseUrl.replace(/\/$/, '')}/${url.replace(/^\//, '')}`;

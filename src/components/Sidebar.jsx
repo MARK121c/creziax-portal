@@ -42,12 +42,12 @@ const teamLinks = [
 
 const clientLinks = [
   { to: '/client', icon: LayoutDashboard, labelKey: 'dashboard' },
+  { to: '/client/projects', icon: FolderKanban, labelKey: 'projects' }, // Restored Projects link
   { to: '/client/files', icon: FileText, labelKey: 'files' },
   { to: '/client/messages', icon: MessageSquare, labelKey: 'messages' },
   { to: '/client/contracts', icon: FileSignature, labelKey: 'contracts' },
   { to: '/client/invoices', icon: Receipt, labelKey: 'invoices' },
   { to: '/client/profile', icon: UserRound, labelKey: 'my_profile' },
-  // Tasks link removed for clients — timeline in dashboard replaces it
 ];
 
 const Sidebar = ({ isOpen, setIsOpen }) => {

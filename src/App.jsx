@@ -1,22 +1,15 @@
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { useEffect, useState, useRef, useCallback } from 'react';
-import useAuthStore from './store/authStore';
-import useThemeStore from './store/themeStore';
-import useNotificationStore from './store/notificationStore';
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
-import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
-
-// Components
-import ProtectedRoute from './components/ProtectedRoute';
+import { useTranslation } from 'react-i18next';
+import useAuthStore from './store/authStore';
+import useNotificationStore from './store/notificationStore';
 import DashboardLayout from './components/DashboardLayout';
-import ClientSplashScreen from './components/ClientSplashScreen';
-import CustomErrorPage from './components/CustomErrorPage';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Pages
 import Login from './pages/Login';
-
-// Admin Dashboard Pages
 import AdminDashboard from './dashboard/admin/AdminDashboard';
 import ClientsPage from './dashboard/admin/ClientsPage';
 import ClientProfilePage from './dashboard/admin/ClientProfilePage';
@@ -25,30 +18,27 @@ import TeamMemberProfilePage from './dashboard/admin/TeamMemberProfilePage';
 import ProjectsPage from './dashboard/admin/ProjectsPage';
 import WorkspaceDetail from './dashboard/admin/WorkspaceDetail';
 import TasksPage from './dashboard/admin/TasksPage';
-import InvoicesPage from './dashboard/admin/InvoicesPage';
 import FilesPage from './dashboard/admin/FilesPage';
 import MessagesPage from './dashboard/admin/MessagesPage';
+import InvoicesPage from './dashboard/admin/InvoicesPage';
 import PaymentsPage from './dashboard/admin/PaymentsPage';
+import ProfilePage from './dashboard/shared/ProfilePage';
 import ExpensesPage from './dashboard/admin/ExpensesPage';
 import ContractsPage from './dashboard/admin/ContractsPage';
 
-// Shared Pages
-import ProfilePage from './dashboard/shared/ProfilePage';
-
-// Team Dashboard Pages
 import TeamDashboard from './dashboard/team/TeamDashboard';
 
-// Client Dashboard Pages
 import ClientDashboard from './dashboard/client/ClientDashboard';
 import ClientFiles from './dashboard/client/ClientFiles';
+import ClientMessages from './dashboard/client/ClientMessages';
 import ClientInvoices from './dashboard/client/ClientInvoices';
 import ClientContracts from './dashboard/client/ClientContracts';
 import ClientProfile from './dashboard/client/ClientProfile';
-import ClientMessages from './dashboard/client/ClientMessages';
+import ClientSplashScreen from './components/ClientSplashScreen';
+import CustomErrorPage from './components/CustomErrorPage';
 
 const ThemeInitializer = () => {
-  const { theme } = useThemeStore();
-  
+  const theme = localStorage.getItem('theme') || 'dark';
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -118,8 +108,9 @@ function App() {
 
   const playGlobalDing = useCallback(() => {
     try {
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-      audio.volume = 0.4;
+      // Local stable notification sound
+      const audio = new Audio('/sounds/notification.mp3');
+      audio.volume = 0.5;
       audio.play().catch(() => {});
     } catch(e) {}
   }, []);
@@ -259,6 +250,7 @@ function App() {
           }
         >
           <Route index element={<ClientDashboard />} />
+          <Route path="projects" element={<ClientDashboard />} />
           <Route path="files" element={<ClientFiles />} />
           <Route path="tasks" element={<Navigate to="/client" replace />} />
           <Route path="messages" element={<ClientMessages />} />
