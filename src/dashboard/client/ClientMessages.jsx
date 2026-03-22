@@ -293,14 +293,15 @@ const ClientMessages = () => {
   };
 
   const handleMeetingSubmit = async (form) => {
-    const desc = `📅 طلب موعد جديد\nالموضوع: ${form.subject}\nالتاريخ: ${form.date}\nالوقت: ${form.time}`;
+    const clientName = user?.firstName || 'Valued Client';
+    const desc = `طلب ميعاد جديد من العميل: ${clientName}\nالموضوع: ${form.subject}\nالتاريخ: ${form.date}\nالوقت: ${form.time}`;
     await createTicketAPI({
-      title: `طلب موعد: ${form.subject}`,
+      title: `طلب ميعاد جديد: ${clientName}`,
       description: desc,
       type: 'MEETING',
       status: 'OPEN',
     });
-    toast.success('تم إرسال طلب الموعد للإدارة ✅');
+    toast.success(isRTL ? 'تم إرسال طلب الموعد للإدارة بنجاح ✅' : 'Meeting request sent to management. ✅');
   };
 
   const selectThread = (item, type) => {

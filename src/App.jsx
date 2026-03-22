@@ -1,13 +1,17 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import useAuthStore from './store/authStore';
 import useThemeStore from './store/themeStore';
-import { Toaster } from 'react-hot-toast';
+import useNotificationStore from './store/notificationStore';
+import { Toaster, toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { io } from 'socket.io-client';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
+import ClientSplashScreen from './components/ClientSplashScreen';
+import CustomErrorPage from './components/CustomErrorPage';
 
 // Pages
 import Login from './pages/Login';
@@ -95,14 +99,91 @@ const LanguageInitializer = () => {
 };
 
 function App() {
-  const { token, fetchProfile } = useAuthStore();
+  const navigate = useNavigate();
+  const { token, user, fetchProfile } = useAuthStore();
+  const { addNotification } = useNotificationStore();
+  const { t } = useTranslation();
+  
+  // SESSION PERSISTENCE: Only show splash once per browser session
+  const [showSplash, setShowSplash] = useState(() => {
+    return !sessionStorage.getItem('creziax_splash_seen');
+  });
+  
+  const [isTimedOut, setIsTimedOut] = useState(false);
+
+  const handleSplashComplete = useCallback(() => {
+    sessionStorage.setItem('creziax_splash_seen', 'true');
+    setShowSplash(false);
+  }, []);
+
+  const playGlobalDing = useCallback(() => {
+    try {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      audio.volume = 0.4;
+      audio.play().catch(() => {});
+    } catch(e) {}
+  }, []);
 
   useEffect(() => {
-    console.log("%c Creziax Portal v1.2.1-final %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
+    console.log("%c Creziax Portal v2.7.0-Elite %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
     if (token) {
       fetchProfile();
     }
   }, [token, fetchProfile]);
+
+  // Fail-safe: If profile takes too long after splash, allow entry or redirect
+  useEffect(() => {
+    if (!showSplash && token && !user) {
+      const timer = setTimeout(() => {
+        setIsTimedOut(true);
+        console.warn("Backend unresponsive. Entering recovery mode.");
+      }, 3000); // 3s total buffer
+      return () => clearTimeout(timer);
+    }
+  }, [showSplash, token, user]);
+
+  // REAL-TIME SMART LISTENERS (Clickable Toasts)
+  useEffect(() => {
+    if (!token || !user) return;
+
+    const socket = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', {
+      transports: ['websocket'],
+    });
+
+    const notifyClickable = (msg, icon, path) => {
+      playGlobalDing();
+      toast(msg, {
+        icon,
+        duration: 5000,
+        style: { cursor: 'pointer', background: '#0a0a0c', color: '#fff', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '1rem', fontWeight: 'bold' },
+        onClick: () => {
+          navigate(path);
+          toast.dismiss();
+        }
+      });
+      addNotification({ message: msg, type: 'info', timestamp: new Date(), link: path });
+    };
+
+    socket.on('receive_message', (data) => {
+      if (data.senderId !== user.id) {
+        notifyClickable(t('new_message_received', 'رسالة جديدة من الإدارة'), '💬', '/client/messages');
+      }
+    });
+
+    socket.on('task_updated', () => {
+      notifyClickable(t('task_updated_global', 'تم تحديث حالة فيديو المشروع'), '🎥', '/client');
+    });
+
+    socket.on('workspace_updated', () => {
+      notifyClickable(t('timeline_updated_global', 'تحديث في مسار المشروع الذكي'), '🔄', '/client');
+    });
+
+    socket.on('new_ticket', () => {
+      notifyClickable(t('new_meeting_global', 'لديك ميعاد اجتماع جديد'), '📅', '/client/messages');
+    });
+
+    return () => socket.disconnect();
+  }, [token, user, addNotification, t, playGlobalDing, navigate]);
 
   return (
     <>
@@ -160,7 +241,20 @@ function App() {
           path="/client"
           element={
             <ProtectedRoute allowedRoles={['CLIENT']}>
-              <DashboardLayout />
+              {showSplash ? (
+                <ClientSplashScreen onComplete={handleSplashComplete} />
+              ) : !token ? (
+                <Navigate to="/login" replace />
+              ) : user ? (
+                <DashboardLayout />
+              ) : isTimedOut ? (
+                <Navigate to="/login" replace />
+              ) : (
+                <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505] gap-6">
+                   <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(245,158,11,0.3)]"></div>
+                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] animate-pulse">Establishing Connection...</p>
+                </div>
+              )}
             </ProtectedRoute>
           }
         >
@@ -173,8 +267,8 @@ function App() {
           <Route path="profile" element={<ClientProfile />} />
         </Route>
 
-        {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* Catch-all Branded Error Page */}
+        <Route path="*" element={<CustomErrorPage />} />
       </Routes>
     </>
   );
