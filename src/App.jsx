@@ -34,6 +34,7 @@ import ClientMessages from './dashboard/client/ClientMessages';
 import ClientInvoices from './dashboard/client/ClientInvoices';
 import ClientContracts from './dashboard/client/ClientContracts';
 import ClientProfile from './dashboard/client/ClientProfile';
+import ClientProjects from './dashboard/client/ClientProjects';
 import ClientSplashScreen from './components/ClientSplashScreen';
 import CustomErrorPage from './components/CustomErrorPage';
 
@@ -116,7 +117,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    console.log("%c Creziax Portal v2.7.0-Elite %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
+    console.log("%c Creziax Portal v2.8.0-Masterpiece %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
     if (token) {
       fetchProfile();
     }
@@ -250,7 +251,7 @@ function App() {
           }
         >
           <Route index element={<ClientDashboard />} />
-          <Route path="projects" element={<ClientDashboard />} />
+          <Route path="projects" element={<ClientProjects />} />
           <Route path="files" element={<ClientFiles />} />
           <Route path="tasks" element={<Navigate to="/client" replace />} />
           <Route path="messages" element={<ClientMessages />} />
