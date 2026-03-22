@@ -36,6 +36,11 @@ import TeamDashboard from './dashboard/team/TeamDashboard';
 
 // Client Dashboard Pages
 import ClientDashboard from './dashboard/client/ClientDashboard';
+import ClientFiles from './dashboard/client/ClientFiles';
+import ClientInvoices from './dashboard/client/ClientInvoices';
+import ClientContracts from './dashboard/client/ClientContracts';
+import ClientProfile from './dashboard/client/ClientProfile';
+import ClientMessages from './dashboard/client/ClientMessages';
 
 const ThemeInitializer = () => {
   const { theme } = useThemeStore();
@@ -160,11 +165,12 @@ function App() {
           }
         >
           <Route index element={<ClientDashboard />} />
-          <Route path="files" element={<FilesPage />} />
-          <Route path="tasks" element={<ClientDashboard />} />
-          <Route path="messages" element={<MessagesPage />} />
-          <Route path="invoices" element={<ClientDashboard />} />
-          <Route path="profile" element={<ProfilePage />} />
+          <Route path="files" element={<ClientFiles />} />
+          <Route path="tasks" element={<Navigate to="/client" replace />} />
+          <Route path="messages" element={<ClientMessages />} />
+          <Route path="invoices" element={<ClientInvoices />} />
+          <Route path="contracts" element={<ClientContracts />} />
+          <Route path="profile" element={<ClientProfile />} />
         </Route>
 
         {/* Catch-all */}

@@ -145,4 +145,7 @@ export const createContractAPI = (data) => api.post('/contracts', data);
 export const updateContractAPI = (id, data) => api.put(`/contracts/${id}`, data);
 export const deleteContractAPI = (id) => api.delete(`/contracts/${id}`);
 
+// Users / Contacts
+export const getClientContactsAPI = () => api.get('/users/client-contacts');
+
 export default api;

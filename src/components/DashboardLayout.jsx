@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useTranslation } from 'react-i18next';
-import { Globe, Sun, Moon, Menu, Megaphone, Pencil, X, Edit2, Bell, CheckCircle2 } from 'lucide-react';
+import { Globe, Sun, Moon, Menu, Megaphone, Pencil, X, Edit2, Bell, CheckCircle2, MessageCircle } from 'lucide-react';
 import useThemeStore from '../store/themeStore';
 import useAuthStore from '../store/authStore';
 import useBroadcastStore from '../store/broadcastStore';
@@ -99,6 +99,28 @@ const DashboardLayout = () => {
           </button>
           
           <div className="flex items-center gap-2 p-1.5 glass-panel rounded-2xl shadow-sm">
+            {/* Client WhatsApp Button */}
+            {user?.role === 'CLIENT' && (
+              <a
+                href={`https://wa.me/201069804568?text=${encodeURIComponent(i18n.language === 'ar' ? 'مرحباً، أحتاج إلى مساعدة في لوحة تحكم Creziax.' : 'Hello, I need help with the Creziax dashboard.')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative flex items-center gap-2 px-4 py-2 rounded-xl font-black text-xs text-white uppercase tracking-widest transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
+                style={{
+                  background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                  boxShadow: '0 0 12px 2px rgba(34,197,94,0.45), 0 2px 8px rgba(34,197,94,0.3)',
+                }}
+              >
+                {/* Glow pulse behind */}
+                <span className="absolute inset-0 rounded-xl animate-pulse opacity-30" style={{ background: 'radial-gradient(circle,#22c55e,transparent 70%)' }} />
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" className="relative z-10 flex-shrink-0">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                  <path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.554 4.118 1.524 5.855L0 24l6.335-1.524A11.944 11.944 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.374l-.36-.214-3.727.977.995-3.641-.234-.374A9.819 9.819 0 0 1 2.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
+                </svg>
+                <span className="relative z-10 hidden sm:inline">تواصل مع الإدارة</span>
+              </a>
+            )}
+
             {/* Admin Broadcast Trigger */}
             {(user?.role === 'ADMIN' || user?.role === 'OWNER') && (
               <button
@@ -192,6 +214,7 @@ const DashboardLayout = () => {
         <div className="w-full mx-auto px-6 pt-10 pb-24 md:px-10 lg:px-16 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <Outlet />
         </div>
+        
       </main>
 
       {/* Broadcast Edit Modal */}
