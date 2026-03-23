@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bell, CheckCircle2, Clock, Trash2 } from 'lucide-react';
 import useNotificationStore from '../../store/notificationStore';
@@ -6,6 +7,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 const NotificationsPage = () => {
   const { t, i18n } = useTranslation();
   const { notifications, markAllRead, clearAll } = useNotificationStore();
+
+  useEffect(() => {
+    console.log("🔔 NotificationsPage Mounted for role:", localStorage.getItem('user_role') || 'Unknown');
+  }, []);
+
+  if (!notifications) return <div className="p-10 text-center font-bold">Loading Notifications...</div>;
   const isRTL = i18n.language === 'ar';
 
   return (

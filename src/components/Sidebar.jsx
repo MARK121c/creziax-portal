@@ -108,8 +108,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           <span className="text-base font-bold tracking-tight text-slate-800 dark:text-white">
             Creziax
           </span>
-          <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] -mt-0.5">
-            {t('agency_portal')}
+          <span className="text-[9px] font-black text-brand-500 uppercase tracking-[0.2em] -mt-0.5">
+            V3.3 ELITE
           </span>
         </div>
       </div>
@@ -130,18 +130,16 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               }`
             }
           >
-            <div className={`flex items-center justify-between w-full ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <div className="flex items-center gap-3.5">
-                <Icon size={18} className="transition-transform group-hover:scale-110" />
-                <span>{t(labelKey)}</span>
-              </div>
-              
-              {unreadMessagesCount > 0 && to.includes('messages') && (
-                <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-lg shadow-rose-500/20 animate-pulse">
-                  {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
-                </span>
-              )}
+            <div className="flex items-center gap-3.5 flex-1">
+              <Icon size={18} className="transition-transform group-hover:scale-110" />
+              <span className="truncate">{t(labelKey)}</span>
             </div>
+            
+            {unreadMessagesCount > 0 && to.includes('messages') && (
+              <span className="ml-auto bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-lg shadow-rose-500/20 animate-pulse">
+                {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+              </span>
+            )}
           </NavLink>
         ))}
         {user?.clientInfo?.notionLink && (
