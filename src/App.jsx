@@ -142,6 +142,8 @@ function App() {
       transports: ['websocket'],
     });
 
+    socket.emit('authenticate', { userId: user.id, role: user.role });
+
     const notifyClickable = (msg, icon, path) => {
       playGlobalDing();
       toast(msg, {
@@ -156,22 +158,35 @@ function App() {
       addNotification({ message: msg, type: 'info', timestamp: new Date(), link: path });
     };
 
-    socket.on('receive_message', (data) => {
-      if (data.senderId !== user.id) {
-        notifyClickable(t('new_message_received', 'رسالة جديدة من الإدارة'), '💬', '/client/messages');
+    socket.on('smart_notification', (data) => {
+      if (data.type === 'message') {
+        let path = '/client/messages';
+        if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/messages';
+        else if (user.role === 'TEAM') path = '/team/messages';
+        
+        notifyClickable(t('new_message_received_global', '🔊 لديك رسالة جديدة'), '💬', path);
       }
     });
 
     socket.on('task_updated', () => {
-      notifyClickable(t('task_updated_global', 'تم تحديث حالة فيديو المشروع'), '🎥', '/client');
+      let path = '/client';
+      if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/projects';
+      else if (user.role === 'TEAM') path = '/team/tasks';
+      notifyClickable(t('task_updated_global', 'تم تحديث حالة فيديو المشروع'), '🎥', path);
     });
 
     socket.on('workspace_updated', () => {
-      notifyClickable(t('timeline_updated_global', 'تحديث في مسار المشروع الذكي'), '🔄', '/client');
+      let path = '/client';
+      if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/projects';
+      else if (user.role === 'TEAM') path = '/team/tasks';
+      notifyClickable(t('timeline_updated_global', 'تحديث في مسار المشروع الذكي'), '🔄', path);
     });
 
     socket.on('new_ticket', () => {
-      notifyClickable(t('new_meeting_global', 'لديك ميعاد اجتماع جديد'), '📅', '/client/messages');
+      let path = '/client/messages';
+      if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/messages';
+      else if (user.role === 'TEAM') path = '/team/messages';
+      notifyClickable(t('new_meeting_global', 'لديك ميعاد اجتماع جديد'), '📅', path);
     });
 
     return () => socket.disconnect();

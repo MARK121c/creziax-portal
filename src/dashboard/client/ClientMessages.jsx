@@ -301,7 +301,13 @@ const ClientMessages = () => {
       type: 'MEETING',
       status: 'OPEN',
     });
-    toast.success(isRTL ? 'تم إرسال طلب الموعد للإدارة بنجاح ✅' : 'Meeting request sent to management. ✅');
+
+    if (activeThread) {
+      const cardContent = `[MEETING_BOOKING]\nTopic: ${form.subject}\nAvailability: ${form.date} ${form.time}`;
+      await doSendMessage(cardContent);
+    }
+
+    toast.success('تم إرسال طلب الموعد للإدارة بنجاح ✅');
   };
 
   const selectThread = (item, type) => {
@@ -324,10 +330,20 @@ const ClientMessages = () => {
     const isDriveLink = m.content?.startsWith('[DRIVE_LINK]');
     const driveUrl = isDriveLink ? m.content.replace('[DRIVE_LINK]', '') : null;
     const isFileCard = m.content?.startsWith('[FILE]');
+    const isBookingCard = m.content?.startsWith('[MEETING_BOOKING]');
+    
     let fileUrl = null;
+    let bookingDetails = null;
+
     if (isFileCard) {
       const lines = m.content.split('\n');
       fileUrl = lines[0].replace('[FILE]', '');
+    } else if (isBookingCard) {
+      const lines = m.content.split('\n');
+      bookingDetails = {
+        topic: lines[1]?.replace('Topic: ', ''),
+        dates: lines[2]?.replace('Availability: ', '')
+      };
     }
     const isMine = m.senderId === user?.id;
 
@@ -339,7 +355,7 @@ const ClientMessages = () => {
               {m.sender?.firstName} {m.sender?.lastName} {isMine && '(أنت)'}
             </span>
           </div>
-          <div className={`px-6 py-4 rounded-[1.25rem] text-sm font-bold leading-relaxed shadow-sm ${isMine ? 'bg-brand-600 text-white rounded-tr-sm shadow-brand-600/10' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-sm border border-slate-100 dark:border-white/5'}`}>
+          <div className={`px-6 py-4 rounded-[1.25rem] text-sm font-bold leading-relaxed shadow-sm ${isMine ? 'bg-brand-600 text-white rounded-tr-sm shadow-brand-600/10' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-sm border border-slate-100 dark:border-white/5'} ${isBookingCard ? 'border-2 border-brand-500/30 ring-4 ring-brand-500/10' : ''}`}>
             {isDriveLink ? (
               <a
                 href={driveUrl}
@@ -359,6 +375,27 @@ const ClientMessages = () => {
                 </div>
                 <ExternalLink size={14} className="opacity-60 flex-shrink-0" />
               </a>
+            ) : isBookingCard ? (
+              <div className="space-y-4 min-w-[200px] text-right" dir="rtl">
+                 <div className="flex items-center gap-3 pb-3 border-b border-white/20">
+                    <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                       <Calendar size={16} />
+                    </div>
+                    <span className="text-[10px] uppercase font-black tracking-widest">طلب ميتنج جديد</span>
+                 </div>
+                 <div className="space-y-1">
+                    <p className="text-[9px] opacity-70 uppercase font-black tracking-widest">موضوع النقاش</p>
+                    <p className="text-xs font-black">{bookingDetails?.topic}</p>
+                 </div>
+                 <div className="space-y-1">
+                    <p className="text-[9px] opacity-70 uppercase font-black tracking-widest">المواعيد المقترحة</p>
+                    <p className="text-xs font-black bg-white/10 p-3 rounded-xl border border-white/5">{bookingDetails?.dates}</p>
+                 </div>
+                 <div className="flex items-center gap-2 pt-2 text-[8px] font-black opacity-60 uppercase tracking-widest">
+                    <Clock size={10} />
+                    انتظار التأكيد من الإدارة
+                 </div>
+              </div>
             ) : isFileCard ? (
               <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 underline text-sm">
                 📎 مرفق
