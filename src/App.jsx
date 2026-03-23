@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, lazy, Suspense } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
 import { io } from 'socket.io-client';
@@ -95,6 +95,7 @@ function App() {
   const { token, user, fetchProfile } = useAuthStore();
   const { addNotification, activeThreadId, incrementUnreadMessages, resetUnreadMessages } = useNotificationStore();
   const { t } = useTranslation();
+  const activeThreadRef = useRef(null);
   
   // SESSION PERSISTENCE: Only show splash once per browser session
   const [showSplash, setShowSplash] = useState(() => {
@@ -138,6 +139,13 @@ function App() {
   // REAL-TIME SMART LISTENERS (Clickable Toasts)
   useEffect(() => {
     if (!token || !user) return;
+    
+    // TRACK ACTIVE THREAD REF TO AVOID STALE CLOSURES IN SOCKET LISTENER
+    activeThreadRef.current = activeThreadId;
+  }, [activeThreadId]);
+
+  useEffect(() => {
+    if (!token || !user) return;
 
     // Use a single socket instance for the lifetime of the session/user
     const socket = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', {
@@ -174,7 +182,7 @@ function App() {
         if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/messages';
         else if (user.role === 'TEAM') path = '/team/messages';
 
-        if (activeThreadId && data.threadId === activeThreadId) {
+        if (activeThreadRef.current && data.threadId === activeThreadRef.current) {
           console.log("🤫 In-Chat Silence: Skipping toast/sound for thread", data.threadId);
         } else {
           incrementUnreadMessages(data.threadId);

@@ -254,8 +254,9 @@ const ClientMessages = () => {
   // Track active thread for global silence logic
   useEffect(() => {
     if (activeThread) {
-      setActiveThreadId(activeThread.id || user?.id);
-      resetUnreadMessages();
+      const tid = activeThread.type === 'GROUP' ? activeThread.id : user?.id;
+      setActiveThreadId(tid);
+      resetUnreadMessages(tid);
     } else {
       setActiveThreadId(null);
     }
