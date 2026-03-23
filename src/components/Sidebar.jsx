@@ -31,6 +31,7 @@ const adminLinks = [
   { to: '/admin/contracts', icon: FileBadge, labelKey: 'contracts' },
   { to: '/admin/payments', icon: CreditCard, labelKey: 'payments' },
   { to: '/admin/profile', icon: UserRound, labelKey: 'my_profile' },
+  { to: '/admin/notifications', icon: Bell, labelKey: 'notifications' },
 ];
 
 const teamLinks = [
@@ -38,6 +39,7 @@ const teamLinks = [
   { to: '/team/tasks', icon: CheckSquare, labelKey: 'my_tasks' },
   { to: '/team/files', icon: FileText, labelKey: 'files' },
   { to: '/team/profile', icon: UserRound, labelKey: 'my_profile' },
+  { to: '/team/notifications', icon: Bell, labelKey: 'notifications' },
 ];
 
 const clientLinks = [
@@ -48,6 +50,7 @@ const clientLinks = [
   { to: '/client/contracts', icon: FileSignature, labelKey: 'contracts' },
   { to: '/client/invoices', icon: Receipt, labelKey: 'invoices' },
   { to: '/client/profile', icon: UserRound, labelKey: 'my_profile' },
+  { to: '/client/notifications', icon: Bell, labelKey: 'notifications' },
 ];
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
@@ -62,7 +65,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         return adminLinks;
       case 'ADMIN':
         return adminLinks.filter(link => {
-          if (link.to === '/admin/profile' || link.to === '/admin') return true;
+          if (link.to === '/admin/profile' || link.to === '/admin' || link.to === '/admin/notifications') return true;
           if (link.to === '/admin/clients' && user?.permissions?.includes('CLIENTS')) return true;
           if (link.to === '/admin/team' && user?.permissions?.includes('TEAM')) return true;
           if (link.to === '/admin/projects' && user?.permissions?.includes('PROJECTS')) return true;
