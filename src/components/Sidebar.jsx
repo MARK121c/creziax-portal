@@ -16,7 +16,8 @@ import {
   ExternalLink,
   ShieldAlert,
   FileBadge,
-  FileSignature
+  FileSignature,
+  Bell
 } from 'lucide-react';
 
 const adminLinks = [
