@@ -59,13 +59,39 @@ const useNotificationStore = create(
     (set, get) => ({
       notifications: [],
       activeThreadId: null,
+      unreadThreads: {}, // { threadId: count }
       unreadMessagesCount: 0,
       
       setActiveThreadId: (id) => set({ activeThreadId: id }),
       
-      incrementUnreadMessages: () => set((state) => ({ unreadMessagesCount: state.unreadMessagesCount + 1 })),
+      incrementUnreadMessages: (threadId) => set((state) => {
+        const newUnreadThreads = { ...state.unreadThreads };
+        newUnreadThreads[threadId] = (newUnreadThreads[threadId] || 0) + 1;
+        
+        // Calculate global count
+        const globalCount = Object.values(newUnreadThreads).reduce((a, b) => a + b, 0);
+        
+        return { 
+          unreadThreads: newUnreadThreads,
+          unreadMessagesCount: globalCount
+        };
+      }),
       
-      resetUnreadMessages: () => set({ unreadMessagesCount: 0 }),
+      resetUnreadMessages: (threadId) => set((state) => {
+        const newUnreadThreads = { ...state.unreadThreads };
+        if (threadId) {
+          delete newUnreadThreads[threadId];
+        } else {
+          // If no threadId, reset everything
+          return { unreadThreads: {}, unreadMessagesCount: 0 };
+        }
+        
+        const globalCount = Object.values(newUnreadThreads).reduce((a, b) => a + b, 0);
+        return { 
+          unreadThreads: newUnreadThreads,
+          unreadMessagesCount: globalCount
+        };
+      }),
       
       addNotification: (message, type = 'info') => {
         // Trigger sound for all notifications except maybe very silent ones

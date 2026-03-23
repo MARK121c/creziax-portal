@@ -169,14 +169,13 @@ const DriveLinkPanel = ({ activeThread, user, onClose, onSend }) => {
 const ClientMessages = () => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
-  const { setActiveThreadId, resetUnreadMessages } = useNotificationStore();
+  const { setActiveThreadId, resetUnreadMessages, unreadThreads } = useNotificationStore();
   
   const [supportContact, setSupportContact] = useState(null);
   const [projects, setProjects] = useState([]);
   const [messages, setMessages] = useState([]);
   const [content, setContent] = useState('');
   const [activeThread, setActiveThread] = useState(null);
-  const [unreadThreads, setUnreadThreads] = useState({});
   
   const [loadingSidebar, setLoadingSidebar] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -338,8 +337,10 @@ const ClientMessages = () => {
     };
     setActiveThread(thread);
     const threadIdToFetch = type === 'GROUP' ? item.id : user.id;
-    // Clear unread for this thread
-    setUnreadThreads(prev => { const n = { ...prev }; delete n[threadIdToFetch]; return n; });
+    
+    // Clear global unread for this thread
+    resetUnreadMessages(threadIdToFetch);
+    
     fetchThreadMessages(threadIdToFetch);
     setShowDrivePanel(false);
   };
@@ -464,8 +465,11 @@ const ClientMessages = () => {
                         <h4 className="text-xs font-black truncate">{t('support_team_contact')}</h4>
                         <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.userId === supportContact.id ? 'text-white' : 'text-slate-400'}`}>{t('support_always_help')}</p>
                       </div>
-                      {unreadThreads[user?.id] > 0 && (
-                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse flex-shrink-0" />
+                      
+                      {unreadThreads[user?.id] > 0 && activeThread?.userId !== supportContact.id && (
+                        <span className="min-w-[18px] h-[18px] rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center px-1 animate-pulse shrink-0">
+                          {unreadThreads[user?.id]}
+                        </span>
                       )}
                     </button>
                   </div>
@@ -487,8 +491,9 @@ const ClientMessages = () => {
                           <h4 className="text-xs font-black truncate">{p.name}</h4>
                           <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === p.id ? 'text-white' : 'text-slate-400'}`}>{t('project_workgroup')}</p>
                         </div>
-                        {unreadThreads[p.id] > 0 && (
-                          <span className="min-w-[18px] h-[18px] rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center px-1 animate-pulse">
+                        
+                        {unreadThreads[p.id] > 0 && activeThread?.id !== p.id && (
+                          <span className="min-w-[18px] h-[18px] rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center px-1 animate-pulse shrink-0">
                             {unreadThreads[p.id]}
                           </span>
                         )}

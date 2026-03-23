@@ -109,7 +109,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             Creziax
           </span>
           <span className="text-[9px] font-black text-brand-500 uppercase tracking-[0.2em] -mt-0.5">
-            V3.3 ELITE
+            V3.5 ELITE
           </span>
         </div>
       </div>
@@ -123,9 +123,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             end={to === '/admin' || to === '/team' || to === '/client'}
             onClick={closeMobileMenu}
             className={({ isActive }) =>
-              `flex items-center gap-3.5 px-4 py-3 rounded-2xl text-[13px] font-bold transition-all duration-300 group ${
+              `flex items-center gap-4 px-5 py-4 rounded-2xl text-[14px] font-bold transition-all duration-300 group ${
                 isActive
-                  ? 'bg-brand-600 text-white shadow-md shadow-brand-500/10'
+                  ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/20'
                   : 'text-slate-500 dark:text-slate-500 hover:text-brand-600 dark:hover:text-slate-200 hover:bg-brand-50/50 dark:hover:bg-white/5'
               }`
             }

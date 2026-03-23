@@ -1,18 +1,26 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bell, CheckCircle2, Clock, Trash2 } from 'lucide-react';
+import { Bell, CheckCircle2, Clock, Trash2, Loader2 } from 'lucide-react';
 import useNotificationStore from '../../store/notificationStore';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const NotificationsPage = () => {
   const { t, i18n } = useTranslation();
-  const { notifications, markAllRead, clearAll } = useNotificationStore();
+  const { notifications = [], markAllRead, clearAll } = useNotificationStore(); // Definitive Safety Default
 
   useEffect(() => {
-    console.log("🔔 NotificationsPage Mounted for role:", localStorage.getItem('user_role') || 'Unknown');
-  }, []);
+    console.log("🔔 NotificationsPage Mounted. Count:", notifications?.length);
+  }, [notifications]);
 
-  if (!notifications) return <div className="p-10 text-center font-bold">Loading Notifications...</div>;
+  // Extra guard against state inconsistencies
+  if (!notifications || !Array.isArray(notifications)) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center p-20 text-center">
+        <Loader2 size={40} className="animate-spin text-brand-500 mb-4" />
+        <p className="font-bold text-slate-500 italic">Initializing Secure Notifications Hub...</p>
+      </div>
+    );
+  }
   const isRTL = i18n.language === 'ar';
 
   return (

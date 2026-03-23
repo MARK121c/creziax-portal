@@ -167,23 +167,19 @@ function App() {
     };
 
     socket.on('smart_notification', (data) => {
-      // CRITICAL: Prevent self-notification
       if (data.senderId === user.id) return;
 
       if (data.type === 'message') {
-        // WhatsApp-style: Silence if already in this chat thread
-        if (activeThreadId && data.threadId === activeThreadId) {
-          console.log("🤫 In-Chat Silence: Skipping toast/sound for thread", data.threadId);
-          return;
-        }
-
         let path = '/client/messages';
         if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/messages';
         else if (user.role === 'TEAM') path = '/team/messages';
-        
-        // If not in this chat, increment unread counter and notify
-        incrementUnreadMessages();
-        notifyClickable(t('new_message_received_global', '🔊 لديك رسالة جديدة'), '💬', path);
+
+        if (activeThreadId && data.threadId === activeThreadId) {
+          console.log("🤫 In-Chat Silence: Skipping toast/sound for thread", data.threadId);
+        } else {
+          incrementUnreadMessages(data.threadId);
+          notifyClickable(t('new_message_received_global', '🔊 لديك رسالة جديدة'), '💬', path);
+        }
       }
     });
 
