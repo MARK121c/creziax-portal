@@ -119,7 +119,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    console.log("%c Creziax Portal v7.0.0-AbsoluteRecovery %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
+    console.log("%c Creziax Portal v8.0.0-AbsolutePrivacy %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
     if (token) {
       fetchProfile();
     }
@@ -182,25 +182,31 @@ function App() {
         if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/messages';
         else if (user.role === 'TEAM') path = '/team/messages';
 
-          // MATH LOGIC (v4.0 Elite): 
-          // 1. If it's a project/group, data.threadId is the target.
-          // 2. If it's a DM, senderId is the target.
-          let targetId = data.threadId; 
-          
-          if (user.role === 'CLIENT') {
-             // For clients, Support chat uses their user.id as key in UI
-             if (!data.threadId || data.threadId === user.id) targetId = user.id;
-          } else {
-             // For Admin/Team, DMs use senderId
-             if (!data.threadId && data.senderId) targetId = data.senderId;
-          }
+        // ABSOLUTE PRIVACY LOGIC (v8.0): 
+        // threadId is the SUPREME key. 
+        // 1. If data.threadId exists, it's a Project/Group. Match ONLY by threadId.
+        // 2. If data.threadId is null, it's a DM. Match by senderId.
+        let targetId = data.threadId; 
+        
+        if (!targetId) {
+           // Fallback for DMs
+           if (user.role === 'CLIENT') targetId = user.id;
+           else targetId = data.senderId;
+        }
 
-          if (activeThreadRef.current && (targetId === activeThreadRef.current || data.senderId === activeThreadRef.current)) {
-             // Silence: In-chat
-          } else {
-             if (targetId) incrementUnreadMessages(targetId);
-             notifyClickable(t('new_message_received_global', '🔊 لديك رسالة جديدة'), '💬', path);
-          }
+        // Strict Thread Isolation Check (v8.0)
+        // Ensure no "leakage" even if senderId matches a different open thread
+        const isCurrentlyViewingThisSpecificThread = activeThreadRef.current && (
+           (data.threadId && data.threadId === activeThreadRef.current) || // Strict Group match
+           (!data.threadId && targetId === activeThreadRef.current) // Strict DM match
+        );
+
+        if (isCurrentlyViewingThisSpecificThread) {
+           // Silence: User is already in this specific thread
+        } else {
+           if (targetId) incrementUnreadMessages(targetId);
+           notifyClickable(t('new_message_received_global', '🔊 لديك رسالة جديدة'), '💬', path);
+        }
       }
     });
 

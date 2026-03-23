@@ -134,14 +134,30 @@ const MessagesPage = () => {
 
     socket.on('receive_message', (msg) => {
       const current = activeThreadRef.current;
-      // Robust check: Match if threadId matches activeThread.id OR if it's a DM match
-      const isMatch = (msg.threadId === current?.id) || (msg.senderId === current?.userId);
+      
+      // ABSOLUTE PRIVACY v8.0:
+      // 1. If it's a project/group message (has threadId), match strictly by ID.
+      // 2. If it's a DM (threadId is null), match by senderId.
+      let isMatch = false;
+      if (msg.threadId) {
+        // Project/Group Match
+        isMatch = (msg.threadId === current?.id);
+      } else {
+        // DM Match
+        isMatch = (msg.senderId === current?.userId);
+      }
       
       if (isMatch) {
         if (msg.senderId !== user?.id) {
+          // Payload Sanitation: Ensure we have at least a sender name to avoid ???
+          const processedMsg = {
+            ...msg,
+            sender: msg.sender || { firstName: t('unknown_user', 'مستخدم'), role: 'USER' }
+          };
+          
           setMessages(prev => {
             if (prev.find(m => m.id === msg.id)) return prev;
-            return [...prev, msg];
+            return [...prev, processedMsg];
           });
         }
       }
