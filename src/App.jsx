@@ -93,7 +93,7 @@ const LanguageInitializer = () => {
 function App() {
   const navigate = useNavigate();
   const { token, user, fetchProfile } = useAuthStore();
-  const { addNotification } = useNotificationStore();
+  const { addNotification, activeThreadId, incrementUnreadMessages, resetUnreadMessages } = useNotificationStore();
   const { t } = useTranslation();
   
   // SESSION PERSISTENCE: Only show splash once per browser session
@@ -171,10 +171,18 @@ function App() {
       if (data.senderId === user.id) return;
 
       if (data.type === 'message') {
+        // WhatsApp-style: Silence if already in this chat thread
+        if (activeThreadId && data.threadId === activeThreadId) {
+          console.log("🤫 In-Chat Silence: Skipping toast/sound for thread", data.threadId);
+          return;
+        }
+
         let path = '/client/messages';
         if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/messages';
         else if (user.role === 'TEAM') path = '/team/messages';
         
+        // If not in this chat, increment unread counter and notify
+        incrementUnreadMessages();
         notifyClickable(t('new_message_received_global', '🔊 لديك رسالة جديدة'), '💬', path);
       }
     });

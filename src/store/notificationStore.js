@@ -58,6 +58,14 @@ const useNotificationStore = create(
   persist(
     (set, get) => ({
       notifications: [],
+      activeThreadId: null,
+      unreadMessagesCount: 0,
+      
+      setActiveThreadId: (id) => set({ activeThreadId: id }),
+      
+      incrementUnreadMessages: () => set((state) => ({ unreadMessagesCount: state.unreadMessagesCount + 1 })),
+      
+      resetUnreadMessages: () => set({ unreadMessagesCount: 0 }),
       
       addNotification: (message, type = 'info') => {
         // Trigger sound for all notifications except maybe very silent ones

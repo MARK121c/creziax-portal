@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import useNotificationStore from '../store/notificationStore';
 import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
@@ -56,6 +57,7 @@ const clientLinks = [
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuthStore();
+  const { unreadMessagesCount } = useNotificationStore();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
@@ -128,8 +130,18 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               }`
             }
           >
-            <Icon size={18} className={`transition-transform group-hover:scale-110 ${isRTL ? 'ml-0.5' : ''}`} />
-            {t(labelKey)}
+            <div className={`flex items-center justify-between w-full ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className="flex items-center gap-3.5">
+                <Icon size={18} className="transition-transform group-hover:scale-110" />
+                <span>{t(labelKey)}</span>
+              </div>
+              
+              {unreadMessagesCount > 0 && to.includes('messages') && (
+                <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-lg shadow-rose-500/20 animate-pulse">
+                  {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+                </span>
+              )}
+            </div>
           </NavLink>
         ))}
         {user?.clientInfo?.notionLink && (

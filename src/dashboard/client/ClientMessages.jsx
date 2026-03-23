@@ -7,6 +7,7 @@ import {
   createTicketAPI
 } from '../../store/api';
 import useAuthStore from '../../store/authStore';
+import useNotificationStore from '../../store/notificationStore';
 import { io } from 'socket.io-client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
@@ -168,6 +169,7 @@ const DriveLinkPanel = ({ activeThread, user, onClose, onSend }) => {
 const ClientMessages = () => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
+  const { setActiveThreadId, resetUnreadMessages } = useNotificationStore();
   
   const [supportContact, setSupportContact] = useState(null);
   const [projects, setProjects] = useState([]);
@@ -219,6 +221,8 @@ const ClientMessages = () => {
 
   useEffect(() => {
     fetchData();
+    // Reset unread count when opening messages page
+    resetUnreadMessages();
 
     socketRef.current = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', {
       transports: ['websocket'],
@@ -241,8 +245,22 @@ const ClientMessages = () => {
       }
     });
 
-    return () => socketRef.current?.disconnect();
-  }, [fetchData, user?.id]);
+    return () => {
+      socketRef.current?.disconnect();
+      // Clear active thread on unmount
+      setActiveThreadId(null);
+    };
+  }, [fetchData, user?.id, resetUnreadMessages, setActiveThreadId]);
+
+  // Track active thread for global silence logic
+  useEffect(() => {
+    if (activeThread) {
+      setActiveThreadId(activeThread.id || user?.id);
+      resetUnreadMessages();
+    } else {
+      setActiveThreadId(null);
+    }
+  }, [activeThread, user?.id, setActiveThreadId, resetUnreadMessages]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
