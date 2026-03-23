@@ -13,6 +13,7 @@ import {
   removeGroupMemberAPI
 } from '../../store/api';
 import useAuthStore from '../../store/authStore';
+import useNotificationStore from '../../store/notificationStore';
 import { io } from 'socket.io-client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
@@ -27,6 +28,7 @@ import EmojiPicker from 'emoji-picker-react';
 const MessagesPage = () => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
+  const { setActiveThreadId, resetUnreadMessages, unreadThreads } = useNotificationStore();
   
   const [clients, setClients] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -93,7 +95,7 @@ const MessagesPage = () => {
       setTeamMembers(uRes.data.filter(u => u.role !== 'CLIENT'));
       setTeamGroups(gRes.data);
     } catch (err) {
-      toast.error("فشل تحميل البيانات");
+      toast.error("??? ????? ????????");
     } finally {
       setLoadingSidebar(false);
     }
@@ -109,21 +111,33 @@ const MessagesPage = () => {
         socketRef.current.emit('join_thread', threadId);
       }
     } catch (err) {
-      toast.error("فشل تحميل الرسائل");
+      toast.error("??? ????? ???????");
     } finally {
       setLoadingMessages(false);
     }
   };
 
+  // Stability Fix (v3.9 Elite): Use refs for socket listeners to avoid disconnect/reconnect loops
+  const activeThreadRef = useRef(activeThread);
+  useEffect(() => {
+    activeThreadRef.current = activeThread;
+  }, [activeThread]);
+
   useEffect(() => {
     fetchData();
-
-    socketRef.current = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', {
+    
+    const socket = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', {
       transports: ['websocket'],
+      auth: { token: localStorage.getItem('token') }
     });
+    socketRef.current = socket;
 
-    socketRef.current.on('receive_message', (msg) => {
-      if (msg.threadId === activeThread?.id) {
+    socket.on('receive_message', (msg) => {
+      const current = activeThreadRef.current;
+      // Robust check: Match if threadId matches activeThread.id OR if it's a DM match
+      const isMatch = (msg.threadId === current?.id) || (msg.senderId === current?.userId);
+      
+      if (isMatch) {
         if (msg.senderId !== user?.id) {
           setMessages(prev => {
             if (prev.find(m => m.id === msg.id)) return prev;
@@ -133,8 +147,10 @@ const MessagesPage = () => {
       }
     });
 
-    return () => socketRef.current.disconnect();
-  }, [fetchData, activeThread?.id]);
+    return () => {
+      socket.disconnect();
+    };
+  }, [user]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -156,7 +172,7 @@ const MessagesPage = () => {
     const socialRegex = /(t\.me|wa\.me|whatsapp|telegram)/i;
 
     if (phoneRegex.test(text) || emailRegex.test(text) || socialRegex.test(text)) {
-      toast.error('عذراً، يمنع مشاركة بيانات التواصل الخارجية لضمان أمان العمل والالتزام بسياسة الخصوصية.', {
+      toast.error('?????? ???? ?????? ?????? ??????? ???????? ????? ???? ????? ????????? ?????? ????????.', {
         icon: <ShieldAlert className="text-rose-500" />,
         duration: 5000
       });
@@ -186,7 +202,7 @@ const MessagesPage = () => {
       if (err.response?.status === 403) {
         toast.error(err.response.data.message);
       } else {
-        toast.error("فشل إرسال الرسالة");
+        toast.error("??? ????? ???????");
       }
     }
   };
@@ -195,7 +211,7 @@ const MessagesPage = () => {
   const handleSendDriveLink = async () => {
     if (!driveLink.trim() || !activeThread) return;
     if (!driveLink.startsWith('http')) {
-      toast.error('يرجى إدخال رابط صحيح');
+      toast.error('???? ????? ???? ????');
       return;
     }
     try {
@@ -209,49 +225,49 @@ const MessagesPage = () => {
       setMessages(prev => [...prev, { ...data, sender: user }]);
       setDriveLink('');
       setShowLinkModal(false);
-      toast.success('تم إرسال رابط الملف بنجاح');
+      toast.success('?? ????? ???? ????? ?????');
     } catch (err) {
-      toast.error('فشل إرسال الرابط');
+      toast.error('??? ????? ??????');
     }
   };
 
   const handleClearChat = async () => {
     if (!activeThread) return;
-    if (!window.confirm("تحذير: هل أنت متأكد من مسح جميع رسائل هذه المحادثة؟ سيتم حذفها نهائياً ولن يمكن استرجاعها.")) return;
+    if (!window.confirm("?????: ?? ??? ????? ?? ??? ???? ????? ??? ????????? ???? ????? ??????? ??? ???? ?????????.")) return;
     try {
       await clearMessagesAPI(activeThread.id);
       setMessages([]);
-      toast.success("تم مسح المحادثة بنجاح من قاعدة البيانات");
+      toast.success("?? ??? ???????? ????? ?? ????? ????????");
     } catch (err) {
-      toast.error(err.response?.data?.message || "فشل مسح المحادثة");
+      toast.error(err.response?.data?.message || "??? ??? ????????");
     }
   };
 
 
   // Handle delete entire group
   const handleDeleteGroup = async (groupId) => {
-    if (!window.confirm('تحذير: سيتم حذف الجروب وجميع رسائله نهائياً. متأكد?')) return;
+    if (!window.confirm('?????: ???? ??? ?????? ????? ?????? ???????. ??????')) return;
     try {
       await deleteTeamGroupAPI(groupId);
       setTeamGroups(prev => prev.filter(g => g.id !== groupId));
       if (activeThread?.id === groupId) setActiveThread(null);
-      toast.success('تم حذف الجروب بنجاح');
+      toast.success('?? ??? ?????? ?????');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'فشل حذف الجروب');
+      toast.error(err.response?.data?.message || '??? ??? ??????');
     }
   };
 
   // Handle remove single member from group
   const handleRemoveMember = async (groupId, memberId) => {
-    if (!window.confirm('إزالة هذا العضو من الجروب?')) return;
+    if (!window.confirm('????? ??? ????? ?? ???????')) return;
     try {
       await removeGroupMemberAPI(groupId, memberId);
       setTeamGroups(prev => prev.map(g =>
         g.id === groupId ? { ...g, members: g.members.filter(m => m.id !== memberId) } : g
       ));
-      toast.success('تم إزالة العضو');
+      toast.success('?? ????? ?????');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'فشل إزالة العضو');
+      toast.error(err.response?.data?.message || '??? ????? ?????');
     }
   };
 
@@ -269,17 +285,26 @@ const MessagesPage = () => {
       memberCount = teamMembers.length + 1; // Team + Owner
     }
 
-    const thread = {
-      id: type === 'DM' || type === 'TEAM' ? item.user?.id || item.id : item.id,
+    const threadId = type === 'DM' || type === 'TEAM' ? item.user?.id || item.id : item.id;
+    
+    // Reset by both ID and possible senderId for DMs to ensure "Ghost Badges" are cleared immediately
+    resetUnreadMessages(threadId); 
+    if (type === 'DM' || type === 'TEAM') {
+       // Also attempt to reset by the generic threadId if available
+       if (item.id && item.id !== threadId) resetUnreadMessages(item.id);
+    }
+
+    setActiveThreadId(threadId);
+    setActiveThread({
+      id: threadId,
       name: type === 'DM' || type === 'TEAM' ? (item.user ? `${item.user.firstName} ${item.user.lastName}` : (item.firstName ? `${item.firstName} ${item.lastName}` : item.name)) : item.name,
       type: type,
       userId: type === 'DM' || type === 'TEAM' ? (item.user?.id || item.id) : null,
       driveUrl: type === 'GROUP' ? item.driveUrl : null,
       avatarUrl: type === 'DM' || type === 'TEAM' ? (item.logoUrl || item.avatarUrl) : null,
       memberCount
-    };
-    setActiveThread(thread);
-    fetchThreadMessages(thread.id);
+    });
+    fetchThreadMessages(threadId);
   };
 
   const filteredClients = clients.filter(c => {
@@ -301,11 +326,11 @@ const MessagesPage = () => {
     try {
       // Execute concurrently for all selected members
       await Promise.all(selectedTeamMembers.map(id => grantChatAccessAPI(id, activeThread.id)));
-      toast.success(`تم منح صلاحية الوصول بنجاح`);
+      toast.success(`?? ??? ?????? ?????? ?????`);
       setIsAddMemberModalOpen(false);
       setSelectedTeamMembers([]);
     } catch (err) {
-      toast.error(err.response?.data?.message || "فشل منح الصلاحية");
+      toast.error(err.response?.data?.message || "??? ??? ????????");
     } finally {
       setGrantingAccess(false);
     }
@@ -314,20 +339,20 @@ const MessagesPage = () => {
   const handleCreateGroup = async (e) => {
     if (e) e.preventDefault();
     if (!newGroupData.name || newGroupData.memberIds.length === 0) {
-      toast.error("يرجى إدخال اسم الجروب واختيار أعضاء");
+      toast.error("???? ????? ??? ?????? ??????? ?????");
       return;
     }
     setCreatingGroup(true);
     try {
       const { data } = await createTeamGroupAPI(newGroupData);
       setTeamGroups(prev => [...prev, data]);
-      toast.success("تم إنشاء جروب الفريق بنجاح");
+      toast.success("?? ????? ???? ?????? ?????");
       setIsCreateGroupModalOpen(false);
       setNewGroupData({ name: '', memberIds: [] });
       // Auto-select the new group
       selectThread(data, 'TEAM_GROUP');
     } catch (err) {
-      toast.error(err.response?.data?.message || "فشل إنشاء الجروب");
+      toast.error(err.response?.data?.message || "??? ????? ??????");
     } finally {
       setCreatingGroup(false);
     }
@@ -351,9 +376,9 @@ Availability: ${bookingData.dates}`;
       setBookingData({ topic: '', dates: '' });
       setIsBookingModalOpen(false);
       setMessages(prev => [...prev, { ...data, sender: user }]);
-      toast.success("تم إرسال طلب الموعد");
+      toast.success("?? ????? ??? ??????");
     } catch (err) {
-      toast.error("فشل إرسال طلب الموعد");
+      toast.error("??? ????? ??? ??????");
     } finally {
        setSendingBooking(false);
     }
@@ -365,19 +390,19 @@ Availability: ${bookingData.dates}`;
         <div className="w-full h-full flex items-center justify-center bg-white dark:bg-[#0a0a0c]/40 rounded-[2.5rem] border border-slate-200 dark:border-white/5 shadow-xl">
            <div className="flex flex-col items-center gap-4">
             <Loader2 className="animate-spin text-brand-500" size={32} />
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">جاري تهيئة مركز الرسائل...</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">???? ????? ???? ???????...</span>
           </div>
         </div>
       ) : (
         <>
           <div className="w-full lg:w-96 bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] flex flex-col overflow-hidden shadow-xl shadow-slate-200/20 dark:shadow-none max-h-[45vh] lg:max-h-none">
             <div className="p-6 md:p-8 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01]">
-              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight mb-6">مركز الرسائل الآمن</h2>
+              <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight mb-6">???? ??????? ?????</h2>
               <div className="relative group">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-500 transition-colors" size={16} />
                 <input 
                   type="text" 
-                  placeholder="البحث في المحادثات..." 
+                  placeholder="????? ?? ?????????..." 
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all"
@@ -396,7 +421,7 @@ Availability: ${bookingData.dates}`;
                       onClick={() => toggleSection('projects')}
                       className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all group"
                     >
-                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">جروبات المشاريع (Teams)</h3>
+                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">?????? ???????? (Teams)</h3>
                       <div className={`text-slate-400 transition-transform duration-300 ${expandedSections.projects ? 'rotate-180' : ''}`}>
                         <ChevronRight size={14} />
                       </div>
@@ -411,8 +436,14 @@ Availability: ${bookingData.dates}`;
                           >
                             <div className="flex-1 text-right overflow-hidden">
                               <h4 className="text-xs font-black truncate">{p.name}</h4>
-                              <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === p.id ? 'text-white' : 'text-slate-400'}`}>{t('project_command_center', 'مركز قيادة المشروع')}</p>
+                              <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === p.id ? 'text-white' : 'text-slate-400'}`}>{t('project_command_center', '???? ????? ???????')}</p>
                             </div>
+                            
+                            {unreadThreads[p.id] > 0 && activeThread?.id !== p.id && (
+                              <span className="bg-rose-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-pulse shrink-0">
+                                {unreadThreads[p.id]}
+                              </span>
+                            )}
                           </button>
                         ))}
                       </div>
@@ -427,7 +458,7 @@ Availability: ${bookingData.dates}`;
                           onClick={() => toggleSection('groups')}
                           className="flex items-center gap-2 hover:text-brand-500 transition-colors group"
                         >
-                          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">{t('internal_team_channels', 'قنوات الفريق (Internal)')}</h3>
+                          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">{t('internal_team_channels', '????? ?????? (Internal)')}</h3>
                           <div className={`text-slate-400 transition-transform duration-300 ${expandedSections.groups ? 'rotate-180' : ''}`}>
                             <ChevronRight size={14} />
                           </div>
@@ -436,7 +467,7 @@ Availability: ${bookingData.dates}`;
                           <button 
                             onClick={() => setIsCreateGroupModalOpen(true)}
                             className="w-6 h-6 rounded-lg bg-brand-500/10 text-brand-500 flex items-center justify-center hover:bg-brand-500 hover:text-white transition-all shadow-sm"
-                            title="إنشاء جروب جديد"
+                            title="????? ???? ????"
                           >
                             <Plus size={14} />
                           </button>
@@ -446,13 +477,18 @@ Availability: ${bookingData.dates}`;
                         <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
                            {/* Global Team Channel (Always first in this section) */}
                            <button 
-                            onClick={() => selectThread({ id: 'TEAM_GLOBAL', name: 'قروب الفريق (العام)' }, 'GROUP')}
+                            onClick={() => selectThread({ id: 'TEAM_GLOBAL', name: '???? ?????? (?????)' }, 'GROUP')}
                             className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.id === 'TEAM_GLOBAL' ? 'bg-emerald-600 text-white shadow-lg' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
                           >
                             <div className="flex-1 text-right overflow-hidden">
-                              <h4 className="text-xs font-black truncate">قروب الفريق (العام)</h4>
-                              <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === 'TEAM_GLOBAL' ? 'text-white' : 'text-emerald-500'}`}>المركز الرئيسي للنقاش</p>
+                              <h4 className="text-xs font-black truncate">???? ?????? (?????)</h4>
+                              <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === 'TEAM_GLOBAL' ? 'text-white' : 'text-emerald-500'}`}>?????? ??????? ??????</p>
                             </div>
+                            {unreadThreads['TEAM_GLOBAL'] > 0 && activeThread?.id !== 'TEAM_GLOBAL' && (
+                              <span className="bg-rose-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-pulse shrink-0">
+                                {unreadThreads['TEAM_GLOBAL']}
+                              </span>
+                            )}
                           </button>
 
                           {/* Custom Team Groups */}
@@ -464,8 +500,14 @@ Availability: ${bookingData.dates}`;
                                   className="flex-1 text-right overflow-hidden"
                                 >
                                   <h4 className="text-xs font-black truncate">{tg.name}</h4>
-                                  <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === tg.id ? 'text-white' : 'text-slate-400'}`}>{tg.members?.length} أعضاء</p>
+                                  <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === tg.id ? 'text-white' : 'text-slate-400'}`}>{tg.members?.length} ?????</p>
                                 </button>
+                                
+                                {unreadThreads[tg.id] > 0 && activeThread?.id !== tg.id && (
+                                  <span className="bg-rose-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-pulse shrink-0">
+                                    {unreadThreads[tg.id]}
+                                  </span>
+                                )}
                                 {(user.role === 'ADMIN' || user.role === 'OWNER') && (
                                   <div className="flex items-center gap-1 flex-shrink-0">
                                     <button
@@ -475,14 +517,14 @@ Availability: ${bookingData.dates}`;
                                           ? 'bg-white/20 text-white'
                                           : 'bg-slate-100 dark:bg-white/10 text-slate-400 hover:text-brand-500'
                                       }`}
-                                      title="إدارة الأعضاء"
+                                      title="????? ???????"
                                     >
                                       <Users size={12} />
                                     </button>
                                     <button
                                       onClick={() => handleDeleteGroup(tg.id)}
                                       className="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all"
-                                      title="حذف الجروب"
+                                      title="??? ??????"
                                     >
                                       <Trash2 size={12} />
                                     </button>
@@ -497,7 +539,7 @@ Availability: ${bookingData.dates}`;
                                       <button
                                         onClick={() => handleRemoveMember(tg.id, m.id)}
                                         className="w-6 h-6 rounded-lg text-rose-400 hover:bg-rose-500/10 flex items-center justify-center transition-all flex-shrink-0"
-                                        title="إزالة من الجروب"
+                                        title="????? ?? ??????"
                                       >
                                         <UserMinus size={12} />
                                       </button>
@@ -520,7 +562,7 @@ Availability: ${bookingData.dates}`;
                         onClick={() => toggleSection('team')}
                         className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all group"
                       >
-                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">أعضاء الفريق (Internal)</h3>
+                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">????? ?????? (Internal)</h3>
                         <div className={`text-slate-400 transition-transform duration-300 ${expandedSections.team ? 'rotate-180' : ''}`}>
                           <ChevronRight size={14} />
                         </div>
@@ -535,8 +577,14 @@ Availability: ${bookingData.dates}`;
                             >
                               <div className="flex-1 text-right overflow-hidden">
                                 <h4 className="text-xs font-black truncate">{tm.firstName} {tm.lastName}</h4>
-                                <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === tm.id ? 'text-white' : 'text-slate-400'}`}>{tm.position || 'عضو بالفريق'}</p>
+                                <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === tm.id ? 'text-white' : 'text-slate-400'}`}>{tm.position || '??? ???????'}</p>
                               </div>
+                              
+                              {unreadThreads[tm.id] > 0 && activeThread?.id !== tm.id && (
+                                <span className="bg-rose-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-pulse shrink-0">
+                                  {unreadThreads[tm.id]}
+                                </span>
+                              )}
                             </button>
                           ))}
                         </div>
@@ -550,7 +598,7 @@ Availability: ${bookingData.dates}`;
                       onClick={() => toggleSection('clients')}
                       className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all group"
                     >
-                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">{t('client_dms', 'شات العملاء (DMs)')}</h3>
+                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-brand-500 transition-colors">{t('client_dms', '??? ??????? (DMs)')}</h3>
                       <div className={`text-slate-400 transition-transform duration-300 ${expandedSections.clients ? 'rotate-180' : ''}`}>
                         <ChevronRight size={14} />
                       </div>
@@ -565,8 +613,14 @@ Availability: ${bookingData.dates}`;
                           >
                             <div className="flex-1 text-right overflow-hidden">
                               <h4 className="text-xs font-black truncate">{c.user?.firstName} {c.user?.lastName}</h4>
-                              <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === c.user?.id ? 'text-white' : 'text-slate-400'}`}>{c.company || 'محادثة خاصة'}</p>
+                              <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === c.user?.id ? 'text-white' : 'text-slate-400'}`}>{c.company || '?????? ????'}</p>
                             </div>
+
+                            {unreadThreads[c.user?.id] > 0 && activeThread?.id !== c.user?.id && (
+                              <span className="bg-rose-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-pulse shrink-0">
+                                {unreadThreads[c.user?.id]}
+                              </span>
+                            )}
                           </button>
                         ))}
                       </div>
@@ -583,8 +637,8 @@ Availability: ${bookingData.dates}`;
                 <div className="w-24 h-24 bg-brand-500/5 rounded-[2.5rem] flex items-center justify-center mb-8 border border-brand-500/10">
                   <MessageSquare size={44} className="text-brand-500" />
                 </div>
-                <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2 italic">الخصوصية أولاً</h3>
-                <p className="text-slate-500 max-w-sm font-bold text-sm leading-relaxed">نظام التواصل الآمن من Creziax. اختر محادثة للبدء، جميع الرسائل مشفرة وتحت رقابة صارمة لضمان الخصوصية.</p>
+                <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2 italic">???????? ?????</h3>
+                <p className="text-slate-500 max-w-sm font-bold text-sm leading-relaxed">???? ??????? ????? ?? Creziax. ???? ?????? ?????? ???? ??????? ????? ???? ????? ????? ????? ????????.</p>
               </div>
             ) : (
               <>
@@ -599,9 +653,9 @@ Availability: ${bookingData.dates}`;
                        </h2>
                        <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{activeThread.type === 'DM' ? 'محادثة خاصة' : activeThread.type === 'TEAM_GROUP' ? 'مجموعة عمل داخلي' : 'جروب المشـروع'} • قناة تواصل محصنة</span>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{activeThread.type === 'DM' ? '?????? ????' : activeThread.type === 'TEAM_GROUP' ? '?????? ??? ?????' : '???? ????????'} . ???? ????? ?????</span>
                           <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
-                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5" dir="rtl"><Users size={12}/> {activeThread.memberCount} أشخاص</span>
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5" dir="rtl"><Users size={12}/> {activeThread.memberCount} ?????</span>
                        </div>
                     </div>
                   </div>
@@ -613,14 +667,14 @@ Availability: ${bookingData.dates}`;
                         className="flex items-center gap-2.5 px-6 py-3.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all hover:bg-slate-200 dark:hover:bg-white/10 active:scale-95"
                        >
                          <UserPlus size={16} />
-                         إضافة عضو فريق
+                         ????? ??? ????
                        </button>
                      )}
                      {(user.role === 'ADMIN' || user.role === 'OWNER') && (
                         <button 
                           onClick={handleClearChat}
                           className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 transition-all hover:bg-rose-500/20 active:scale-95 flex items-center justify-center border border-rose-500/20"
-                          title="مسح جميع بيانات المحادثة نهائياً"
+                          title="??? ???? ?????? ???????? ???????"
                         >
                           <Trash2 size={20} />
                         </button>
@@ -633,7 +687,7 @@ Availability: ${bookingData.dates}`;
                          className="flex items-center gap-2.5 px-6 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl hover:scale-105 active:scale-95"
                        >
                          <Briefcase size={16} />
-                         ملفات المشروع
+                         ????? ???????
                        </a>
                      )}
                      <button 
@@ -642,7 +696,7 @@ Availability: ${bookingData.dates}`;
                     className="flex items-center gap-2.5 px-6 py-3.5 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-brand-600/20 hover:scale-105 active:scale-95"
                   >
                     <Calendar size={16} />
-                    حجز موعد الاجتماع
+                    ??? ???? ????????
                   </button>
                   </div>
                 </div>
@@ -653,7 +707,7 @@ Availability: ${bookingData.dates}`;
                   ) : messages.length === 0 ? (
                      <div className="h-full flex flex-col items-center justify-center opacity-20 py-20 text-center">
                        <ShieldAlert size={44} className="mb-4 text-brand-500" />
-                       <p className="font-black text-[10px] uppercase tracking-[0.2em] max-w-xs leading-loose italic">ابدأ المحادثة الآن. جميع البيانات محمية بفلتر الخصوصية التلقائي.</p>
+                       <p className="font-black text-[10px] uppercase tracking-[0.2em] max-w-xs leading-loose italic">???? ???????? ????. ???? ???????? ????? ????? ???????? ????????.</p>
                      </div>
                   ) : messages.map((m, i) => {
                       const isDriveLink = m.content?.startsWith('[DRIVE_LINK]');
@@ -688,7 +742,7 @@ Availability: ${bookingData.dates}`;
                              <div className={`flex items-center gap-3 mb-2 px-1 ${m.senderId === user?.id ? 'flex-row-reverse' : ''}`}>
 
                                 <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                                  {m.sender?.firstName} {m.sender?.lastName} {m.senderId === user?.id && '(أنت)'}
+                                  {m.sender?.firstName} {m.sender?.lastName} {m.senderId === user?.id && '(???)'}
                                 </span>
                              </div>
                             <div className={`px-6 py-4 rounded-[1rem] md:rounded-[1.5rem] text-sm font-bold leading-relaxed shadow-xl ${m.senderId === user?.id ? 'bg-brand-600 text-white rounded-tr-none shadow-brand-600/10' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-none border border-slate-100 dark:border-white/5'} ${isBookingCard ? 'border-2 border-brand-500/30 ring-4 ring-brand-500/10' : ''}`}>
@@ -704,7 +758,7 @@ Availability: ${bookingData.dates}`;
                                     <LinkIcon size={18} />
                                   </div>
                                   <div className="text-right">
-                                    <p className="text-[10px] uppercase tracking-widest opacity-70 font-black">ملف من Google Drive</p>
+                                    <p className="text-[10px] uppercase tracking-widest opacity-70 font-black">??? ?? Google Drive</p>
                                     <p className="text-xs underline underline-offset-4 truncate max-w-[180px]" style={{direction: 'ltr'}}>{driveUrl.replace('https://', '').substring(0, 40)}...</p>
                                   </div>
                                   <ExternalLink size={14} className="opacity-60 flex-shrink-0" />
@@ -715,19 +769,19 @@ Availability: ${bookingData.dates}`;
                                       <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
                                          <Calendar size={16} />
                                       </div>
-                                      <span className="text-[10px] uppercase font-black tracking-widest">طلب ميتنج جديد</span>
+                                      <span className="text-[10px] uppercase font-black tracking-widest">??? ????? ????</span>
                                    </div>
                                    <div className="space-y-1">
-                                      <p className="text-[9px] opacity-70 uppercase font-black tracking-widest">موضوع النقاش</p>
+                                      <p className="text-[9px] opacity-70 uppercase font-black tracking-widest">????? ??????</p>
                                       <p className="text-xs font-black">{bookingDetails?.topic}</p>
                                    </div>
                                    <div className="space-y-1">
-                                      <p className="text-[9px] opacity-70 uppercase font-black tracking-widest">المواعيد المقترحة</p>
+                                      <p className="text-[9px] opacity-70 uppercase font-black tracking-widest">???????? ????????</p>
                                       <p className="text-xs font-black bg-white/10 p-3 rounded-xl border border-white/5">{bookingDetails?.dates}</p>
                                    </div>
                                    <div className="flex items-center gap-2 pt-2 text-[8px] font-black opacity-60 uppercase tracking-widest">
                                       <Clock size={10} />
-                                      انتظار التأكيد من الإدارة
+                                      ?????? ??????? ?? ???????
                                    </div>
                                 </div>
                               ) : isFileCard ? (
@@ -739,7 +793,7 @@ Availability: ${bookingData.dates}`;
                                   ) : (
                                     <a href={fileDetails.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between gap-4 p-3 rounded-xl border border-white/10 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-all font-black text-xs min-w-[200px]" dir="rtl">
                                       <div className="flex flex-col items-start gap-1">
-                                         <span className="text-[10px] uppercase tracking-widest opacity-80">مرفق</span>
+                                         <span className="text-[10px] uppercase tracking-widest opacity-80">????</span>
                                          <span className="truncate max-w-[150px] opacity-100 underline underline-offset-4" style={{direction: 'ltr'}}>{fileDetails.url.split('/').pop()}</span>
                                       </div>
                                       <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
@@ -771,7 +825,7 @@ Availability: ${bookingData.dates}`;
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-black text-slate-700 dark:text-white uppercase tracking-wider flex items-center gap-2">
                             <LinkIcon size={14} className="text-brand-500" />
-                            إرسال رابط ملف من Google Drive
+                            ????? ???? ??? ?? Google Drive
                           </p>
                           <button type="button" onClick={() => { setShowLinkModal(false); setDriveLink(''); }} className="text-slate-400 hover:text-rose-500">
                             <X size={18} />
@@ -786,7 +840,7 @@ Availability: ${bookingData.dates}`;
                           placeholder="https://drive.google.com/file/d/..."
                           className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                         />
-                        <p className="text-[10px] text-slate-400 font-bold">افتح الملف في Drive ← Share ← Copy Link ← الصق هنا</p>
+                        <p className="text-[10px] text-slate-400 font-bold">???? ????? ?? Drive ? Share ? Copy Link ? ???? ???</p>
                         <button
                           type="button"
                           onClick={handleSendDriveLink}
@@ -794,7 +848,7 @@ Availability: ${bookingData.dates}`;
                           className="flex items-center justify-center gap-2 w-full py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-black text-sm disabled:opacity-50 transition"
                         >
                           <Send size={16} className="rotate-180" />
-                          إرسال الرابط
+                          ????? ??????
                         </button>
                       </div>
                     </div>
@@ -815,7 +869,7 @@ Availability: ${bookingData.dates}`;
                         value={content} 
                         onChange={e => setContent(e.target.value)} 
                         onClick={() => setShowEmojiPicker(false)}
-                        placeholder="اكتب رسالتك داخل بيئة العمل الآمنة..."
+                        placeholder="???? ?????? ???? ???? ????? ??????..."
                         className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/10 rounded-[1.5rem] px-6 py-5 text-sm text-slate-800 dark:text-white font-black focus:outline-none focus:ring-4 focus:ring-brand-500/10 transition-all font-bold placeholder:opacity-50 text-right" 
                         dir="rtl"
                       />
@@ -824,7 +878,7 @@ Availability: ${bookingData.dates}`;
                           size={20} 
                           onClick={() => { setShowLinkModal(prev => !prev); setShowEmojiPicker(false); }}
                           className={`cursor-pointer transition-all active:scale-95 ${showLinkModal ? 'text-brand-500 opacity-100' : 'hover:text-brand-500 hover:opacity-100'}`} 
-                          title="إرسال رابط من Google Drive"
+                          title="????? ???? ?? Google Drive"
                         />
                         <Smile 
                           size={20} 
@@ -858,8 +912,8 @@ Availability: ${bookingData.dates}`;
                   <UserPlus size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-slate-800 dark:text-white">إضافة عضو للمحادثة</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">منح صلاحية الوصول لقناة العميل الآمنة</p>
+                  <h3 className="text-lg font-black text-slate-800 dark:text-white">????? ??? ????????</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">??? ?????? ?????? ????? ?????? ??????</p>
                 </div>
               </div>
               <button onClick={() => setIsAddMemberModalOpen(false)} className="text-slate-400 hover:text-rose-500 transition-colors">
@@ -870,7 +924,7 @@ Availability: ${bookingData.dates}`;
           <div className="p-8 space-y-6" dir="rtl">
               {/* Team members */}
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">أعضاء الفريق</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">????? ??????</label>
                 <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto custom-scrollbar">
                   {teamMembers.map(tm => (
                     <button 
@@ -889,17 +943,17 @@ Availability: ${bookingData.dates}`;
                       </div>
                       <div className="flex-1 text-right">
                         <h4 className="text-[11px] font-black text-slate-700 dark:text-white uppercase tracking-widest">{tm.firstName} {tm.lastName}</h4>
-                        <p className="text-[9px] font-bold text-slate-400">{tm.position || 'فريق العمل'}</p>
+                        <p className="text-[9px] font-bold text-slate-400">{tm.position || '???? ?????'}</p>
                       </div>
                     </button>
                   ))}
-                  {teamMembers.length === 0 && <p className="text-center py-6 text-xs font-bold text-slate-400 italic">لا يوجد أعضاء</p>}
+                  {teamMembers.length === 0 && <p className="text-center py-6 text-xs font-bold text-slate-400 italic">?? ???? ?????</p>}
                 </div>
               </div>
 
               {/* Clients - so they can be given chat access to their project */}
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">العملاء</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">???????</label>
                 <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto custom-scrollbar">
                   {clients.map(c => (
                     <button
@@ -919,11 +973,11 @@ Availability: ${bookingData.dates}`;
                       </div>
                       <div className="flex-1 text-right">
                         <h4 className="text-[11px] font-black text-slate-700 dark:text-white">{c.user?.firstName} {c.user?.lastName}</h4>
-                        <p className="text-[9px] font-bold text-slate-400">{c.company || 'عميل'}</p>
+                        <p className="text-[9px] font-bold text-slate-400">{c.company || '????'}</p>
                       </div>
                     </button>
                   ))}
-                  {clients.length === 0 && <p className="text-center py-6 text-xs font-bold text-slate-400 italic">لا يوجد عملاء</p>}
+                  {clients.length === 0 && <p className="text-center py-6 text-xs font-bold text-slate-400 italic">?? ???? ?????</p>}
                 </div>
               </div>
 
@@ -934,13 +988,13 @@ Availability: ${bookingData.dates}`;
                   className="flex-1 h-14 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-[0_10px_30px_rgba(79,70,229,0.3)] disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-3"
                 >
                   {grantingAccess ? <Loader2 size={18} className="animate-spin" /> : <ShieldAlert size={18} />}
-                  منح صلاحية الوصول
+                  ??? ?????? ??????
                 </button>
                 <button 
                   onClick={() => setIsAddMemberModalOpen(false)}
                   className="flex-1 h-14 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:bg-slate-200 dark:hover:bg-white/10"
                 >
-                  إلغاء
+                  ?????
                 </button>
               </div>
             </div>
@@ -957,8 +1011,8 @@ Availability: ${bookingData.dates}`;
                   <Calendar size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-slate-800 dark:text-white">جدولة موعد جديد</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">تحديد الاجتماعات ضمن بيئة العمل</p>
+                  <h3 className="text-lg font-black text-slate-800 dark:text-white">????? ???? ????</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">????? ?????????? ??? ???? ?????</p>
                 </div>
               </div>
               <button onClick={() => setIsBookingModalOpen(false)} className="text-slate-400 hover:text-rose-500 transition-colors">
@@ -969,21 +1023,21 @@ Availability: ${bookingData.dates}`;
             <div className="p-8 space-y-6" dir="rtl">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">موضوع الاجتماع / الاستفسار</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">????? ???????? / ?????????</label>
                   <input 
                     type="text"
                     value={bookingData.topic}
                     onChange={e => setBookingData({...bookingData, topic: e.target.value})}
-                    placeholder="مثال: مراجعة تصاميم السوشيال ميديا"
+                    placeholder="????: ?????? ?????? ???????? ?????"
                     className="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 dark:text-white focus:ring-2 focus:ring-brand-500/20 transition-all"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">المواعيد المناسبة (التاريخ والوقت)</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">???????? ???????? (??????? ??????)</label>
                   <textarea 
                     value={bookingData.dates}
                     onChange={e => setBookingData({...bookingData, dates: e.target.value})}
-                    placeholder="مثال: الخميس الساعة 4 عصراً أو الجمعة 10 صباحاً"
+                    placeholder="????: ?????? ?????? 4 ????? ?? ?????? 10 ??????"
                     rows={4}
                     className="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 dark:text-white focus:ring-2 focus:ring-brand-500/20 transition-all resize-none"
                   />
@@ -997,13 +1051,13 @@ Availability: ${bookingData.dates}`;
                   className="flex-1 h-14 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-[0_10px_30px_rgba(79,70,229,0.3)] disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-3"
                 >
                   {sendingBooking ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                  إرسال طلب الموعد
+                  ????? ??? ??????
                 </button>
                 <button 
                   onClick={() => setIsBookingModalOpen(false)}
                   className="flex-1 h-14 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:bg-slate-200 dark:hover:bg-white/10"
                 >
-                  إلغاء
+                  ?????
                 </button>
               </div>
             </div>
@@ -1020,8 +1074,8 @@ Availability: ${bookingData.dates}`;
                   <Plus size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-slate-800 dark:text-white">إنشاء جروب فريق جديد</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">مساحة عمل خاصة لأعضاء الفريق</p>
+                  <h3 className="text-lg font-black text-slate-800 dark:text-white">????? ???? ???? ????</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">????? ??? ???? ?????? ??????</p>
                 </div>
               </div>
               <button onClick={() => setIsCreateGroupModalOpen(false)} className="text-slate-400 hover:text-rose-500 transition-colors">
@@ -1032,17 +1086,17 @@ Availability: ${bookingData.dates}`;
             <div className="p-8 space-y-6" dir="rtl">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">اسم الجروب</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">??? ??????</label>
                   <input 
                     type="text"
                     value={newGroupData.name}
                     onChange={e => setNewGroupData({...newGroupData, name: e.target.value})}
-                    placeholder="مثال: فريق المونتاج، إدارة المشاريع..."
+                    placeholder="????: ???? ????????? ????? ????????..."
                     className="w-full bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 dark:text-white focus:ring-2 focus:ring-brand-500/20 transition-all font-black"
                   />
                 </div>
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">اختر الأعضاء</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">???? ???????</label>
                   <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto custom-scrollbar">
                     {teamMembers.filter(tm => tm.id !== user.id).map(tm => (
                       <button 
@@ -1077,13 +1131,13 @@ Availability: ${bookingData.dates}`;
                   className="flex-1 h-14 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-brand-600/20 disabled:opacity-50 flex items-center justify-center gap-3"
                 >
                   {creatingGroup ? <Loader2 size={18} className="animate-spin" /> : <Users size={18} />}
-                  إنشاء الجروب
+                  ????? ??????
                 </button>
                 <button 
                   onClick={() => setIsCreateGroupModalOpen(false)}
                   className="flex-1 h-14 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all hover:bg-slate-200 dark:hover:bg-white/10"
                 >
-                  إلغاء
+                  ?????
                 </button>
               </div>
             </div>

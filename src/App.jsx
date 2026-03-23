@@ -119,7 +119,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    console.log("%c Creziax Portal v2.8.0-Masterpiece %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
+    console.log("%c Creziax Portal v4.0.0-Elite-Stability %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
     if (token) {
       fetchProfile();
     }
@@ -156,7 +156,7 @@ function App() {
     });
 
     socket.on('connect', () => {
-      console.log("🌐 Global Pulse Connected:", socket.id);
+      console.log("?? Global Pulse Connected:", socket.id);
       socket.emit('authenticate', { userId: user.id, role: user.role });
     });
 
@@ -182,11 +182,25 @@ function App() {
         if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/messages';
         else if (user.role === 'TEAM') path = '/team/messages';
 
-        if (activeThreadRef.current && data.threadId === activeThreadRef.current) {
-          console.log("🤫 In-Chat Silence: Skipping toast/sound for thread", data.threadId);
+        // MATH LOGIC (v3.9 Elite): 
+        // 1. If it's a project/group, data.threadId is the target.
+        // 2. If it's a DM, senderId is the target.
+        let targetId = data.threadId; 
+        
+        if (user.role === 'CLIENT') {
+           // For clients, Support chat uses their user.id as key in UI
+           if (!data.threadId || data.threadId === user.id) targetId = user.id;
         } else {
-          incrementUnreadMessages(data.threadId);
-          notifyClickable(t('new_message_received_global', '🔊 لديك رسالة جديدة'), '💬', path);
+           // For Admin/Team, DMs use senderId
+           if (!data.threadId && data.senderId) targetId = data.senderId;
+        }
+
+        // Silence check (Elite v3.9)
+        if (activeThreadRef.current && (targetId === activeThreadRef.current || data.senderId === activeThreadRef.current)) {
+           // Silence: User is already viewing this chat
+        } else {
+           if (targetId) incrementUnreadMessages(targetId);
+           notifyClickable(t('new_message_received_global', '?? ???? ????? ?????'), '??', path);
         }
       }
     });
@@ -198,7 +212,7 @@ function App() {
       let path = '/client';
       if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/projects';
       else if (user.role === 'TEAM') path = '/team/tasks';
-      notifyClickable(t('task_updated_global', 'تم تحديث حالة فيديو المشروع'), '🎥', path);
+      notifyClickable(t('task_updated_global', '?? ????? ???? ????? ???????'), '??', path);
     });
 
     socket.on('workspace_updated', (data) => {
@@ -207,7 +221,7 @@ function App() {
       let path = '/client';
       if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/projects';
       else if (user.role === 'TEAM') path = '/team/tasks';
-      notifyClickable(t('timeline_updated_global', 'تحديث في مسار المشروع الذكي'), '🔄', path);
+      notifyClickable(t('timeline_updated_global', '????? ?? ???? ??????? ?????'), '??', path);
     });
 
     socket.on('new_ticket', (data) => {
@@ -216,11 +230,11 @@ function App() {
       let path = '/client/messages';
       if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/messages';
       else if (user.role === 'TEAM') path = '/team/messages';
-      notifyClickable(t('new_meeting_global', 'لديك ميعاد اجتماع جديد'), '📅', path);
+      notifyClickable(t('new_meeting_global', '???? ????? ?????? ????'), '??', path);
     });
 
     return () => {
-      console.log("🌐 Global Pulse Disconnecting...");
+      console.log("?? Global Pulse Disconnecting...");
       socket.disconnect();
     };
   }, [token, user?.id, user?.role, addNotification, t, playGlobalDing, navigate]);

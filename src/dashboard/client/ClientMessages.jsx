@@ -17,9 +17,9 @@ import {
   ShieldAlert, X, Calendar, Clock, CalendarPlus2
 } from 'lucide-react';
 
-// ──────────────────────────────────────────────
+// ??????????????????????????????????????????????
 // Meeting Scheduler Pop-up
-// ──────────────────────────────────────────────
+// ??????????????????????????????????????????????
 const MeetingModal = ({ onClose, onSubmit }) => {
   const [form, setForm] = useState({ subject: '', date: '', time: '' });
   const [sending, setSending] = useState(false);
@@ -27,7 +27,7 @@ const MeetingModal = ({ onClose, onSubmit }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.subject || !form.date || !form.time) {
-      toast.error('يرجى تعبئة جميع الحقول');
+      toast.error('???? ????? ???? ??????');
       return;
     }
     setSending(true);
@@ -48,8 +48,8 @@ const MeetingModal = ({ onClose, onSubmit }) => {
             <CalendarPlus2 size={20} className="text-brand-500" />
           </div>
           <div>
-            <h3 className="text-base font-black text-slate-800 dark:text-white">جدولة موعد جديد</h3>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">سيتم إرسال الطلب للإدارة للموافقة</p>
+            <h3 className="text-base font-black text-slate-800 dark:text-white">????? ???? ????</h3>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">???? ????? ????? ??????? ????????</p>
           </div>
           <button onClick={onClose} className="mr-auto p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-all">
             <X size={18} />
@@ -58,12 +58,12 @@ const MeetingModal = ({ onClose, onSubmit }) => {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">موضوع الاجتماع</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">????? ????????</label>
             <input
               type="text"
               value={form.subject}
               onChange={e => setForm(p => ({ ...p, subject: e.target.value }))}
-              placeholder="مثال: مراجعة تقدم المشروع، نقاش خطة المحتوى..."
+              placeholder="????: ?????? ???? ???????? ???? ??? ???????..."
               className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl px-5 py-3.5 text-sm font-bold focus:ring-2 focus:ring-brand-500/20 outline-none transition-all dark:text-white placeholder-slate-400"
             />
           </div>
@@ -71,7 +71,7 @@ const MeetingModal = ({ onClose, onSubmit }) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                <Calendar size={12} /> التاريخ
+                <Calendar size={12} /> ???????
               </label>
               <input
                 type="date"
@@ -83,7 +83,7 @@ const MeetingModal = ({ onClose, onSubmit }) => {
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                <Clock size={12} /> الوقت
+                <Clock size={12} /> ?????
               </label>
               <input
                 type="time"
@@ -100,7 +100,7 @@ const MeetingModal = ({ onClose, onSubmit }) => {
             className="w-full py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-brand-600/20 flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {sending ? <Loader2 size={16} className="animate-spin" /> : <CalendarPlus2 size={16} />}
-            إرسال طلب الموعد
+            ????? ??? ??????
           </button>
         </form>
       </div>
@@ -108,17 +108,17 @@ const MeetingModal = ({ onClose, onSubmit }) => {
   );
 };
 
-// ──────────────────────────────────────────────
+// ??????????????????????????????????????????????
 // Drive Link Panel
-// ──────────────────────────────────────────────
+// ??????????????????????????????????????????????
 const DriveLinkPanel = ({ activeThread, user, onClose, onSend }) => {
   const [link, setLink] = useState('');
   const [sending, setSending] = useState(false);
 
   const handleSend = async () => {
-    if (!link.trim()) { toast.error('الرجاء لصق رابط Google Drive أولاً'); return; }
+    if (!link.trim()) { toast.error('?????? ??? ???? Google Drive ?????'); return; }
     if (!link.includes('drive.google.com') && !link.startsWith('http')) {
-      toast.error('الرجاء إدخال رابط صحيح');
+      toast.error('?????? ????? ???? ????');
       return;
     }
     setSending(true);
@@ -135,7 +135,7 @@ const DriveLinkPanel = ({ activeThread, user, onClose, onSend }) => {
     <div className="absolute bottom-full mb-3 left-0 right-0 mx-4 z-20 bg-white dark:bg-[#121215] border border-slate-200 dark:border-white/10 rounded-2xl p-4 shadow-2xl animate-in fade-in slide-in-from-bottom-2 duration-200">
       <div className="flex items-center gap-2 mb-3">
         <LinkIcon size={16} className="text-brand-500" />
-        <span className="text-xs font-black text-slate-700 dark:text-white uppercase tracking-widest">إرسال رابط ملف (Google Drive)</span>
+        <span className="text-xs font-black text-slate-700 dark:text-white uppercase tracking-widest">????? ???? ??? (Google Drive)</span>
         <button onClick={onClose} className="mr-auto text-slate-400 hover:text-slate-600 dark:hover:text-white">
           <X size={16} />
         </button>
@@ -156,16 +156,16 @@ const DriveLinkPanel = ({ activeThread, user, onClose, onSend }) => {
           className="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-black text-xs transition-all disabled:opacity-50 flex items-center gap-2"
         >
           {sending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-          إرسال
+          ?????
         </button>
       </div>
     </div>
   );
 };
 
-// ──────────────────────────────────────────────
+// ??????????????????????????????????????????????
 // Main Component
-// ──────────────────────────────────────────────
+// ??????????????????????????????????????????????
 const ClientMessages = () => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
@@ -197,7 +197,7 @@ const ClientMessages = () => {
       setSupportContact(contactsRes.data.support);
       setProjects(projectsRes.data || []);
     } catch (err) {
-      toast.error("فشل تحميل جهات الاتصال");
+      toast.error("??? ????? ???? ???????");
     } finally {
       setLoadingSidebar(false);
     }
@@ -212,7 +212,7 @@ const ClientMessages = () => {
         socketRef.current.emit('join_thread', threadId);
       }
     } catch (err) {
-      toast.error("فشل تحميل الرسائل");
+      toast.error("??? ????? ???????");
     } finally {
       setLoadingMessages(false);
     }
@@ -220,36 +220,31 @@ const ClientMessages = () => {
 
   useEffect(() => {
     fetchData();
-    // Reset unread count when opening messages page
-    resetUnreadMessages();
 
-    socketRef.current = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', {
+    const socket = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', {
       transports: ['websocket'],
+      auth: { token: localStorage.getItem('token') }
     });
+    socketRef.current = socket;
 
-    socketRef.current.on('receive_message', (msg) => {
+    socket.on('receive_message', (msg) => {
       const current = activeThreadRef.current;
       const currentExpectedThreadId = current?.type === 'GROUP' ? current.id : user?.id;
 
-      if (msg.threadId === currentExpectedThreadId) {
+      if (msg.threadId === currentExpectedThreadId || msg.senderId === current?.userId) {
         if (msg.senderId !== user?.id) {
           setMessages(prev => {
             if (prev.find(m => m.id === msg.id)) return prev;
             return [...prev, msg];
           });
         }
-      } else {
-        // Mark thread as having unread messages (pulse)
-        setUnreadThreads(prev => ({ ...prev, [msg.threadId]: (prev[msg.threadId] || 0) + 1 }));
       }
     });
 
     return () => {
-      socketRef.current?.disconnect();
-      // Clear active thread on unmount
-      setActiveThreadId(null);
+      socket.disconnect();
     };
-  }, [fetchData, user?.id, resetUnreadMessages, setActiveThreadId]);
+  }, [user?.id]); // Only re-connect if user ID changes
 
   // Track active thread for global silence logic
   useEffect(() => {
@@ -271,7 +266,7 @@ const ClientMessages = () => {
     const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
     const socialRegex = /(t\.me|wa\.me|whatsapp|telegram)/i;
     if (phoneRegex.test(text) || emailRegex.test(text) || socialRegex.test(text)) {
-      toast.error('عذراً، يمنع مشاركة بيانات التواصل الخارجية لضمان خصوصية المنصة.', { duration: 5000 });
+      toast.error('?????? ???? ?????? ?????? ??????? ???????? ????? ?????? ??????.', { duration: 5000 });
       return false;
     }
     return true;
@@ -300,21 +295,21 @@ const ClientMessages = () => {
       if (err.response?.status === 403) {
         toast.error(err.response.data.message);
       } else {
-        toast.error("فشل إرسال الرسالة");
+        toast.error("??? ????? ???????");
       }
     }
   };
 
   const handleSendDriveLink = async (link) => {
     await doSendMessage(link);
-    toast.success('تم إرسال رابط الملف بنجاح');
+    toast.success('?? ????? ???? ????? ?????');
   };
 
   const handleMeetingSubmit = async (form) => {
     const clientName = user?.firstName || 'Valued Client';
-    const desc = `طلب ميعاد جديد من العميل: ${clientName}\nالموضوع: ${form.subject}\nالتاريخ: ${form.date}\nالوقت: ${form.time}`;
+    const desc = `??? ????? ???? ?? ??????: ${clientName}\n???????: ${form.subject}\n???????: ${form.date}\n?????: ${form.time}`;
     await createTicketAPI({
-      title: `طلب ميعاد جديد: ${clientName}`,
+      title: `??? ????? ????: ${clientName}`,
       description: desc,
       type: 'MEETING',
       status: 'OPEN',
@@ -325,7 +320,7 @@ const ClientMessages = () => {
       await doSendMessage(cardContent);
     }
 
-    toast.success('تم إرسال طلب الموعد للإدارة بنجاح ✅');
+    toast.success('?? ????? ??? ?????? ??????? ????? ?');
   };
 
   const selectThread = (item, type) => {
@@ -334,7 +329,7 @@ const ClientMessages = () => {
       name: type === 'DM' ? (item.firstName ? `${item.firstName} ${item.lastName}` : item.name) : item.name,
       type: type,
       userId: type === 'DM' ? item.id : null,
-      subtitle: type === 'DM' ? (item.role === 'OWNER' ? 'فريق الدعم' : 'مدير المشروع') : 'مجموعة المشروع',
+      subtitle: type === 'DM' ? (item.role === 'OWNER' ? '???? ?????' : '???? ???????') : '?????? ???????',
     };
     setActiveThread(thread);
     const threadIdToFetch = type === 'GROUP' ? item.id : user.id;
@@ -372,7 +367,7 @@ const ClientMessages = () => {
         <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} max-w-[85%] md:max-w-[70%]`}>
           <div className={`flex items-center gap-3 mb-2 px-1 ${isMine ? 'flex-row-reverse' : ''}`}>
             <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-              {m.sender?.firstName} {m.sender?.lastName} {isMine && '(أنت)'}
+              {m.sender?.firstName} {m.sender?.lastName} {isMine && '(???)'}
             </span>
           </div>
           <div className={`px-6 py-4 rounded-[1.25rem] text-sm font-bold leading-relaxed shadow-sm ${isMine ? 'bg-brand-600 text-white rounded-tr-sm shadow-brand-600/10' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-sm border border-slate-100 dark:border-white/5'} ${isBookingCard ? 'border-2 border-brand-500/30 ring-4 ring-brand-500/10' : ''}`}>
@@ -401,24 +396,24 @@ const ClientMessages = () => {
                     <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
                        <Calendar size={16} />
                     </div>
-                    <span className="text-[10px] uppercase font-black tracking-widest">طلب ميتنج جديد</span>
+                    <span className="text-[10px] uppercase font-black tracking-widest">??? ????? ????</span>
                  </div>
                  <div className="space-y-1">
-                    <p className="text-[9px] opacity-70 uppercase font-black tracking-widest">موضوع النقاش</p>
+                    <p className="text-[9px] opacity-70 uppercase font-black tracking-widest">????? ??????</p>
                     <p className="text-xs font-black">{bookingDetails?.topic}</p>
                  </div>
                  <div className="space-y-1">
-                    <p className="text-[9px] opacity-70 uppercase font-black tracking-widest">المواعيد المقترحة</p>
+                    <p className="text-[9px] opacity-70 uppercase font-black tracking-widest">???????? ????????</p>
                     <p className="text-xs font-black bg-white/10 p-3 rounded-xl border border-white/5">{bookingDetails?.dates}</p>
                  </div>
                  <div className="flex items-center gap-2 pt-2 text-[8px] font-black opacity-60 uppercase tracking-widest">
                     <Clock size={10} />
-                    انتظار التأكيد من الإدارة
+                    ?????? ??????? ?? ???????
                  </div>
               </div>
             ) : isFileCard ? (
               <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 underline text-sm">
-                📎 مرفق
+                ?? ????
               </a>
             ) : (
               <p className="whitespace-pre-wrap break-words">{m.content}</p>
@@ -426,7 +421,7 @@ const ClientMessages = () => {
           </div>
           <span className="text-[8px] font-black text-slate-400 mt-2 px-2 uppercase tracking-[0.2em] flex items-center gap-1">
             {new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            {isMine && <span className="ml-1 opacity-70">✓✓</span>}
+            {isMine && <span className="ml-1 opacity-70">??</span>}
           </span>
         </div>
       </div>
@@ -440,7 +435,7 @@ const ClientMessages = () => {
       )}
 
       <div className="h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-4 md:gap-8 animate-in fade-in duration-700">
-        {/* ─── Sidebar ─── */}
+        {/* ??? Sidebar ??? */}
         <div className="w-full lg:w-80 bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] flex flex-col overflow-hidden shadow-xl shadow-slate-200/20 dark:shadow-none max-h-[45vh] lg:max-h-none">
           <div className="p-6 md:p-8 border-b border-slate-100 dark:border-white/5 bg-brand-600">
             <h2 className="text-xl font-black text-white uppercase tracking-tight mb-2">{t('support_and_contact')}</h2>
@@ -507,7 +502,7 @@ const ClientMessages = () => {
           </div>
         </div>
 
-        {/* ─── Chat Panel ─── */}
+        {/* ??? Chat Panel ??? */}
         <div className="flex-1 bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] flex flex-col overflow-hidden shadow-sm dark:shadow-none min-h-0">
           {!activeThread ? (
             <div className="h-full flex flex-col items-center justify-center opacity-40 p-10 text-center">
@@ -543,8 +538,8 @@ const ClientMessages = () => {
                     className="flex items-center gap-2 px-4 py-2.5 bg-brand-50 dark:bg-brand-500/10 hover:bg-brand-100 dark:hover:bg-brand-500/20 text-brand-600 dark:text-brand-400 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all border border-brand-100 dark:border-brand-500/20 flex-shrink-0"
                   >
                     <CalendarPlus2 size={14} />
-                    <span className="hidden sm:inline">جدولة موعد جديد</span>
-                    <span className="sm:hidden">موعد</span>
+                    <span className="hidden sm:inline">????? ???? ????</span>
+                    <span className="sm:hidden">????</span>
                   </button>
                 </div>
               </div>
@@ -592,7 +587,7 @@ const ClientMessages = () => {
                     <button 
                       type="button" 
                       onClick={() => setShowDrivePanel(p => !p)}
-                      title="إرسال رابط ملف"
+                      title="????? ???? ???"
                       className={`p-3 mx-2 transition-colors flex-shrink-0 ${showDrivePanel ? 'text-brand-500' : 'text-slate-400 hover:text-brand-500'}`}
                     >
                       <LinkIcon size={20} />
