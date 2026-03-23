@@ -23,6 +23,7 @@ import MessagesPage from './dashboard/admin/MessagesPage';
 import InvoicesPage from './dashboard/admin/InvoicesPage';
 import PaymentsPage from './dashboard/admin/PaymentsPage';
 import ProfilePage from './dashboard/shared/ProfilePage';
+import NotificationsPage from './dashboard/shared/NotificationsPage';
 import ExpensesPage from './dashboard/admin/ExpensesPage';
 import ContractsPage from './dashboard/admin/ContractsPage';
 
@@ -138,11 +139,18 @@ function App() {
   useEffect(() => {
     if (!token || !user) return;
 
+    // Use a single socket instance for the lifetime of the session/user
     const socket = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', {
       transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
     });
 
-    socket.emit('authenticate', { userId: user.id, role: user.role });
+    socket.on('connect', () => {
+      console.log("🌐 Global Pulse Connected:", socket.id);
+      socket.emit('authenticate', { userId: user.id, role: user.role });
+    });
 
     const notifyClickable = (msg, icon, path) => {
       playGlobalDing();
@@ -155,10 +163,13 @@ function App() {
           toast.dismiss();
         }
       });
-      addNotification({ message: msg, type: 'info', timestamp: new Date(), link: path });
+      addNotification(msg, 'info');
     };
 
     socket.on('smart_notification', (data) => {
+      // CRITICAL: Prevent self-notification
+      if (data.senderId === user.id) return;
+
       if (data.type === 'message') {
         let path = '/client/messages';
         if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/messages';
@@ -168,29 +179,39 @@ function App() {
       }
     });
 
-    socket.on('task_updated', () => {
+    socket.on('task_updated', (data) => {
+      // Only notify if someone else updated it
+      if (data?.userId && data.userId === user.id) return;
+
       let path = '/client';
       if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/projects';
       else if (user.role === 'TEAM') path = '/team/tasks';
       notifyClickable(t('task_updated_global', 'تم تحديث حالة فيديو المشروع'), '🎥', path);
     });
 
-    socket.on('workspace_updated', () => {
+    socket.on('workspace_updated', (data) => {
+      if (data?.userId && data.userId === user.id) return;
+
       let path = '/client';
       if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/projects';
       else if (user.role === 'TEAM') path = '/team/tasks';
       notifyClickable(t('timeline_updated_global', 'تحديث في مسار المشروع الذكي'), '🔄', path);
     });
 
-    socket.on('new_ticket', () => {
+    socket.on('new_ticket', (data) => {
+      if (data?.userId && data.userId === user.id) return;
+
       let path = '/client/messages';
       if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/messages';
       else if (user.role === 'TEAM') path = '/team/messages';
       notifyClickable(t('new_meeting_global', 'لديك ميعاد اجتماع جديد'), '📅', path);
     });
 
-    return () => socket.disconnect();
-  }, [token, user, addNotification, t, playGlobalDing, navigate]);
+    return () => {
+      console.log("🌐 Global Pulse Disconnecting...");
+      socket.disconnect();
+    };
+  }, [token, user?.id, user?.role, addNotification, t, playGlobalDing, navigate]);
 
   return (
     <>
@@ -225,6 +246,7 @@ function App() {
           <Route path="profile" element={<ProfilePage />} />
           <Route path="expenses" element={<ExpensesPage />} />
           <Route path="contracts" element={<ContractsPage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
         </Route>
 
         {/* Team Routes */}
@@ -241,6 +263,7 @@ function App() {
           <Route path="messages" element={<MessagesPage />} />
           <Route path="files" element={<FilesPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
         </Route>
 
         {/* Client Routes */}
@@ -273,6 +296,7 @@ function App() {
           <Route path="invoices" element={<ClientInvoices />} />
           <Route path="contracts" element={<ClientContracts />} />
           <Route path="profile" element={<ClientProfile />} />
+          <Route path="notifications" element={<NotificationsPage />} />
         </Route>
 
         {/* Catch-all Branded Error Page */}
