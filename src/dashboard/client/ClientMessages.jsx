@@ -229,29 +229,13 @@ const ClientMessages = () => {
 
     socket.on('receive_message', (msg) => {
       const current = activeThreadRef.current;
-      
-      // STRICT ISOLATION v5.0:
-      // Client has two modes: Support (Private) and Projects (Group).
-      let isMatch = false;
-      if (msg.threadId) {
-        // Project Match (threadId matches project.id)
-        isMatch = (msg.threadId === current?.id && current?.type === 'GROUP');
-      } else {
-        // Support DM Match (No threadId, match by senderId)
-        // If the sender is an admin/staff and we are in support chat
-        isMatch = (current?.type !== 'GROUP' && msg.senderId === current?.userId);
-      }
+      const currentExpectedThreadId = current?.type === 'GROUP' ? current.id : user?.id;
 
-      if (isMatch) {
+      if (msg.threadId === currentExpectedThreadId || msg.senderId === current?.userId) {
         if (msg.senderId !== user?.id) {
-          const processedMsg = {
-            ...msg,
-            sender: msg.sender || { firstName: t('support_agent', '????? ?????'), role: 'ADMIN' }
-          };
-          
           setMessages(prev => {
             if (prev.find(m => m.id === msg.id)) return prev;
-            return [...prev, processedMsg];
+            return [...prev, msg];
           });
         }
       }
