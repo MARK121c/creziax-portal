@@ -119,7 +119,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    console.log("%c Creziax Portal v4.0.0-Elite-Stability %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
+    console.log("%c Creziax Portal v5.0.0-Isolation %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
     if (token) {
       fetchProfile();
     }
@@ -182,22 +182,25 @@ function App() {
         if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/messages';
         else if (user.role === 'TEAM') path = '/team/messages';
 
-        // MATH LOGIC (v3.9 Elite): 
-        // 1. If it's a project/group, data.threadId is the target.
-        // 2. If it's a DM, senderId is the target.
+        // STRICT ROUTING LOGIC (v5.0 Isolation): 
+        // 1. If threadId exists, it's a Project/Group. Match ONLY by threadId.
+        // 2. If threadId is null/empty, it's a DM. Match by senderId.
         let targetId = data.threadId; 
         
-        if (user.role === 'CLIENT') {
-           // For clients, Support chat uses their user.id as key in UI
-           if (!data.threadId || data.threadId === user.id) targetId = user.id;
-        } else {
-           // For Admin/Team, DMs use senderId
-           if (!data.threadId && data.senderId) targetId = data.senderId;
+        if (!targetId) {
+           // Fallback for DMs
+           if (user.role === 'CLIENT') targetId = user.id;
+           else targetId = data.senderId;
         }
 
-        // Silence check (Elite v3.9)
-        if (activeThreadRef.current && (targetId === activeThreadRef.current || data.senderId === activeThreadRef.current)) {
-           // Silence: User is already viewing this chat
+        // Strict Thread Isolation Check
+        const isCurrentlyViewing = activeThreadRef.current && (
+           (data.threadId && targetId === activeThreadRef.current) || // Group match
+           (!data.threadId && data.senderId === activeThreadRef.current) // DM match
+        );
+
+        if (isCurrentlyViewing) {
+           // Silence: User is already in the matching thread
         } else {
            if (targetId) incrementUnreadMessages(targetId);
            notifyClickable(t('new_message_received_global', '?? ???? ????? ?????'), '??', path);
