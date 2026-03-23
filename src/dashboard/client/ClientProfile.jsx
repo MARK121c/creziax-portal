@@ -21,14 +21,12 @@ const ClientProfile = () => {
   const { t, i18n } = useTranslation();
   const { user, updateProfile } = useAuthStore();
   
-  const fileInputRefLogo = useRef(null);
   const fileInputRefAvatar = useRef(null);
   
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
-    company: '',
     phone: '',
     currentPassword: '',
     newPassword: '',
@@ -36,7 +34,6 @@ const ClientProfile = () => {
   });
   
   const [loading, setLoading] = useState(false);
-  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
@@ -46,7 +43,6 @@ const ClientProfile = () => {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         email: user.email || '',
-        company: user.clientInfo?.company || '',
         phone: user.clientInfo?.phone || '',
       }));
     }
@@ -70,7 +66,6 @@ const ClientProfile = () => {
       await updateProfile({
         firstName: formData.firstName,
         lastName: formData.lastName,
-        company: formData.company,
         phone: formData.phone,
         currentPassword: formData.currentPassword,
         newPassword: formData.newPassword,
@@ -84,33 +79,6 @@ const ClientProfile = () => {
     }
   };
 
-  const handleLogoUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error(t('image_too_large')); return; }
-    setUploadingLogo(true);
-    const loadingToast = toast.loading(t('uploading_image'));
-    const uploadData = new FormData(); uploadData.append('image', file);
-    try {
-      const { data } = await uploadImageAPI(uploadData);
-      await updateProfile({ logoUrl: data.url });
-      toast.success(t('image_updated_success'), { id: loadingToast });
-    } catch (err) {
-      toast.error(t('image_upload_failed'), { id: loadingToast });
-    } finally { setUploadingLogo(false); }
-  };
-
-  const handleDeleteLogo = async () => {
-    if (!confirm(t('confirm_delete_avatar'))) return;
-    setUploadingLogo(true);
-    const loadingToast = toast.loading(t('deleting_image'));
-    try {
-      await updateProfile({ logoUrl: null });
-      toast.success(t('image_deleted_success'), { id: loadingToast });
-    } catch (err) {
-      toast.error(t('image_delete_failed'), { id: loadingToast });
-    } finally { setUploadingLogo(false); }
-  };
 
   // Avatar Handlers
   const handleAvatarUpload = async (e) => {
@@ -144,7 +112,6 @@ const ClientProfile = () => {
     } finally { setUploadingAvatar(false); }
   };
 
-  const logoUrl = user?.clientInfo?.logoUrl;
   const avatarUrl = user?.avatarUrl;
 
   return (
@@ -165,57 +132,6 @@ const ClientProfile = () => {
         {/* Sidebar Cards */}
         <div className="lg:col-span-4 space-y-6">
           
-          {/* Company Logo Card */}
-          <div className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 p-8 rounded-[2.5rem] flex flex-col items-center text-center shadow-sm relative overflow-hidden group backdrop-blur-3xl">
-            <div className="absolute top-4 left-4 bg-brand-500/10 text-brand-500 px-3 py-1 rounded-[10px] text-[10px] font-black uppercase tracking-widest">
-              شعار الشركة
-            </div>
-            <div className="relative mb-6 mt-4">
-              <div className="w-32 h-32 rounded-[2rem] overflow-hidden bg-slate-50 dark:bg-white/5 border-4 border-white dark:border-[#121214] shadow-xl flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
-                {logoUrl ? (
-                  <img src={getFormattedUrl(logoUrl)} alt="Company Logo" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-brand-50 to-slate-100 dark:from-brand-500/5 dark:to-white/5 flex items-center justify-center">
-                    <Building2 size={40} className="text-brand-300 dark:text-brand-500/50" />
-                  </div>
-                )}
-                {uploadingLogo && (
-                  <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center">
-                    <Loader2 size={24} className="text-white animate-spin" />
-                  </div>
-                )}
-              </div>
-              <button 
-                onClick={() => fileInputRefLogo.current?.click()}
-                className="absolute -bottom-2 -right-2 p-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl shadow-lg shadow-brand-500/30 transition-all active:scale-95"
-              >
-                <Camera size={16} />
-              </button>
-            </div>
-            <div className="space-y-1">
-              <h2 className="font-black text-xl text-slate-900 dark:text-white uppercase tracking-tight">
-                {user?.clientInfo?.company || 'Company Name'}
-              </h2>
-            </div>
-            <div className="grid grid-cols-2 gap-3 w-full mt-8">
-              <button 
-                onClick={() => fileInputRefLogo.current?.click()}
-                disabled={uploadingLogo}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-50 dark:bg-white/5 hover:bg-brand-50 dark:hover:bg-brand-500/10 text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all border border-slate-100 dark:border-white/5"
-              >
-                <UploadCloud size={14} /> {t('upload', 'رفع')}
-              </button>
-              <button 
-                onClick={handleDeleteLogo}
-                disabled={uploadingLogo || !logoUrl}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-50 dark:bg-white/5 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-slate-400 dark:text-slate-500 hover:text-rose-500 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all border border-slate-100 dark:border-white/5"
-              >
-                <Trash2 size={14} /> {t('delete', 'حذف')}
-              </button>
-            </div>
-            <input type="file" ref={fileInputRefLogo} accept="image/*" className="hidden" onChange={handleLogoUpload} />
-          </div>
-
           {/* Personal Avatar Card */}
           <div className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 p-8 rounded-[2.5rem] flex flex-col items-center text-center shadow-sm relative overflow-hidden group backdrop-blur-3xl">
             <div className="absolute top-4 left-4 bg-indigo-500/10 text-indigo-500 px-3 py-1 rounded-[10px] text-[10px] font-black uppercase tracking-widest">
@@ -324,19 +240,6 @@ const ClientProfile = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{t('company_name', 'اسم الشركة')}</label>
-                  <div className="relative">
-                    <Building2 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input
-                      type="text"
-                      name="company"
-                      value={formData.company}
-                      onChange={handleChange}
-                      className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl pr-12 pl-5 py-3.5 text-sm font-bold focus:ring-2 focus:ring-brand-500/20 outline-none transition-all dark:text-white"
-                    />
-                  </div>
-                </div>
 
                 <div className="space-y-2 md:col-span-2">
                   <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">{t('phone_number', 'رقم الهاتف')}</label>
