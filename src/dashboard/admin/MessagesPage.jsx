@@ -28,6 +28,15 @@ import EmojiPicker from 'emoji-picker-react';
 const MessagesPage = () => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
+  const navigate = useNavigate();
+
+  // v15.2 RBAC Guard: If user is not OWNER or ADMIN, redirect away silently
+  useEffect(() => {
+    if (user && user.role !== 'OWNER' && user.role !== 'ADMIN') {
+        console.warn("🔐 RBAC Block: Non-admin attempted to access Admin Messages");
+        navigate('/client/messages');
+    }
+  }, [user, navigate]);
   const { setActiveThreadId, resetUnreadMessages, unreadThreads } = useNotificationStore();
   
   const [clients, setClients] = useState([]);
@@ -102,6 +111,7 @@ const MessagesPage = () => {
   }, [user?.role]);
 
   const fetchThreadMessages = async (threadId) => {
+    if (!threadId) return; // v15.2 Guard: Prevent toast on initial load
     setLoadingMessages(true);
     try {
       const { data } = await getMessagesAPI(threadId);
@@ -111,6 +121,7 @@ const MessagesPage = () => {
         // join_thread handled centrally via join_rooms hook
       }
     } catch (err) {
+      console.error("Messages Load Error:", err);
       toast.error("فشل تحميل الرسائل");
     } finally {
       setLoadingMessages(false);
@@ -301,6 +312,7 @@ const MessagesPage = () => {
       setMessages([]);
       toast.success("تم مسح المحادثة بنجاح من قاعدة البيانات والجلسات النشطة");
     } catch (err) {
+      console.error("Clear Chat Error:", err);
       toast.error(err.response?.data?.message || "فشل مسح المحادثة");
     }
   };

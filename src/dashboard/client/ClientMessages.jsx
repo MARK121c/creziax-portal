@@ -204,6 +204,7 @@ const ClientMessages = () => {
   }, []);
 
   const fetchThreadMessages = async (threadId) => {
+    if (!threadId) return; // v15.2 Guard: Prevent toast on initial load
     setLoadingMessages(true);
     try {
       const { data } = await getMessagesAPI(threadId);
