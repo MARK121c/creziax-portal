@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Use environment variable or fallback to relative path (best for Coolify/Docker)
-const API_URL = import.meta.env.VITE_API_URL || '/api';
-// Version: 1.3.2 (Session-safe 401 handling)
+// v15.3: Hardcoded production URL as guaranteed fallback — NEVER use relative /api in production
+const API_URL = import.meta.env.VITE_API_URL || 'https://api.creziax.cloud/api';
+// Version: 15.3 (Hardcoded URL Fallback — CORS-safe)
 
 const api = axios.create({
   baseURL: API_URL,
