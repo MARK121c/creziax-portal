@@ -174,8 +174,17 @@ const MessagesPage = () => {
     };
 
     socket.on('receive_message', handleReceiveMessage);
+    socket.on('chat_deleted', ({ threadId }) => {
+      if (activeThreadRef.current?.id === threadId) {
+        setMessages([]);
+        setActiveThread(null);
+        toast.success("تم مسح هذه المحادثة من قبل الإدارة");
+      }
+    });
+
     return () => {
       socket.off('receive_message', handleReceiveMessage);
+      socket.off('chat_deleted');
     };
   }, [user, socket, fetchData]);
 
@@ -243,7 +252,7 @@ const MessagesPage = () => {
         ) : null
       };
       
-      socketRef.current.emit('send_message', socketPayload);
+      socket.emit('send_message', socketPayload);
       setContent('');
       setMessages(prev => [...prev, { ...data, sender: user }]);
     } catch (err) {
@@ -269,7 +278,7 @@ const MessagesPage = () => {
         threadId: activeThread.id,
         receiverId: activeThread.type === 'DM' || activeThread.type === 'TEAM' ? activeThread.userId : null
       });
-      socketRef.current.emit('send_message', { ...data, threadId: activeThread.id });
+      socket.emit('send_message', { ...data, threadId: activeThread.id });
       setMessages(prev => [...prev, { ...data, sender: user }]);
       setDriveLink('');
       setShowLinkModal(false);
@@ -284,8 +293,13 @@ const MessagesPage = () => {
     if (!window.confirm("تحذير: هل أنت متأكد من مسح جميع رسائل هذه المحادثة؟ سيتم حذفها نهائياً ولن يمكن استرجاعها.")) return;
     try {
       await clearMessagesAPI(activeThread.id);
+      socket.emit('force_delete_chat', { 
+        threadId: activeThread.id, 
+        type: activeThread.type === 'GROUP' ? 'GROUP' : 'PRIVATE',
+        receiverId: activeThread.userId 
+      });
       setMessages([]);
-      toast.success("تم مسح المحادثة بنجاح من قاعدة البيانات");
+      toast.success("تم مسح المحادثة بنجاح من قاعدة البيانات والجلسات النشطة");
     } catch (err) {
       toast.error(err.response?.data?.message || "فشل مسح المحادثة");
     }
@@ -420,7 +434,7 @@ Availability: ${bookingData.dates}`;
         threadId: activeThread.id,
         receiverId: activeThread.type === 'DM' || activeThread.type === 'TEAM' ? activeThread.userId : null
       });
-      socketRef.current.emit('send_message', { ...data, threadId: activeThread.id });
+      socket.emit('send_message', { ...data, threadId: activeThread.id });
       setBookingData({ topic: '', dates: '' });
       setIsBookingModalOpen(false);
       setMessages(prev => [...prev, { ...data, sender: user }]);

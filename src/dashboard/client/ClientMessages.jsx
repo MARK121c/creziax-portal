@@ -261,8 +261,18 @@ const ClientMessages = () => {
     };
 
     socket.on('receive_message', handleReceiveMessage);
+    socket.on('chat_deleted', ({ threadId }) => {
+      const current = activeThreadRef.current;
+      if (current?.id === threadId || (!current?.id && threadId === user?.id)) {
+        setMessages([]);
+        setActiveThread(null);
+        toast.success("تم مسح هذه المحادثة من قبل الإدارة");
+      }
+    });
+
     return () => {
        socket.off('receive_message', handleReceiveMessage);
+       socket.off('chat_deleted');
     };
   }, [user?.id, socket, fetchData]); // Only re-connect if user ID changes
 
@@ -309,7 +319,7 @@ const ClientMessages = () => {
     });
     
     // Build socket payload (v10.0 Standard Architecture)
-    socketRef.current?.emit('send_message', { 
+    socket.emit('send_message', { 
       ...data, 
       type,
       threadId: threadIdToSend,
