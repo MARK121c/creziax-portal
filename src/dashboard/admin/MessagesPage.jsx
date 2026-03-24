@@ -123,18 +123,29 @@ const MessagesPage = () => {
     activeThreadRef.current = activeThread;
   }, [activeThread]);
 
-  // V10.0 Explicit Room Joining
+  // V12.0 ZERO DROP: Emit explicitly on connect & reconnects
   useEffect(() => {
-    if (socketRef.current && user?.id && !loadingSidebar) {
-      const projectIds = projects.map(p => p.id);
-      const groupIds = teamGroups.map(g => g.id);
-      socketRef.current.emit('join_rooms', {
-        userId: user.id,
-        role: user.role,
-        projectIds: [...projectIds, ...groupIds]
-      });
-    }
-  }, [projects, teamGroups, user?.id, user?.role, loadingSidebar]);
+    if (!socketRef.current || loadingSidebar) return;
+    const socket = socketRef.current;
+
+    const handleJoinRooms = () => {
+      if (user?.id) {
+        const projectIds = projects.map(p => p.id);
+        const groupIds = teamGroups.map(g => g.id);
+        socket.emit('join_rooms', {
+          userId: user.id,
+          role: user.role,
+          projectIds: [...projectIds, ...groupIds]
+        });
+        console.log("Admin Room Sync: Joined User Room & Projects/Teams");
+      }
+    };
+
+    socket.on('connect', handleJoinRooms);
+    if (socket.connected) handleJoinRooms();
+
+    return () => socket.off('connect', handleJoinRooms);
+  }, [projects, teamGroups, user, loadingSidebar]);
 
   useEffect(() => {
     fetchData();
