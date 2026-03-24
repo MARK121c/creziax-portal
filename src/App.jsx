@@ -149,7 +149,6 @@ function App() {
   }, [activeThreadId]);
 
   useEffect(() => {
-  useEffect(() => {
     if (!token || !user) return;
 
     if (!socketRef.current) {
@@ -232,7 +231,6 @@ function App() {
       socket.off('workspace_updated', handleTaskUpdate);
     };
   }, [token, user?.id, user?.role, incrementUnreadMessages, t, navigate]);
-  }, [token, user?.id, user?.role, addNotification, t, playGlobalDing, navigate]);
 
   return (
     <>
