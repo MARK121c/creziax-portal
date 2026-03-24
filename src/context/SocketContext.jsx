@@ -6,20 +6,20 @@ const SocketContext = createContext(null);
 export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider = ({ children, user, token }) => {
-  const socketRef = useRef(null);
+  const [socket, setSocket] = React.useState(null);
 
   useEffect(() => {
     if (!token || !user) {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
+      if (socket) {
+        socket.disconnect();
+        setSocket(null);
       }
       return;
     }
 
-    if (!socketRef.current) {
+    if (!socket) {
       console.log("%c 🌐 Socket Context: Initializing Singleton... ", "background: #1e1b4b; color: #818cf8; font-weight: bold;");
-      socketRef.current = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', {
+      const newSocket = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', {
         transports: ['websocket'],
         reconnection: true,
         reconnectionAttempts: 10,
@@ -27,29 +27,26 @@ export const SocketProvider = ({ children, user, token }) => {
         auth: { token }
       });
 
-      socketRef.current.on('connect', () => {
-        console.log("%c 🌐 Global Pulse Connected: ", "color: #22c55e; font-weight: bold;", socketRef.current.id);
+      newSocket.on('connect', () => {
+        console.log("%c 🌐 Global Pulse Connected: ", "color: #22c55e; font-weight: bold;", newSocket.id);
         
-        // GLOBAL JOIN ROOMS (Deduplicated)
-        socketRef.current.emit('join_rooms', { 
+        newSocket.emit('join_rooms', { 
             userId: user.id, 
             role: user.role,
-            projectIds: [] // Base rooms, others joined dynamically if needed
+            projectIds: [] 
         });
       });
 
-      socketRef.current.on('connect_error', (err) => {
+      newSocket.on('connect_error', (err) => {
         console.error("🌐 Socket Connection Error:", err.message);
       });
-    }
 
-    return () => {
-      // We keep the socket alive during the session, it only disconnects on logout (handled by token/user check)
-    };
+      setSocket(newSocket);
+    }
   }, [token, user?.id]);
 
   return (
-    <SocketContext.Provider value={socketRef.current}>
+    <SocketContext.Provider value={socket}>
       {children}
     </SocketContext.Provider>
   );
