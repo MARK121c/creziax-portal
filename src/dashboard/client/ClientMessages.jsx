@@ -264,10 +264,10 @@ const ClientMessages = () => {
     socket.on('receive_message', handleReceiveMessage);
     socket.on('chat_deleted', ({ threadId }) => {
       const current = activeThreadRef.current;
-      if (current?.id === threadId || (!current?.id && threadId === user?.id)) {
+      if (current?.id === threadId || threadId === user?.id) {
         setMessages([]);
         setActiveThread(null);
-        toast.success("تم مسح هذه المحادثة من قبل الإدارة");
+        toast.success("تم مسح هذه المحادثة بالكامل من قبل الإدارة");
       }
     });
 

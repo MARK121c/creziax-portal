@@ -197,7 +197,41 @@ function AppContent() {
 
       if (!isCurrentlyViewingThisSpecificThread) {
          if (targetId) incrementUnreadMessages(targetId);
-         notifyClickable(`رسالة جديدة من ${data.senderName || 'مجهول'}`, '💬', isGroup ? '/client/projects' : '/client/messages');
+         let targetPath = '/client/messages';
+         if (user.role === 'ADMIN' || user.role === 'OWNER') {
+            targetPath = isGroup ? '/admin/projects' : '/admin/messages';
+         } else if (user.role === 'TEAM') {
+            targetPath = isGroup ? '/team/projects' : '/team/messages';
+         } else {
+            targetPath = isGroup ? '/client/projects' : '/client/messages';
+         }
+         notifyClickable(`رسالة جديدة من ${data.senderName || 'مجهول'}`, '💬', targetPath);
+      }
+    };
+
+    const handleSmartNotification = (notif) => {
+      if (notif.senderId === user.id) return;
+      
+      const isGroup = notif.threadId != null;
+      let targetId = isGroup ? notif.threadId : notif.senderId;
+      
+      const currentViewedThreadId = activeThreadRef.current;
+      let isViewing = false;
+      if (currentViewedThreadId) {
+         isViewing = isGroup ? (currentViewedThreadId === notif.threadId) : (currentViewedThreadId === targetId);
+      }
+      
+      if (!isViewing) {
+         if (targetId) incrementUnreadMessages(targetId);
+         let targetPath = '/admin/messages';
+         if (user.role === 'ADMIN' || user.role === 'OWNER') {
+            targetPath = isGroup ? '/admin/projects' : '/admin/messages';
+         } else if (user.role === 'TEAM') {
+            targetPath = isGroup ? '/team/projects' : '/team/messages';
+         } else {
+            targetPath = isGroup ? '/client/projects' : '/client/messages';
+         }
+         notifyClickable(`رسالة جديدة من ${notif.senderName || 'مجهول'}`, '💬', targetPath);
       }
     };
 
@@ -207,11 +241,13 @@ function AppContent() {
     };
 
     socket.on('receive_message', handleReceiveMessage);
+    socket.on('smart_notification', handleSmartNotification);
     socket.on('task_updated', handleTaskUpdate);
     socket.on('workspace_updated', handleTaskUpdate); // Reuse same logic
 
     return () => {
       socket.off('receive_message', handleReceiveMessage);
+      socket.off('smart_notification', handleSmartNotification);
       socket.off('task_updated', handleTaskUpdate);
       socket.off('workspace_updated', handleTaskUpdate);
     };
