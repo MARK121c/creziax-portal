@@ -96,6 +96,10 @@ function App() {
   const { addNotification, activeThreadId, incrementUnreadMessages, resetUnreadMessages } = useNotificationStore();
   const { t } = useTranslation();
   const activeThreadRef = useRef(null);
+  const socketRef = useRef(null); // v13.0 Singleton Socket
+  const processedMessagesRef = useRef(new Set()); 
+  const lastSoundTriggerRef = useRef(0); 
+
   
   // SESSION PERSISTENCE: Only show splash once per browser session
   const [showSplash, setShowSplash] = useState(() => {
@@ -119,7 +123,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    console.log("%c Creziax Portal v12.1.0-FinalMasterpiece %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
+    console.log("%c Creziax Portal v13.0.0-FinalStable %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
     if (token) {
       fetchProfile();
     }
@@ -145,107 +149,89 @@ function App() {
   }, [activeThreadId]);
 
   useEffect(() => {
+  useEffect(() => {
     if (!token || !user) return;
 
-    // Use a single socket instance for the lifetime of the session/user
-    const socket = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', {
-      transports: ['websocket'],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 2000,
-    });
+    if (!socketRef.current) {
+      socketRef.current = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', {
+        transports: ['websocket'],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 2000,
+      });
 
-    socket.on('connect', () => {
-      console.log("🌐 Global Pulse Connected:", socket.id);
-      socket.emit('join_rooms', { userId: user.id, role: user.role, projectIds: [] });
-    });
+      socketRef.current.on('connect', () => {
+        console.log("🌐 Global Pulse Connected:", socketRef.current.id);
+        socketRef.current.emit('join_rooms', { userId: user.id, role: user.role, projectIds: [] });
+      });
+    }
+
+    const socket = socketRef.current;
 
     const playNotificationSound = () => {
-      const audio = new Audio('/notification.mp3'); // Assuming it's in public folder
-      audio.volume = 0.5;
-      audio.play().catch(e => console.log("Audio play prevented by browser policy", e));
+      const now = Date.now();
+      if (now - lastSoundTriggerRef.current < 2500) return; // v13.0 Strict 2.5s Throttle
+      
+      const audio = new Audio('/sounds/notification.mp3'); // Aligned with Store
+      audio.volume = 0.4;
+      audio.play()
+        .then(() => { lastSoundTriggerRef.current = now; })
+        .catch(() => { /* Silently fail if blocked */ });
     };
 
     const notifyClickable = (msg, icon, path) => {
       playNotificationSound();
       toast(msg, {
         icon,
-        duration: 5000,
+        id: `global-toast-${msg.substring(0, 10)}`, // ID prevents overlap of identical messages
+        duration: 4000,
         style: { cursor: 'pointer', background: '#0a0a0c', color: '#fff', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '1rem', fontWeight: 'bold' },
         onClick: () => {
           navigate(path);
           toast.dismiss();
         }
       });
-      addNotification(msg, 'info');
     };
 
-    // V12.1 Global Audio & Toast Notifications for Messages
-    socket.on('receive_message', (data) => {
-      if (data.senderId === user.id) return; // Don't notify for our own messages
+    const handleReceiveMessage = (data) => {
+      if (data.senderId === user.id) return; 
 
-      let path = '/client/messages';
-      if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/messages';
-      else if (user.role === 'TEAM') path = '/team/messages';
-
-      // 1. Identify what thread this message belongs to (for unread counts)
+      if (processedMessagesRef.current.has(data.id)) return;
+      processedMessagesRef.current.add(data.id);
+      
       const isGroup = data.type === 'GROUP';
-      // For Admin, private message target is the client's ID. 
-      // For Client, private message target is their own ID.
       let targetId = isGroup ? data.threadId : (user.role === 'CLIENT' ? user.id : data.senderId);
 
-      // 2. Check if the user is currently looking at this exact thread
       const currentViewedThreadId = activeThreadRef.current;
       let isCurrentlyViewingThisSpecificThread = false;
 
       if (currentViewedThreadId) {
-         if (isGroup) {
-            isCurrentlyViewingThisSpecificThread = currentViewedThreadId === data.threadId;
-         } else {
-            // If they are in a Private DM checkout
-            isCurrentlyViewingThisSpecificThread = currentViewedThreadId === targetId;
-         }
+         isCurrentlyViewingThisSpecificThread = isGroup ? 
+            (currentViewedThreadId === data.threadId) : 
+            (currentViewedThreadId === targetId);
       }
 
       if (!isCurrentlyViewingThisSpecificThread) {
-         // Not looking at exactly THIS conversation -> Play sound & show Badge!
          if (targetId) incrementUnreadMessages(targetId);
-         notifyClickable(`رسالة جديدة من ${data.senderName || 'مجهول'}`, '💬', path);
+         notifyClickable(`رسالة جديدة من ${data.senderName || 'مجهول'}`, '💬', isGroup ? '/client/projects' : '/client/messages');
       }
-    });
+    };
 
-    socket.on('task_updated', (data) => {
-      // Only notify if someone else updated it
-      if (data?.userId && data.userId === user.id) return;
+    const handleTaskUpdate = (data) => {
+      if (data?.userId === user.id) return;
+      notifyClickable(t('task_updated_global', 'تم تحديث حالة فيديو المشروع'), '🎥', '/client');
+    };
 
-      let path = '/client';
-      if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/projects';
-      else if (user.role === 'TEAM') path = '/team/tasks';
-      notifyClickable(t('task_updated_global', 'تم تحديث حالة فيديو المشروع'), '🎥', path);
-    });
-
-    socket.on('workspace_updated', (data) => {
-      if (data?.userId && data.userId === user.id) return;
-
-      let path = '/client';
-      if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/projects';
-      else if (user.role === 'TEAM') path = '/team/tasks';
-      notifyClickable(t('timeline_updated_global', 'تحديث في مسار المشروع الذكي'), '🔄', path);
-    });
-
-    socket.on('new_ticket', (data) => {
-      if (data?.userId && data.userId === user.id) return;
-
-      let path = '/client/messages';
-      if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/messages';
-      else if (user.role === 'TEAM') path = '/team/messages';
-      notifyClickable(t('new_meeting_global', 'لديك ميعاد اجتماع جديد'), '📅', path);
-    });
+    socket.on('receive_message', handleReceiveMessage);
+    socket.on('task_updated', handleTaskUpdate);
+    socket.on('workspace_updated', handleTaskUpdate); // Reuse same logic
 
     return () => {
-      console.log("🌐 Global Pulse Disconnecting...");
-      socket.disconnect();
+      socket.off('receive_message', handleReceiveMessage);
+      socket.off('task_updated', handleTaskUpdate);
+      socket.off('workspace_updated', handleTaskUpdate);
     };
+  }, [token, user?.id, user?.role, incrementUnreadMessages, t, navigate]);
   }, [token, user?.id, user?.role, addNotification, t, playGlobalDing, navigate]);
 
   return (
