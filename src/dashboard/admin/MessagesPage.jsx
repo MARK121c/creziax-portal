@@ -14,7 +14,7 @@ import {
 } from '../../store/api';
 import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
-import { io } from 'socket.io-client';
+import { useSocket } from '../../context/SocketContext';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import { 
@@ -65,7 +65,7 @@ const MessagesPage = () => {
   const [newGroupData, setNewGroupData] = useState({ name: '', memberIds: [] });
   const [creatingGroup, setCreatingGroup] = useState(false);
   
-  const socketRef = useRef();
+  const socket = useSocket(); // v14.0 Shared Singleton
   const scrollRef = useRef();
 
   // Close emoji picker when clicking outside
@@ -125,9 +125,8 @@ const MessagesPage = () => {
 
   // V12.0 ZERO DROP: Emit explicitly on connect & reconnects
   useEffect(() => {
-    if (!socketRef.current || loadingSidebar) return;
-    const socket = socketRef.current;
-
+    if (!socket || loadingSidebar) return;
+ 
     const handleJoinRooms = () => {
       if (user?.id) {
         const projectIds = projects.map(p => p.id);
@@ -137,30 +136,23 @@ const MessagesPage = () => {
           role: user.role,
           projectIds: [...projectIds, ...groupIds]
         });
-        console.log("Admin Room Sync: Joined User Room & Projects/Teams");
+        console.log("Admin Room Sync: Joined User Room & Projects/Teams (Singleton)");
       }
     };
 
+    handleJoinRooms();
     socket.on('connect', handleJoinRooms);
-    if (socket.connected) handleJoinRooms();
-
     return () => socket.off('connect', handleJoinRooms);
-  }, [projects, teamGroups, user, loadingSidebar]);
+  }, [projects, teamGroups, user, loadingSidebar, socket]);
 
   useEffect(() => {
     fetchData();
-    
-    const socket = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', {
-      transports: ['websocket'],
-      auth: { token: localStorage.getItem('token') }
-    });
-    socketRef.current = socket;
+    if (!socket) return;
 
-    socket.on('receive_message', (newMsg) => {
+    const handleReceiveMessage = (newMsg) => {
       const current = activeThreadRef.current;
       if (!current) return;
       
-      // 1. تحديد الهدف (Target Room / Guard)
       const targetId = current.userId || current.id;
       const isCorrectThread = 
         (newMsg.type === 'GROUP' && newMsg.threadId === current.id) ||
@@ -168,7 +160,6 @@ const MessagesPage = () => {
       
       if (isCorrectThread) {
         if (newMsg.senderId !== user?.id) {
-          // Payload Sanitation: Ensure we have at least a sender name
           const processedMsg = {
             ...newMsg,
             sender: newMsg.sender || { firstName: newMsg.senderName || 'مستخدم', role: 'USER' }
@@ -179,16 +170,14 @@ const MessagesPage = () => {
             return [...prev, processedMsg];
           });
         }
-      } else {
-        // لو مش بتاعت الشات ده، تروح صامتة تعمل إشعار (Badge) فقط في App.jsx
-        // The global listener in App.jsx inherently fulfills this rule
       }
-    });
-
-    return () => {
-      socket.disconnect();
     };
-  }, [user]);
+
+    socket.on('receive_message', handleReceiveMessage);
+    return () => {
+      socket.off('receive_message', handleReceiveMessage);
+    };
+  }, [user, socket, fetchData]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {

@@ -8,7 +8,7 @@ import {
 } from '../../store/api';
 import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
-import { io } from 'socket.io-client';
+import { useSocket } from '../../context/SocketContext';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import { 
@@ -182,7 +182,7 @@ const ClientMessages = () => {
   const [showDrivePanel, setShowDrivePanel] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   
-  const socketRef = useRef();
+  const socket = useSocket(); // v14.0 Shared Singleton
   const scrollRef = useRef();
   const activeThreadRef = useRef(activeThread);
   activeThreadRef.current = activeThread;
@@ -220,8 +220,7 @@ const ClientMessages = () => {
 
   // V12.0 ZERO DROP: Emit explicitly on connect & reconnects
   useEffect(() => {
-    if (!socketRef.current || loadingSidebar) return;
-    const socket = socketRef.current;
+    if (!socket || loadingSidebar) return;
 
     const handleJoinRooms = () => {
       if (user?.id) {
@@ -230,30 +229,23 @@ const ClientMessages = () => {
           role: user.role,
           projectIds: projects.map(p => p.id)
         });
-        console.log("Client Room Sync: Joined User Room & Projects");
+        console.log("Client Room Sync: Joined User Room & Projects (Singleton)");
       }
     };
 
+    handleJoinRooms();
     socket.on('connect', handleJoinRooms);
-    if (socket.connected) handleJoinRooms();
-
     return () => socket.off('connect', handleJoinRooms);
-  }, [projects, user, loadingSidebar]);
+  }, [projects, user, loadingSidebar, socket]);
 
   useEffect(() => {
     fetchData();
+    if (!socket) return;
 
-    const socket = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', {
-      transports: ['websocket'],
-      auth: { token: localStorage.getItem('token') }
-    });
-    socketRef.current = socket;
-
-    socket.on('receive_message', (newMsg) => {
+    const handleReceiveMessage = (newMsg) => {
       const current = activeThreadRef.current;
       if (!current) return;
       
-      // 1. تحديد الهدف (Target Room / Guard)
       const isCorrectThread = 
         (newMsg.type === 'GROUP' && newMsg.threadId === current.id && current.type === 'GROUP') ||
         (newMsg.type === 'PRIVATE' && current.type !== 'GROUP');
@@ -265,15 +257,14 @@ const ClientMessages = () => {
             return [...prev, { ...newMsg, sender: newMsg.sender || { firstName: newMsg.senderName || 'الدعم الفني', role: 'ADMIN' } }];
           });
         }
-      } else {
-        // لو مش بتاعت الشات ده، تروح صامتة تعمل إشعار (Badge) فقط في App.jsx
       }
-    });
-
-    return () => {
-      socket.disconnect();
     };
-  }, [user?.id]); // Only re-connect if user ID changes
+
+    socket.on('receive_message', handleReceiveMessage);
+    return () => {
+       socket.off('receive_message', handleReceiveMessage);
+    };
+  }, [user?.id, socket, fetchData]); // Only re-connect if user ID changes
 
   // Track active thread for global silence logic
   useEffect(() => {

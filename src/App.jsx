@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
-import { io } from 'socket.io-client';
 import { useTranslation } from 'react-i18next';
+import { SocketProvider, useSocket } from './context/SocketContext';
 import useAuthStore from './store/authStore';
 import useNotificationStore from './store/notificationStore';
 import DashboardLayout from './components/DashboardLayout';
@@ -90,13 +90,14 @@ const LanguageInitializer = () => {
   return null;
 };
 
-function App() {
+function AppContent() {
   const navigate = useNavigate();
   const { token, user, fetchProfile } = useAuthStore();
   const { addNotification, activeThreadId, incrementUnreadMessages, resetUnreadMessages } = useNotificationStore();
   const { t } = useTranslation();
   const activeThreadRef = useRef(null);
-  const socketRef = useRef(null); // v13.0 Singleton Socket
+  
+  const socket = useSocket(); // v14.0 Singleton Socket
   const processedMessagesRef = useRef(new Set()); 
   const lastSoundTriggerRef = useRef(0); 
 
@@ -149,33 +150,17 @@ function App() {
   }, [activeThreadId]);
 
   useEffect(() => {
-    if (!token || !user) return;
-
-    if (!socketRef.current) {
-      socketRef.current = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', {
-        transports: ['websocket'],
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 2000,
-      });
-
-      socketRef.current.on('connect', () => {
-        console.log("🌐 Global Pulse Connected:", socketRef.current.id);
-        socketRef.current.emit('join_rooms', { userId: user.id, role: user.role, projectIds: [] });
-      });
-    }
-
-    const socket = socketRef.current;
+    if (!token || !user || !socket) return;
 
     const playNotificationSound = () => {
       const now = Date.now();
-      if (now - lastSoundTriggerRef.current < 2500) return; // v13.0 Strict 2.5s Throttle
+      if (now - lastSoundTriggerRef.current < 2500) return; 
       
-      const audio = new Audio('/sounds/notification.mp3'); // Aligned with Store
+      const audio = new Audio('/sounds/notification.mp3'); 
       audio.volume = 0.4;
       audio.play()
         .then(() => { lastSoundTriggerRef.current = now; })
-        .catch(() => { /* Silently fail if blocked */ });
+        .catch(() => {});
     };
 
     const notifyClickable = (msg, icon, path) => {
@@ -325,4 +310,12 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  const { user, token } = useAuthStore();
+  
+  return (
+    <SocketProvider user={user} token={token}>
+      <AppContent />
+    </SocketProvider>
+  );
+}
