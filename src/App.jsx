@@ -119,7 +119,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    console.log("%c Creziax Portal v12.0.0-ZeroDrop %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
+    console.log("%c Creziax Portal v12.1.0-FinalMasterpiece %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
     if (token) {
       fetchProfile();
     }
@@ -160,8 +160,14 @@ function App() {
       socket.emit('join_rooms', { userId: user.id, role: user.role, projectIds: [] });
     });
 
+    const playNotificationSound = () => {
+      const audio = new Audio('/notification.mp3'); // Assuming it's in public folder
+      audio.volume = 0.5;
+      audio.play().catch(e => console.log("Audio play prevented by browser policy", e));
+    };
+
     const notifyClickable = (msg, icon, path) => {
-      playGlobalDing();
+      playNotificationSound();
       toast(msg, {
         icon,
         duration: 5000,
@@ -174,35 +180,37 @@ function App() {
       addNotification(msg, 'info');
     };
 
-    socket.on('smart_notification', (data) => {
-      if (data.senderId === user.id) return;
+    // V12.1 Global Audio & Toast Notifications for Messages
+    socket.on('receive_message', (data) => {
+      if (data.senderId === user.id) return; // Don't notify for our own messages
 
-      if (data.type === 'message') {
-        let path = '/client/messages';
-        if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/messages';
-        else if (user.role === 'TEAM') path = '/team/messages';
+      let path = '/client/messages';
+      if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/messages';
+      else if (user.role === 'TEAM') path = '/team/messages';
 
-        // v10.0 STANDARD SOCKET ARCHITECTURE
-        // Backend strictly shapes notificationPayload:
-        // Group = { threadId: 'uuid', ... }
-        // Private = { threadId: null, ... }
-        let targetId;
-        let isCurrentlyViewingThisSpecificThread = false;
+      // 1. Identify what thread this message belongs to (for unread counts)
+      const isGroup = data.type === 'GROUP';
+      // For Admin, private message target is the client's ID. 
+      // For Client, private message target is their own ID.
+      let targetId = isGroup ? data.threadId : (user.role === 'CLIENT' ? user.id : data.senderId);
 
-        if (data.threadId) {
-           targetId = data.threadId;
-           isCurrentlyViewingThisSpecificThread = activeThreadRef.current === data.threadId;
-        } else {
-           targetId = user.role === 'CLIENT' ? user.id : data.senderId;
-           isCurrentlyViewingThisSpecificThread = activeThreadRef.current === targetId;
-        }
+      // 2. Check if the user is currently looking at this exact thread
+      const currentViewedThreadId = activeThreadRef.current;
+      let isCurrentlyViewingThisSpecificThread = false;
 
-        if (isCurrentlyViewingThisSpecificThread) {
-           // Silence: User is already in this specific thread
-        } else {
-           if (targetId) incrementUnreadMessages(targetId);
-           notifyClickable(t('new_message_received_global', '🔊 لديك رسالة جديدة'), '💬', path);
-        }
+      if (currentViewedThreadId) {
+         if (isGroup) {
+            isCurrentlyViewingThisSpecificThread = currentViewedThreadId === data.threadId;
+         } else {
+            // If they are in a Private DM checkout
+            isCurrentlyViewingThisSpecificThread = currentViewedThreadId === targetId;
+         }
+      }
+
+      if (!isCurrentlyViewingThisSpecificThread) {
+         // Not looking at exactly THIS conversation -> Play sound & show Badge!
+         if (targetId) incrementUnreadMessages(targetId);
+         notifyClickable(`رسالة جديدة من ${data.senderName || 'مجهول'}`, '💬', path);
       }
     });
 
