@@ -119,7 +119,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    console.log("%c Creziax Portal v9.1.0-AbsoluteRecovery %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
+    console.log("%c Creziax Portal v10.0.0-BulletproofRouting %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
     if (token) {
       fetchProfile();
     }
@@ -182,24 +182,20 @@ function App() {
         if (user.role === 'ADMIN' || user.role === 'OWNER') path = '/admin/messages';
         else if (user.role === 'TEAM') path = '/team/messages';
 
-        // ABSOLUTE PRIVACY LOGIC (v8.0): 
-        // threadId is the SUPREME key. 
-        // 1. If data.threadId exists, it's a Project/Group. Match ONLY by threadId.
-        // 2. If data.threadId is null, it's a DM. Match by senderId.
-        let targetId = data.threadId; 
-        
-        if (!targetId) {
-           // Fallback for DMs
-           if (user.role === 'CLIENT') targetId = user.id;
-           else targetId = data.senderId;
-        }
+        // v10.0 STANDARD SOCKET ARCHITECTURE
+        // Backend strictly shapes notificationPayload:
+        // Group = { threadId: 'uuid', ... }
+        // Private = { threadId: null, ... }
+        let targetId;
+        let isCurrentlyViewingThisSpecificThread = false;
 
-        // Strict Thread Isolation Check (v8.0)
-        // Ensure no "leakage" even if senderId matches a different open thread
-        const isCurrentlyViewingThisSpecificThread = activeThreadRef.current && (
-           (data.threadId && data.threadId === activeThreadRef.current) || // Strict Group match
-           (!data.threadId && targetId === activeThreadRef.current) // Strict DM match
-        );
+        if (data.threadId) {
+           targetId = data.threadId;
+           isCurrentlyViewingThisSpecificThread = activeThreadRef.current === data.threadId;
+        } else {
+           targetId = user.role === 'CLIENT' ? user.id : data.senderId;
+           isCurrentlyViewingThisSpecificThread = activeThreadRef.current === targetId;
+        }
 
         if (isCurrentlyViewingThisSpecificThread) {
            // Silence: User is already in this specific thread

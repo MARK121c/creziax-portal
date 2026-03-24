@@ -230,15 +230,13 @@ const ClientMessages = () => {
     socket.on('receive_message', (msg) => {
       const current = activeThreadRef.current;
       
-      // v9.1 STRICT MATCH:
-      // - Group msg: has threadId → match if threadId === current.id AND we're in a GROUP
-      // - DM msg: no threadId → match if we're NOT in a GROUP (support chat)
+      // v10.0 Standard Socket Architecture:
       let isMatch = false;
-      if (msg.threadId) {
-        isMatch = (msg.threadId === current?.id && current?.type === 'GROUP');
-      } else {
-        // DM: no threadId, just check we're in the support/DM view
-        isMatch = (current?.type !== 'GROUP');
+      if (msg.type === 'GROUP') {
+        isMatch = (current && msg.threadId === current.id && current.type === 'GROUP');
+      } else if (msg.type === 'PRIVATE') {
+        // DM Match: support chat
+        isMatch = (current && current.type !== 'GROUP');
       }
 
       if (isMatch && msg.senderId !== user?.id) {
@@ -283,20 +281,23 @@ const ClientMessages = () => {
   const doSendMessage = async (msgContent) => {
     if (!activeThread) return;
     
-    // v9.1 STRICT: GROUP gets threadId, DM gets null (so server routes via receiverId)
+    // v10.0 Standard Socket Architecture Payload
     const isGroup = activeThread.type === 'GROUP';
+    const type = isGroup ? 'GROUP' : 'PRIVATE';
     const threadIdToSend = isGroup ? activeThread.id : null;
     const receiverIdToSend = !isGroup ? activeThread.userId : null;
     
     const { data } = await sendMessageAPI({ 
       content: msgContent, 
+      type,
       threadId: threadIdToSend,
       receiverId: receiverIdToSend
     });
     
-    // Socket payload: threadId null for DMs, group ID for groups
+    // Build socket payload (v10.0 Standard Architecture)
     socketRef.current?.emit('send_message', { 
       ...data, 
+      type,
       threadId: threadIdToSend,
       receiverId: receiverIdToSend,
       senderName: `${user?.firstName} ${user?.lastName}`

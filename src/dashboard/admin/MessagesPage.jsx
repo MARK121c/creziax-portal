@@ -135,16 +135,12 @@ const MessagesPage = () => {
     socket.on('receive_message', (msg) => {
       const current = activeThreadRef.current;
       
-      // ABSOLUTE PRIVACY v8.0:
-      // 1. If it's a project/group message (has threadId), match strictly by ID.
-      // 2. If it's a DM (threadId is null), match by senderId.
+      // v10.0 Standard Socket Architecture:
       let isMatch = false;
-      if (msg.threadId) {
-        // Project/Group Match
-        isMatch = (msg.threadId === current?.id);
-      } else {
-        // DM Match
-        isMatch = (msg.senderId === current?.userId);
+      if (msg.type === 'GROUP') {
+        isMatch = (current && msg.threadId === current.id);
+      } else if (msg.type === 'PRIVATE') {
+        isMatch = (current && (msg.senderId === current.userId || msg.receiverId === current.userId));
       }
       
       if (isMatch) {
@@ -205,23 +201,27 @@ const MessagesPage = () => {
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'OWNER';
     if (content.trim() && !isAdmin && !validateMessage(content)) return;
 
-    // Build strict payload - never mix threadId and receiverId for group messages
+    // v10.0 Standard Socket Architecture Payload
     const isDM = activeThread.type === 'DM' || activeThread.type === 'TEAM';
+    const type = isDM ? 'PRIVATE' : 'GROUP';
     const messagePayload = { 
       content, 
-      threadId: !isDM ? activeThread.id : null,
-      receiverId: isDM ? activeThread.userId : null
+      type,
+      threadId: type === 'GROUP' ? activeThread.id : null,
+      receiverId: type === 'PRIVATE' ? activeThread.userId : null
     };
 
     try {
       const { data } = await sendMessageAPI(messagePayload);
       
-      // Build socket payload with memberIds for group notifications (v9.0)
+      // Build socket payload (v10.0 Standard Architecture)
       const socketPayload = { 
         ...data, 
-        threadId: !isDM ? activeThread.id : null,
+        type,
+        threadId: type === 'GROUP' ? activeThread.id : null,
+        receiverId: type === 'PRIVATE' ? activeThread.userId : null,
         senderName: `${user?.firstName} ${user?.lastName}`,
-        memberIds: !isDM ? (
+        memberIds: type === 'GROUP' ? (
           activeThread.type === 'TEAM_GROUP' 
             ? (teamGroups.find(g => g.id === activeThread.id)?.members?.map(m => m.id) || [])
             : (projects.find(p => p.id === activeThread.id)?.teamMembers?.map(tm => tm.user?.id || tm.userId).filter(Boolean) || [])
