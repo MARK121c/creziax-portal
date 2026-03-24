@@ -209,7 +209,7 @@ const ClientMessages = () => {
       const { data } = await getMessagesAPI(threadId);
       setMessages(data || []);
       if (socketRef.current) {
-        socketRef.current.emit('join_thread', threadId);
+        // join_thread handled centrally via join_rooms hook
       }
     } catch (err) {
       toast.error("فشل تحميل الرسائل");
@@ -217,6 +217,17 @@ const ClientMessages = () => {
       setLoadingMessages(false);
     }
   };
+
+  // V10.0 Explicit Room Joining
+  useEffect(() => {
+    if (socketRef.current && user?.id && !loadingSidebar) {
+      socketRef.current.emit('join_rooms', {
+        userId: user.id,
+        role: user.role,
+        projectIds: projects.map(p => p.id)
+      });
+    }
+  }, [projects, user?.id, user?.role, loadingSidebar]);
 
   useEffect(() => {
     fetchData();

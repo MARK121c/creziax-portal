@@ -157,7 +157,7 @@ function App() {
 
     socket.on('connect', () => {
       console.log("🌐 Global Pulse Connected:", socket.id);
-      socket.emit('authenticate', { userId: user.id, role: user.role });
+      socket.emit('join_rooms', { userId: user.id, role: user.role, projectIds: [] });
     });
 
     const notifyClickable = (msg, icon, path) => {

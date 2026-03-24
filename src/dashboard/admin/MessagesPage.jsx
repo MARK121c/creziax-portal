@@ -108,7 +108,7 @@ const MessagesPage = () => {
       setMessages(data || []);
       
       if (socketRef.current) {
-        socketRef.current.emit('join_thread', threadId);
+        // join_thread handled centrally via join_rooms hook
       }
     } catch (err) {
       toast.error("فشل تحميل الرسائل");
@@ -122,6 +122,19 @@ const MessagesPage = () => {
   useEffect(() => {
     activeThreadRef.current = activeThread;
   }, [activeThread]);
+
+  // V10.0 Explicit Room Joining
+  useEffect(() => {
+    if (socketRef.current && user?.id && !loadingSidebar) {
+      const projectIds = projects.map(p => p.id);
+      const groupIds = teamGroups.map(g => g.id);
+      socketRef.current.emit('join_rooms', {
+        userId: user.id,
+        role: user.role,
+        projectIds: [...projectIds, ...groupIds]
+      });
+    }
+  }, [projects, teamGroups, user?.id, user?.role, loadingSidebar]);
 
   useEffect(() => {
     fetchData();
