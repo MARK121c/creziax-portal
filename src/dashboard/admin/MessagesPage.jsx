@@ -205,13 +205,30 @@ const MessagesPage = () => {
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'OWNER';
     if (content.trim() && !isAdmin && !validateMessage(content)) return;
 
+    // Build strict payload - never mix threadId and receiverId for group messages
+    const isDM = activeThread.type === 'DM' || activeThread.type === 'TEAM';
+    const messagePayload = { 
+      content, 
+      threadId: !isDM ? activeThread.id : null,
+      receiverId: isDM ? activeThread.userId : null
+    };
+
     try {
-      const { data } = await sendMessageAPI({ 
-        content, 
-        threadId: activeThread.id,
-        receiverId: activeThread.type === 'DM' || activeThread.type === 'TEAM' ? activeThread.userId : null
-      });
-      socketRef.current.emit('send_message', { ...data, threadId: activeThread.id });
+      const { data } = await sendMessageAPI(messagePayload);
+      
+      // Build socket payload with memberIds for group notifications (v9.0)
+      const socketPayload = { 
+        ...data, 
+        threadId: !isDM ? activeThread.id : null,
+        senderName: `${user?.firstName} ${user?.lastName}`,
+        memberIds: !isDM ? (
+          activeThread.type === 'TEAM_GROUP' 
+            ? (teamGroups.find(g => g.id === activeThread.id)?.members?.map(m => m.id) || [])
+            : (projects.find(p => p.id === activeThread.id)?.teamMembers?.map(tm => tm.user?.id || tm.userId).filter(Boolean) || [])
+        ) : null
+      };
+      
+      socketRef.current.emit('send_message', socketPayload);
       setContent('');
       setMessages(prev => [...prev, { ...data, sender: user }]);
     } catch (err) {
