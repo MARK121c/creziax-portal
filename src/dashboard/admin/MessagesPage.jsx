@@ -118,7 +118,7 @@ const MessagesPage = () => {
       const { data } = await getMessagesAPI(threadId);
       setMessages(data || []);
       
-      if (socketRef.current) {
+      if (socket) {
         // join_thread handled centrally via join_rooms hook
       }
     } catch (err) {
