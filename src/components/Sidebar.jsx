@@ -109,7 +109,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             Creziax
           </span>
           <span className="text-[9px] font-black text-brand-500 uppercase tracking-[0.2em] -mt-0.5">
-            V15.3 STABLE MASTER
+            v16.0 - STABLE
           </span>
         </div>
       </div>

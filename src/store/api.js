@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// v15.3: Hardcoded production URL as guaranteed fallback — NEVER use relative /api in production
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.creziax.cloud/api';
-// Version: 15.3 (Hardcoded URL Fallback — CORS-safe)
+// v16.0: STRICTLY HARDCODED API URL - NO ENV FALLBACK
+const API_URL = 'https://api.creziax.cloud/api';
+// Version: 16.0 (Golden Release - Strictly Hardcoded)
 
 const api = axios.create({
   baseURL: API_URL,
