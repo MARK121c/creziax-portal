@@ -238,23 +238,24 @@ const ClientMessages = () => {
     });
     socketRef.current = socket;
 
-    socket.on('receive_message', (msg) => {
+    socket.on('receive_message', (newMsg) => {
       const current = activeThreadRef.current;
+      if (!current) return;
       
-      // v10.0 Standard Socket Architecture:
-      let isMatch = false;
-      if (msg.type === 'GROUP') {
-        isMatch = (current && msg.threadId === current.id && current.type === 'GROUP');
-      } else if (msg.type === 'PRIVATE') {
-        // DM Match: support chat
-        isMatch = (current && current.type !== 'GROUP');
-      }
+      // 1. تحديد الهدف (Target Room / Guard)
+      const isCorrectThread = 
+        (newMsg.type === 'GROUP' && newMsg.threadId === current.id && current.type === 'GROUP') ||
+        (newMsg.type === 'PRIVATE' && current.type !== 'GROUP');
 
-      if (isMatch && msg.senderId !== user?.id) {
-        setMessages(prev => {
-          if (prev.find(m => m.id === msg.id)) return prev;
-          return [...prev, { ...msg, sender: msg.sender || { firstName: 'الدعم الفني', role: 'ADMIN' } }];
-        });
+      if (isCorrectThread) {
+        if (newMsg.senderId !== user?.id) {
+          setMessages(prev => {
+            if (prev.find(m => m.id === newMsg.id)) return prev;
+            return [...prev, { ...newMsg, sender: newMsg.sender || { firstName: newMsg.senderName || 'الدعم الفني', role: 'ADMIN' } }];
+          });
+        }
+      } else {
+        // لو مش بتاعت الشات ده، تروح صامتة تعمل إشعار (Badge) فقط في App.jsx
       }
     });
 

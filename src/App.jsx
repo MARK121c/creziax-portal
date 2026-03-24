@@ -119,7 +119,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    console.log("%c Creziax Portal v10.0.0-BulletproofRouting %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
+    console.log("%c Creziax Portal v11.0.0-ZeroLeakage %c Loaded ", "background: #f59e0b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #1e293b; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
     if (token) {
       fetchProfile();
     }

@@ -145,30 +145,32 @@ const MessagesPage = () => {
     });
     socketRef.current = socket;
 
-    socket.on('receive_message', (msg) => {
+    socket.on('receive_message', (newMsg) => {
       const current = activeThreadRef.current;
+      if (!current) return;
       
-      // v10.0 Standard Socket Architecture:
-      let isMatch = false;
-      if (msg.type === 'GROUP') {
-        isMatch = (current && msg.threadId === current.id);
-      } else if (msg.type === 'PRIVATE') {
-        isMatch = (current && (msg.senderId === current.userId || msg.receiverId === current.userId));
-      }
+      // 1. تحديد الهدف (Target Room / Guard)
+      const targetId = current.userId || current.id;
+      const isCorrectThread = 
+        (newMsg.type === 'GROUP' && newMsg.threadId === current.id) ||
+        (newMsg.type === 'PRIVATE' && (newMsg.senderId === targetId || newMsg.receiverId === targetId));
       
-      if (isMatch) {
-        if (msg.senderId !== user?.id) {
-          // Payload Sanitation: Ensure we have at least a sender name to avoid ???
+      if (isCorrectThread) {
+        if (newMsg.senderId !== user?.id) {
+          // Payload Sanitation: Ensure we have at least a sender name
           const processedMsg = {
-            ...msg,
-            sender: msg.sender || { firstName: t('unknown_user', 'مستخدم'), role: 'USER' }
+            ...newMsg,
+            sender: newMsg.sender || { firstName: newMsg.senderName || 'مستخدم', role: 'USER' }
           };
           
           setMessages(prev => {
-            if (prev.find(m => m.id === msg.id)) return prev;
+            if (prev.find(m => m.id === newMsg.id)) return prev;
             return [...prev, processedMsg];
           });
         }
+      } else {
+        // لو مش بتاعت الشات ده، تروح صامتة تعمل إشعار (Badge) فقط في App.jsx
+        // The global listener in App.jsx inherently fulfills this rule
       }
     });
 
