@@ -230,30 +230,22 @@ const ClientMessages = () => {
     socket.on('receive_message', (msg) => {
       const current = activeThreadRef.current;
       
-      // ABSOLUTE PRIVACY v8.0:
-      // Client has two modes: Support (Private) and Projects (Group).
+      // v9.1 STRICT MATCH:
+      // - Group msg: has threadId → match if threadId === current.id AND we're in a GROUP
+      // - DM msg: no threadId → match if we're NOT in a GROUP (support chat)
       let isMatch = false;
       if (msg.threadId) {
-        // Project Match (threadId matches project.id)
         isMatch = (msg.threadId === current?.id && current?.type === 'GROUP');
       } else {
-        // Support DM Match (No threadId, match by senderId)
-        // If the sender is an admin/staff and we are in support chat
-        isMatch = (current?.type !== 'GROUP' && msg.senderId === current?.userId);
+        // DM: no threadId, just check we're in the support/DM view
+        isMatch = (current?.type !== 'GROUP');
       }
 
-      if (isMatch) {
-        if (msg.senderId !== user?.id) {
-          const processedMsg = {
-            ...msg,
-            sender: msg.sender || { firstName: t('support_agent', 'الدعم الفني'), role: 'ADMIN' }
-          };
-          
-          setMessages(prev => {
-            if (prev.find(m => m.id === msg.id)) return prev;
-            return [...prev, processedMsg];
-          });
-        }
+      if (isMatch && msg.senderId !== user?.id) {
+        setMessages(prev => {
+          if (prev.find(m => m.id === msg.id)) return prev;
+          return [...prev, { ...msg, sender: msg.sender || { firstName: 'الدعم الفني', role: 'ADMIN' } }];
+        });
       }
     });
 
@@ -290,13 +282,25 @@ const ClientMessages = () => {
 
   const doSendMessage = async (msgContent) => {
     if (!activeThread) return;
-    const threadIdToSend = activeThread.type === 'GROUP' ? activeThread.id : user.id;
+    
+    // v9.1 STRICT: GROUP gets threadId, DM gets null (so server routes via receiverId)
+    const isGroup = activeThread.type === 'GROUP';
+    const threadIdToSend = isGroup ? activeThread.id : null;
+    const receiverIdToSend = !isGroup ? activeThread.userId : null;
+    
     const { data } = await sendMessageAPI({ 
       content: msgContent, 
       threadId: threadIdToSend,
-      receiverId: activeThread.type === 'DM' ? activeThread.userId : null
+      receiverId: receiverIdToSend
     });
-    socketRef.current?.emit('send_message', { ...data, threadId: threadIdToSend });
+    
+    // Socket payload: threadId null for DMs, group ID for groups
+    socketRef.current?.emit('send_message', { 
+      ...data, 
+      threadId: threadIdToSend,
+      receiverId: receiverIdToSend,
+      senderName: `${user?.firstName} ${user?.lastName}`
+    });
     setMessages(prev => [...prev, { ...data, sender: user }]);
   };
 
