@@ -135,7 +135,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               <span className="truncate">{t(labelKey)}</span>
             </div>
             
-            {unreadMessagesCount > 0 && to.includes('messages') && (
+            {unreadMessagesCount > 0 && globalCountVisible && to.includes('messages') && (
               <span className="ml-auto bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-lg shadow-rose-500/20 animate-pulse">
                 {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
               </span>

@@ -78,7 +78,7 @@ const LanguageInitializer = () => {
 function AppContent() {
   const navigate = useNavigate();
   const { token, user, fetchProfile } = useAuthStore();
-  const { addNotification, activeThreadId, incrementUnreadMessages, resetUnreadMessages } = useNotificationStore();
+  const { addNotification, activeThreadId, incrementUnreadMessages, resetUnreadMessages, setGlobalCountVisible } = useNotificationStore();
   const { t } = useTranslation();
   const activeThreadRef = useRef(null);
   
@@ -112,7 +112,7 @@ function AppContent() {
   };
 
   useEffect(() => {
-    console.log("%c Creziax Portal v17.5-ELITE %c Loaded ", "background: #1e293b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #22c55e; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
+    console.log("%c Creziax Portal v17.5.2-ELITE %c Loaded ", "background: #1e293b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #22c55e; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
     if (token) {
       fetchProfile();
     }
@@ -134,6 +134,16 @@ function AppContent() {
     if (!token || !user) return;
     activeThreadRef.current = activeThreadId;
   }, [activeThreadId, token, user]);
+
+  const location = useLocation();
+
+  useEffect(() => {
+    // Hide global unread badge on sidebar when entering any messages page
+    const messagesPaths = ['/admin/messages', '/team/messages', '/client/messages'];
+    if (messagesPaths.includes(location.pathname)) {
+      setGlobalCountVisible(false); 
+    }
+  }, [location.pathname, setGlobalCountVisible]);
 
   useEffect(() => {
     if (!token || !user || !socket) return;
