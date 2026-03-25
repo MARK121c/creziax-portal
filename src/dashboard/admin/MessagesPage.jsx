@@ -22,9 +22,12 @@ import {
   Send, MessageSquare, Search, MoreHorizontal, Smile, Link as LinkIcon,
   Loader2, UserCircle, Plus, Filter, Clock, CheckCircle2, AlertCircle,
   Tag, ChevronRight, Briefcase, Calendar, ExternalLink, ShieldAlert,
-  UserPlus, X, Users, Check, Trash2, UserMinus
+  UserPlus, X, Users, Check, Trash2, UserMinus, Paperclip
 } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
+import axios from 'axios';
+
+const API_URL = 'https://api.creziax.cloud/api';
 
 const MessagesPage = () => {
   const { t } = useTranslation();
@@ -75,6 +78,10 @@ const MessagesPage = () => {
   const [newGroupData, setNewGroupData] = useState({ name: '', memberIds: [] });
   const [creatingGroup, setCreatingGroup] = useState(false);
   
+  // v17.0 Elite Features
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [pinningMessageId, setPinningMessageId] = useState(null);
+  
   const socket = useSocket(); // v14.0 Shared Singleton
   const scrollRef = useRef();
 
@@ -112,15 +119,16 @@ const MessagesPage = () => {
   }, [user?.role]);
 
   const fetchThreadMessages = async (threadId) => {
-    if (!threadId) return; // v15.2 Guard: Prevent toast on initial load
+    if (!threadId) return;
     setLoadingMessages(true);
     try {
       const { data } = await getMessagesAPI(threadId);
       setMessages(data || []);
       
-      if (socket) {
-        // join_thread handled centrally via join_rooms hook
-      }
+      // Auto-Clear (v17.0): Mark thread as read on the backend
+      markAsReadAPI({ threadId });
+      resetUnreadMessages(threadId);
+      toast.dismiss(); // Dismiss any pending toasts for this thread
     } catch (err) {
       console.error("Messages Load Error:", err);
       toast.error("فشل تحميل الرسائل");
@@ -244,7 +252,8 @@ const MessagesPage = () => {
       content, 
       type,
       threadId: type === 'GROUP' ? activeThread.id : null,
-      receiverId: type === 'PRIVATE' ? activeThread.userId : null
+      receiverId: type === 'PRIVATE' ? activeThread.userId : null,
+      parentId: replyingTo?.id || null // v17.0 Reply
     };
 
     try {
@@ -266,7 +275,8 @@ const MessagesPage = () => {
       
       socket.emit('send_message', socketPayload);
       setContent('');
-      setMessages(prev => [...prev, { ...data, sender: user }]);
+      setReplyingTo(null); // Clear reply state
+      setMessages(prev => [...prev, { ...data, sender: user, parent: replyingTo }]);
     } catch (err) {
       if (err.response?.status === 403) {
         toast.error(err.response.data.message);
@@ -408,6 +418,23 @@ const MessagesPage = () => {
       toast.error(err.response?.data?.message || "فشل منح الصلاحية");
     } finally {
       setGrantingAccess(false);
+    }
+  };
+
+  // v17.0 Pin Message
+  const handleTogglePin = async (msgId) => {
+    setPinningMessageId(msgId);
+    try {
+      const { data } = await axios.patch(`${API_URL}/messages/${msgId}/pin`, {}, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      // Update local state
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, isPinned: data.isPinned } : m));
+      toast.success(data.isPinned ? "تم تثبيت الرسالة" : "تم إلغاء التثبيت");
+    } catch (err) {
+      toast.error("فشل تعديل تثبيت الرسالة");
+    } finally {
+      setPinningMessageId(null);
     }
   };
 
@@ -777,6 +804,29 @@ Availability: ${bookingData.dates}`;
                 </div>
                 
                 <div className="flex-1 overflow-y-auto px-6 md:px-10 py-8 space-y-8 custom-scrollbar bg-slate-50/20 dark:bg-[#08080a]">
+                  {/* v17.0 Pinned Message Banner */}
+                  {messages.some(m => m.isPinned) && (
+                    <div className="sticky top-0 z-10 -mx-10 px-10 py-3 bg-brand-500/10 backdrop-blur-md border-b border-brand-500/20 mb-6 flex items-center justify-between animate-in slide-in-from-top duration-500">
+                      <div className="flex items-center gap-4 overflow-hidden">
+                        <div className="w-8 h-8 rounded-lg bg-brand-500 text-white flex items-center justify-center flex-shrink-0 shadow-lg shadow-brand-500/20">
+                           <Clock size={16} />
+                        </div>
+                        <div className="text-right overflow-hidden">
+                          <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest leading-none mb-1">رسالة مثبتة من الإدارة</p>
+                          <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
+                            {messages.find(m => m.isPinned)?.content.substring(0, 100)}...
+                          </p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => handleTogglePin(messages.find(m => m.isPinned)?.id)}
+                        className="text-[10px] font-black text-slate-400 hover:text-brand-500 transition-colors uppercase tracking-widest px-3 py-1 bg-white/50 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/10"
+                      >
+                        إلغاء التثبيت
+                      </button>
+                    </div>
+                  )}
+
                   {loadingMessages ? (
                      <div className="h-full flex flex-col items-center justify-center opacity-50"><Loader2 size={32} className="animate-spin text-brand-500" /></div>
                   ) : messages.length === 0 ? (
@@ -815,12 +865,42 @@ Availability: ${bookingData.dates}`;
                         <div key={m.id || i} className={`flex ${m.senderId === user?.id ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-500`}>
                           <div className={`flex flex-col ${m.senderId === user?.id ? 'items-end' : 'items-start'} max-w-[85%] md:max-w-[70%]`}>
                              <div className={`flex items-center gap-3 mb-2 px-1 ${m.senderId === user?.id ? 'flex-row-reverse' : ''}`}>
-
                                 <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                                   {m.sender?.firstName} {m.sender?.lastName} {m.senderId === user?.id && '(أنت)'}
                                 </span>
+                                {m.isPinned && <Clock size={12} className="text-brand-500" />}
                              </div>
-                            <div className={`px-6 py-4 rounded-[1rem] md:rounded-[1.5rem] text-sm font-bold leading-relaxed shadow-xl ${m.senderId === user?.id ? 'bg-brand-600 text-white rounded-tr-none shadow-brand-600/10' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-none border border-slate-100 dark:border-white/5'} ${isBookingCard ? 'border-2 border-brand-500/30 ring-4 ring-brand-500/10' : ''}`}>
+
+                            {/* v17.0 Reply Quote */}
+                            {m.parent && (
+                              <div className={`mb-1 px-4 py-2 rounded-t-2xl bg-slate-100 dark:bg-white/5 border-r-4 border-brand-500/50 max-w-full overflow-hidden opacity-80 ${m.senderId === user?.id ? 'mr-2' : 'ml-2'}`}>
+                                <p className="text-[10px] font-black text-brand-500 mb-1">{m.parent.sender?.firstName} {m.parent.sender?.lastName}</p>
+                                <p className="text-[11px] font-bold text-slate-500 truncate">{m.parent.content}</p>
+                              </div>
+                            )}
+
+                            <div className="group relative">
+                              {/* v17.0 Action Icons on Hover */}
+                              <div className={`invisible group-hover:visible absolute top-1/2 -translate-y-1/2 flex items-center gap-2 px-3 ${m.senderId === user?.id ? 'right-full' : 'left-full'}`}>
+                                <button 
+                                  onClick={() => setReplyingTo(m)}
+                                  className="w-8 h-8 rounded-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm flex items-center justify-center text-slate-400 hover:text-brand-500 hover:scale-110 transition-all"
+                                  title="رد"
+                                >
+                                  <Users size={14} /> 
+                                </button>
+                                {(user.role === 'ADMIN' || user.role === 'OWNER') && (
+                                  <button 
+                                    onClick={() => handleTogglePin(m.id)}
+                                    className={`w-8 h-8 rounded-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm flex items-center justify-center hover:scale-110 transition-all ${m.isPinned ? 'text-brand-500' : 'text-slate-400 hover:text-brand-500'}`}
+                                    title={m.isPinned ? "إلغاء التثبيت" : "تثبيت"}
+                                  >
+                                    <Clock size={14} />
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className={`px-6 py-4 rounded-[1rem] md:rounded-[1.5rem] text-sm font-bold leading-relaxed shadow-xl ${m.senderId === user?.id ? 'bg-brand-600 text-white rounded-tr-none shadow-brand-600/10' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-none border border-slate-100 dark:border-white/5'} ${isBookingCard ? 'border-2 border-brand-500/30 ring-4 ring-brand-500/10' : ''} ${m.isPinned ? 'ring-2 ring-brand-500/20 bg-brand-50/50 dark:bg-brand-500/5' : ''}`}>
                               {isDriveLink ? (
                                 <a
                                   href={driveUrl}
@@ -881,6 +961,7 @@ Availability: ${bookingData.dates}`;
                               ) : (
                                 <p className="whitespace-pre-wrap break-words">{m.content}</p>
                               )}
+                              </div>
                             </div>
                             <span className="text-[8px] font-black text-slate-400 mt-2 px-2 uppercase tracking-[0.2em]">
                               {new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -893,6 +974,26 @@ Availability: ${bookingData.dates}`;
                 </div>
 
                 <div className="p-4 md:p-8 bg-white dark:bg-[#0a0a0c] border-t border-slate-100 dark:border-white/5 relative">
+                  {/* v17.0 Reply Preview */}
+                  {replyingTo && (
+                    <div className="absolute bottom-full mb-2 left-0 w-full px-4 md:px-8 animate-in slide-in-from-bottom-2 duration-300" dir="rtl">
+                       <div className="bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 flex items-center justify-between border-r-4 border-brand-500">
+                          <div className="overflow-hidden">
+                             <p className="text-[10px] font-black text-brand-500 mb-1 uppercase tracking-widest flex items-center gap-2">
+                                <Users size={12} /> رد على {replyingTo.sender?.firstName} {replyingTo.sender?.lastName}
+                             </p>
+                             <p className="text-xs font-bold text-slate-500 truncate max-w-md">{replyingTo.content}</p>
+                          </div>
+                          <button 
+                            onClick={() => setReplyingTo(null)}
+                            className="text-slate-400 hover:text-rose-500 p-2"
+                          >
+                            <X size={18} />
+                          </button>
+                       </div>
+                    </div>
+                  )}
+
                   {/* Drive Link Modal */}
                   {showLinkModal && (
                     <div className="absolute bottom-full mb-4 left-0 w-full animate-in fade-in slide-in-from-bottom-4 duration-300" dir="rtl">
