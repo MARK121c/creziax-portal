@@ -14,7 +14,8 @@ import {
   removeGroupMemberAPI,
   togglePinAPI,
   deleteSpecificMessageAPI,
-  markAllAsReadAPI
+  markAllAsReadAPI,
+  markAsReadAPI
 } from '../../store/api';
 import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
@@ -28,6 +29,32 @@ import {
   UserPlus, X, Users, Check, Trash2, UserMinus, Paperclip, Pin, MessageSquareReply
 } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
+
+// ──────────────────────────────────────────────
+// Pinned Message Bar (V17.6 Supreme)
+// ──────────────────────────────────────────────
+const PinnedBar = ({ message, onUnpin }) => {
+  if (!message) return null;
+  return (
+    <div className="sticky top-0 z-20 bg-brand-500/10 backdrop-blur-md border-b border-brand-500/20 px-6 py-3 flex items-center justify-between animate-in slide-in-from-top duration-300 -mx-10 px-10">
+      <div className="flex items-center gap-3 overflow-hidden">
+        <Pin size={16} className="text-brand-500 shrink-0 fill-brand-500/20" />
+        <div className="overflow-hidden">
+           <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest mb-0.5">رسالة مثبتة</p>
+           <p className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate max-w-sm md:max-w-md">{message.content}</p>
+        </div>
+      </div>
+      <button 
+        onClick={() => onUnpin(message.id)} 
+        className="p-2 hover:bg-brand-500/20 rounded-xl text-slate-400 hover:text-brand-500 transition-all font-black text-[10px] uppercase tracking-widest flex items-center gap-2"
+        title="إلغاء التثبيت"
+      >
+        <span>إلغاء التثبيت</span>
+        <X size={14} />
+      </button>
+    </div>
+  );
+};
 import axios from 'axios';
 
 const API_URL = 'https://api.creziax.cloud/api';
@@ -46,8 +73,7 @@ const MessagesPage = () => {
   const { setActiveThreadId, resetUnreadMessages, unreadThreads, setGlobalCountVisible } = useNotificationStore();
 
   useEffect(() => {
-    // v17.5.3 Zero-Out Logic: Mark all as read on mount
-    markAllAsReadAPI().catch(() => {});
+    // v17.6 Supreme Zero-Out Sidebar Logic
     resetUnreadMessages(); // Reset all global unread counts
     setGlobalCountVisible(false); // Hide global badge
   }, [resetUnreadMessages, setGlobalCountVisible]);
@@ -192,12 +218,18 @@ const MessagesPage = () => {
     });
 
     socket.on('message_deleted', ({ id }) => {
-      // v17.5.3 Iron Deletion: Filter out deleted messages completely for a clean "disappear" effect
+      // v17.6-SUPREME Iron Deletion: Direct Filter
       setMessages(prev => prev.filter(m => m.id !== id));
     });
 
     socket.on('message_pinned', ({ id, isPinned }) => {
-      setMessages(prev => prev.map(m => m.id === id ? { ...m, isPinned } : m));
+      setMessages(prev => {
+        // v17.6-SUPREME: Only one pinned message per thread allowed
+        if (isPinned) {
+          return prev.map(m => m.id === id ? { ...m, isPinned: true } : { ...m, isPinned: false });
+        }
+        return prev.map(m => m.id === id ? { ...m, isPinned: false } : m);
+      });
     });
 
     return () => {
@@ -531,7 +563,7 @@ const MessagesPage = () => {
                         <p className="text-[11px] font-black text-slate-300">خيار الحذف:</p>
                         <div className="flex gap-2">
                            <button onClick={async () => { closeToast(); try { await deleteSpecificMessageAPI(m.id, 'me'); setMessages(prev => prev.filter(msg => msg.id !== m.id)); } catch(e) {} }} className="bg-white/10 text-[10px] font-bold px-3 py-1 rounded-md text-white">لدي</button>
-                           {(user.role === 'ADMIN' || user.role === 'OWNER') && <button onClick={async () => { closeToast(); try { await deleteSpecificMessageAPI(m.id, 'everyone'); setMessages(prev => prev.map(msg => msg.id === m.id ? { ...msg, content: '🚫 تم حذف هذه الرسالة من قبل الإدارة', isDeleted: true } : msg)); } catch(e) {} }} className="bg-rose-500 text-[10px] font-bold px-3 py-1 rounded-md text-white">للجميع</button>}
+                           {(user.role === 'ADMIN' || user.role === 'OWNER') && <button onClick={async () => { closeToast(); try { await deleteSpecificMessageAPI(m.id, 'everyone'); setMessages(prev => prev.filter(msg => msg.id !== m.id)); } catch(e) {} }} className="bg-rose-500 text-[10px] font-bold px-3 py-1 rounded-md text-white">للجميع</button>}
                         </div>
                      </div>
                    ), { theme: 'dark', autoClose: 5000 });
@@ -691,16 +723,11 @@ const MessagesPage = () => {
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto px-6 md:px-10 py-8 space-y-8 custom-scrollbar bg-slate-50/30 dark:bg-[#08080a]">
-              {messages.some(m => m.isPinned) && (
-                <div className="sticky top-0 z-10 -mx-10 px-10 py-3 bg-brand-500/10 backdrop-blur-md border-b border-brand-500/20 mb-6 flex items-center justify-between animate-in slide-in-from-top">
-                  <div className="flex items-center gap-4">
-                    <Clock size={16} className="text-brand-500" />
-                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate max-w-sm">{messages.find(m => m.isPinned)?.content}</p>
-                  </div>
-                  <button onClick={() => handleTogglePin(messages.find(m => m.isPinned).id)} className="text-[10px] font-black text-brand-500 underline">إلغاء التثبيت</button>
-                </div>
-              )}
+            <div className="flex-1 overflow-y-auto px-6 md:px-10 py-8 space-y-8 custom-scrollbar bg-slate-50/30 dark:bg-[#08080a] relative">
+              <PinnedBar 
+                message={messages.find(m => m.isPinned)} 
+                onUnpin={(id) => handleTogglePin(id)} 
+              />
 
               {loadingMessages ? (
                  <div className="h-full flex flex-col items-center justify-center"><Loader2 size={32} className="animate-spin text-brand-500" /></div>
