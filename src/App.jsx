@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { Toaster, toast } from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
+import { ToastContainer, toast as rToast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { useTranslation } from 'react-i18next';
 import { SocketProvider, useSocket } from './context/SocketContext';
 import useAuthStore from './store/authStore';
@@ -49,24 +51,7 @@ const ThemeInitializer = () => {
     }
   }, [theme]);
 
-  return (
-    <Toaster 
-      position="top-center" 
-      toastOptions={{
-        className: 'border border-slate-200 dark:border-white/10 shadow-xl rounded-2xl font-medium text-sm',
-        style: {
-          background: theme === 'dark' ? '#18181b' : '#ffffff',
-          color: theme === 'dark' ? '#f8fafc' : '#0f172a',
-        },
-        success: {
-          iconTheme: {
-            primary: '#10b981',
-            secondary: theme === 'dark' ? '#18181b' : '#ffffff',
-          },
-        },
-      }}
-    />
-  );
+  return null;
 };
 
 const LanguageInitializer = () => {
@@ -114,17 +99,20 @@ function AppContent() {
     setShowSplash(false);
   }, []);
 
-  const playGlobalDing = useCallback(() => {
+  const playNotificationSound = () => {
+    const now = Date.now();
+    // Throttle sound to once every 2.5s to prevent "machine gun" sounds
+    if (now - lastSoundTriggerRef.current < 2500) return; 
+    
     try {
-      // Local stable notification sound
-      const audio = new Audio('/sounds/notification.mp3');
-      audio.volume = 1.0; // v17.1 Max volume inside app and out
-      audio.play().catch(() => {});
+      const audio = new Audio('/sounds/notification.mp3'); 
+      audio.volume = 1.0; 
+      audio.play().then(() => { lastSoundTriggerRef.current = now; }).catch(() => {});
     } catch(e) {}
-  }, []);
+  };
 
   useEffect(() => {
-    console.log("%c Creziax Portal v17.4.1-HOTFIX %c Loaded ", "background: #1e293b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #22c55e; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
+    console.log("%c Creziax Portal v17.5-ELITE %c Loaded ", "background: #1e293b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #22c55e; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
     if (token) {
       fetchProfile();
     }
@@ -144,42 +132,33 @@ function AppContent() {
   // REAL-TIME SMART LISTENERS (Clickable Toasts)
   useEffect(() => {
     if (!token || !user) return;
-    
-    // TRACK ACTIVE THREAD REF TO AVOID STALE CLOSURES IN SOCKET LISTENER
     activeThreadRef.current = activeThreadId;
-  }, [activeThreadId]);
+  }, [activeThreadId, token, user]);
 
   useEffect(() => {
     if (!token || !user || !socket) return;
 
-    const playNotificationSound = () => {
-      const now = Date.now();
-      if (now - lastSoundTriggerRef.current < 2500) return; 
-      
-      const audio = new Audio('/sounds/notification.mp3'); 
-      audio.volume = 1.0; 
-      audio.play()
-        .then(() => { lastSoundTriggerRef.current = now; })
-        .catch(() => {});
-    };
-
     const notifyClickable = (msg, icon, path) => {
       playNotificationSound();
-      toast(msg, {
-        icon,
-        id: `global-toast-${msg.substring(0, 10)}`, // ID prevents overlap of identical messages
-        duration: 4000,
-        style: { cursor: 'pointer', background: '#0a0a0c', color: '#fff', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '1rem', fontWeight: 'bold' },
+      rToast(msg, {
+        icon: icon,
+        toastId: `global-${msg.substring(0, 15)}`, // Strict ID to prevent duplicate toasts
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "dark",
         onClick: () => {
           navigate(path);
-          toast.dismiss();
+          rToast.dismiss();
         }
       });
     };
 
     const handleReceiveMessage = (data) => {
       if (data.senderId === user.id) return; 
-
       if (processedMessagesRef.current.has(data.id)) return;
       processedMessagesRef.current.add(data.id);
       
@@ -187,15 +166,13 @@ function AppContent() {
       let targetId = isGroup ? data.threadId : (user.role === 'CLIENT' ? user.id : data.senderId);
 
       const currentViewedThreadId = activeThreadRef.current;
-      let isCurrentlyViewingThisSpecificThread = false;
+      let isViewingThis = false;
 
       if (currentViewedThreadId) {
-         isCurrentlyViewingThisSpecificThread = isGroup ? 
-            (currentViewedThreadId === data.threadId) : 
-            (currentViewedThreadId === targetId);
+         isViewingThis = isGroup ? (currentViewedThreadId === data.threadId) : (currentViewedThreadId === targetId);
       }
 
-      if (!isCurrentlyViewingThisSpecificThread) {
+      if (!isViewingThis) {
          if (targetId) incrementUnreadMessages(targetId);
          let targetPath = '/client/messages';
          if (user.role === 'ADMIN' || user.role === 'OWNER') {
@@ -211,8 +188,6 @@ function AppContent() {
 
     const handleSmartNotification = (notif) => {
       if (notif.senderId === user.id) return;
-      
-      // v17.3 Strict Deduplication to prevent 3x Toasts
       if (notif.id && processedMessagesRef.current.has(notif.id)) return;
       if (notif.id) processedMessagesRef.current.add(notif.id);
 
@@ -244,8 +219,6 @@ function AppContent() {
       notifyClickable(t('task_updated_global', 'تم تحديث حالة فيديو المشروع'), '🎥', '/client');
     };
 
-
-    // v17.3 RESTORED: smart_notification handles OUT OF CHAT badges for Groups correctly!
     socket.on('smart_notification', handleSmartNotification);
     socket.on('receive_message', handleReceiveMessage);
     socket.on('task_updated', handleTaskUpdate);
@@ -257,14 +230,15 @@ function AppContent() {
       socket.off('task_updated', handleTaskUpdate);
       socket.off('workspace_updated', handleTaskUpdate);
     };
-  }, [token, user?.id, user?.role, incrementUnreadMessages, t, navigate]);
+  }, [token, user?.id, user?.role, incrementUnreadMessages, t, navigate, socket]);
 
   return (
     <>
       <ThemeInitializer />
       <LanguageInitializer />
+      <Toaster position="top-center" reverseOrder={false} />
+      <ToastContainer limit={3} />
       <Routes>
-        {/* Public */}
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
 
@@ -327,7 +301,7 @@ function AppContent() {
                 <Navigate to="/login" replace />
               ) : (
                 <div className="min-h-screen flex flex-col items-center justify-center bg-[#050505] gap-6">
-                   <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(245,158,11,0.3)]"></div>
+                   <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] animate-pulse">Establishing Connection...</p>
                 </div>
               )}
@@ -337,7 +311,6 @@ function AppContent() {
           <Route index element={<ClientDashboard />} />
           <Route path="projects" element={<ClientProjects />} />
           <Route path="files" element={<ClientFiles />} />
-          <Route path="tasks" element={<Navigate to="/client" replace />} />
           <Route path="messages" element={<ClientMessages />} />
           <Route path="invoices" element={<ClientInvoices />} />
           <Route path="contracts" element={<ClientContracts />} />
@@ -345,7 +318,6 @@ function AppContent() {
           <Route path="notifications" element={<NotificationsPage />} />
         </Route>
 
-        {/* Catch-all Branded Error Page */}
         <Route path="*" element={<CustomErrorPage />} />
       </Routes>
     </>
