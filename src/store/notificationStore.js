@@ -61,8 +61,10 @@ const useNotificationStore = create(
       activeThreadId: null,
       unreadThreads: {}, // { threadId: count }
       unreadMessagesCount: 0,
+      globalCountVisible: true,
       
       setActiveThreadId: (id) => set({ activeThreadId: id }),
+      setGlobalCountVisible: (visible) => set({ globalCountVisible: visible }),
       
       incrementUnreadMessages: (threadId) => set((state) => {
         const newUnreadThreads = { ...state.unreadThreads };
@@ -73,7 +75,8 @@ const useNotificationStore = create(
         
         return { 
           unreadThreads: newUnreadThreads,
-          unreadMessagesCount: globalCount
+          unreadMessagesCount: globalCount,
+          globalCountVisible: true // Always show when new msg arrives
         };
       }),
       
