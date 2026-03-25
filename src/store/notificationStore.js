@@ -75,8 +75,7 @@ const useNotificationStore = create(
         
         return { 
           unreadThreads: newUnreadThreads,
-          unreadMessagesCount: globalCount,
-          globalCountVisible: true // Always show when new msg arrives
+          unreadMessagesCount: globalCount
         };
       }),
       
