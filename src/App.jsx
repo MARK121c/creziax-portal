@@ -117,10 +117,11 @@ function AppContent() {
     // Throttle sound to once every 2.5s to prevent "machine gun" sounds
     if (now - lastSoundTriggerRef.current < 2500) return; 
     
+    lastSoundTriggerRef.current = now; // v17.7 Immediate Sync Lock BEFORE promise
     try {
       const audio = new Audio('/sounds/notification.mp3'); 
       audio.volume = 1.0; 
-      audio.play().then(() => { lastSoundTriggerRef.current = now; }).catch(() => {});
+      audio.play().catch(() => {});
     } catch(e) {}
   };
 
