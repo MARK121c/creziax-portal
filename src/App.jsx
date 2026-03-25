@@ -118,13 +118,13 @@ function AppContent() {
     try {
       // Local stable notification sound
       const audio = new Audio('/sounds/notification.mp3');
-      audio.volume = 0.5;
+      audio.volume = 1.0; // v17.1 Max volume inside app and out
       audio.play().catch(() => {});
     } catch(e) {}
   }, []);
 
   useEffect(() => {
-    console.log("%c Creziax Portal v15.3-STABLE-MASTER %c Loaded ", "background: #1e293b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #22c55e; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
+    console.log("%c Creziax Portal v17.4.1-HOTFIX %c Loaded ", "background: #1e293b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #22c55e; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
     if (token) {
       fetchProfile();
     }
@@ -157,7 +157,7 @@ function AppContent() {
       if (now - lastSoundTriggerRef.current < 2500) return; 
       
       const audio = new Audio('/sounds/notification.mp3'); 
-      audio.volume = 0.4;
+      audio.volume = 1.0; 
       audio.play()
         .then(() => { lastSoundTriggerRef.current = now; })
         .catch(() => {});
@@ -212,6 +212,10 @@ function AppContent() {
     const handleSmartNotification = (notif) => {
       if (notif.senderId === user.id) return;
       
+      // v17.3 Strict Deduplication to prevent 3x Toasts
+      if (notif.id && processedMessagesRef.current.has(notif.id)) return;
+      if (notif.id) processedMessagesRef.current.add(notif.id);
+
       const isGroup = notif.threadId != null;
       let targetId = isGroup ? notif.threadId : notif.senderId;
       
@@ -240,14 +244,16 @@ function AppContent() {
       notifyClickable(t('task_updated_global', 'تم تحديث حالة فيديو المشروع'), '🎥', '/client');
     };
 
-    socket.on('receive_message', handleReceiveMessage);
+
+    // v17.3 RESTORED: smart_notification handles OUT OF CHAT badges for Groups correctly!
     socket.on('smart_notification', handleSmartNotification);
+    socket.on('receive_message', handleReceiveMessage);
     socket.on('task_updated', handleTaskUpdate);
-    socket.on('workspace_updated', handleTaskUpdate); // Reuse same logic
+    socket.on('workspace_updated', handleTaskUpdate);
 
     return () => {
-      socket.off('receive_message', handleReceiveMessage);
       socket.off('smart_notification', handleSmartNotification);
+      socket.off('receive_message', handleReceiveMessage);
       socket.off('task_updated', handleTaskUpdate);
       socket.off('workspace_updated', handleTaskUpdate);
     };

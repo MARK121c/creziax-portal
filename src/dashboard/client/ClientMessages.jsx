@@ -449,7 +449,7 @@ const ClientMessages = () => {
 
           <div className="group relative">
             {/* v17.1 Action Icons on Hover (Admin & Client: Reply and Pin) */}
-            <div className={`invisible group-hover:visible absolute top-[10px] flex items-center gap-2 px-3 ${isMine ? 'right-full' : 'left-full'} transition-all`} style={{ minWidth: 'max-content' }}>
+            <div className={`invisible group-hover:visible absolute top-[10px] flex flex-row flex-nowrap items-center gap-2 px-3 z-20 ${isMine ? 'right-[95%]' : 'left-[95%]'} transition-all`} style={{ minWidth: 'max-content' }}>
               <button 
                 onClick={() => {
                   toast((t) => (
