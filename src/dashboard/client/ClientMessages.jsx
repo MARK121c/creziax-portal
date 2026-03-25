@@ -14,8 +14,9 @@ import { toast } from 'react-hot-toast';
 import { 
   Send, MessageSquare, Loader2, UserCircle, 
   Briefcase, Headset, Link as LinkIcon, ExternalLink,
-  ShieldAlert, X, Calendar, Clock, CalendarPlus2
+  ShieldAlert, X, Calendar, Clock, CalendarPlus2, Users
 } from 'lucide-react';
+import { markAsReadAPI } from '../../store/api';
 
 // ──────────────────────────────────────────────
 // Meeting Scheduler Pop-up
@@ -182,6 +183,9 @@ const ClientMessages = () => {
   const [showDrivePanel, setShowDrivePanel] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   
+  // v17.0 Elite
+  const [replyingTo, setReplyingTo] = useState(null);
+  
   const socket = useSocket(); // v14.0 Shared Singleton
   const scrollRef = useRef();
   const activeThreadRef = useRef(activeThread);
@@ -204,14 +208,16 @@ const ClientMessages = () => {
   }, []);
 
   const fetchThreadMessages = async (threadId) => {
-    if (!threadId) return; // v15.2 Guard: Prevent toast on initial load
+    if (!threadId) return;
     setLoadingMessages(true);
     try {
       const { data } = await getMessagesAPI(threadId);
       setMessages(data || []);
-      if (socket) {
-        // join_thread handled centrally via join_rooms hook
-      }
+      
+      // Auto-Clear (v17.0)
+      markAsReadAPI({ threadId });
+      resetUnreadMessages(threadId);
+      toast.dismiss();
     } catch (err) {
       toast.error("فشل تحميل الرسائل");
     } finally {
@@ -255,7 +261,11 @@ const ClientMessages = () => {
         if (newMsg.senderId !== user?.id) {
           setMessages(prev => {
             if (prev.find(m => m.id === newMsg.id)) return prev;
-            return [...prev, { ...newMsg, sender: newMsg.sender || { firstName: newMsg.senderName || 'الدعم الفني', role: 'ADMIN' } }];
+            return [...prev, { 
+              ...newMsg, 
+              sender: newMsg.sender || { firstName: newMsg.senderName || 'الدعم الفني', role: 'ADMIN' },
+              parent: newMsg.parent // v17.0 Support
+            }];
           });
         }
       }
@@ -316,7 +326,8 @@ const ClientMessages = () => {
       content: msgContent, 
       type,
       threadId: threadIdToSend,
-      receiverId: receiverIdToSend
+      receiverId: receiverIdToSend,
+      parentId: replyingTo?.id || null // v17.0 Reply
     });
     
     // Build socket payload (v10.0 Standard Architecture)
@@ -325,9 +336,11 @@ const ClientMessages = () => {
       type,
       threadId: threadIdToSend,
       receiverId: receiverIdToSend,
-      senderName: `${user?.firstName} ${user?.lastName}`
+      senderName: `${user?.firstName} ${user?.lastName}`,
+      parent: replyingTo // Pass for local UI update
     });
-    setMessages(prev => [...prev, { ...data, sender: user }]);
+    setReplyingTo(null);
+    setMessages(prev => [...prev, { ...data, sender: user, parent: replyingTo }]);
   };
 
   const handleSend = async (e) => {
@@ -415,8 +428,30 @@ const ClientMessages = () => {
             <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
               {m.sender?.firstName} {m.sender?.lastName} {isMine && '(أنت)'}
             </span>
+            {m.isPinned && <Clock size={12} className="text-brand-500" />}
           </div>
-          <div className={`px-6 py-4 rounded-[1.25rem] text-sm font-bold leading-relaxed shadow-sm ${isMine ? 'bg-brand-600 text-white rounded-tr-sm shadow-brand-600/10' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-sm border border-slate-100 dark:border-white/5'} ${isBookingCard ? 'border-2 border-brand-500/30 ring-4 ring-brand-500/10' : ''}`}>
+
+          {/* v17.0 Reply Quote */}
+          {m.parent && (
+            <div className={`mb-1 px-4 py-2 rounded-t-2xl bg-slate-100 dark:bg-white/5 border-r-4 border-brand-500/50 max-w-full overflow-hidden opacity-80 ${isMine ? 'mr-2' : 'ml-2'}`}>
+              <p className="text-[10px] font-black text-brand-500 mb-1">{m.parent.sender?.firstName} {m.parent.sender?.lastName}</p>
+              <p className="text-[11px] font-bold text-slate-500 truncate">{m.parent.content}</p>
+            </div>
+          )}
+
+          <div className="group relative">
+            {/* v17.0 Action Icons on Hover (Client: Reply Only) */}
+            <div className={`invisible group-hover:visible absolute top-1/2 -translate-y-1/2 flex items-center gap-2 px-3 ${isMine ? 'right-full' : 'left-full'}`}>
+              <button 
+                onClick={() => setReplyingTo(m)}
+                className="w-8 h-8 rounded-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm flex items-center justify-center text-slate-400 hover:text-brand-500 hover:scale-110 transition-all"
+                title="رد"
+              >
+                <Users size={14} /> 
+              </button>
+            </div>
+
+            <div className={`px-6 py-4 rounded-[1.25rem] text-sm font-bold leading-relaxed shadow-sm ${isMine ? 'bg-brand-600 text-white rounded-tr-none shadow-brand-600/10' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-none border border-slate-100 dark:border-white/5'} ${isBookingCard ? 'border-2 border-brand-500/30 ring-4 ring-brand-500/10' : ''} ${m.isPinned ? 'ring-2 ring-brand-500/20 bg-brand-50/50 dark:bg-brand-500/5' : ''}`}>
             {isDriveLink ? (
               <a
                 href={driveUrl}
@@ -471,6 +506,7 @@ const ClientMessages = () => {
           </span>
         </div>
       </div>
+    </div>
     );
   };
 
@@ -592,6 +628,23 @@ const ClientMessages = () => {
               
               {/* Messages Area */}
               <div className="flex-1 overflow-y-auto px-6 md:px-10 py-8 space-y-8 custom-scrollbar bg-slate-50/30 dark:bg-[#08080a]">
+                {/* v17.0 Pinned Message Banner */}
+                {messages.some(m => m.isPinned) && (
+                  <div className="sticky top-0 z-10 -mx-10 px-10 py-3 bg-brand-500/10 backdrop-blur-md border-b border-brand-500/20 mb-6 flex items-center justify-between animate-in slide-in-from-top duration-500">
+                    <div className="flex items-center gap-4 overflow-hidden">
+                      <div className="w-8 h-8 rounded-lg bg-brand-500 text-white flex items-center justify-center flex-shrink-0 shadow-lg shadow-brand-500/20">
+                         <Clock size={16} />
+                      </div>
+                      <div className="text-right overflow-hidden">
+                        <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest leading-none mb-1">رسالة مثبتة من الإدارة</p>
+                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
+                          {messages.find(m => m.isPinned)?.content.substring(0, 100)}...
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {loadingMessages ? (
                   <div className="h-full flex flex-col items-center justify-center opacity-50"><Loader2 size={32} className="animate-spin text-brand-500" /></div>
                 ) : messages.length === 0 ? (
@@ -605,6 +658,26 @@ const ClientMessages = () => {
 
               {/* Input Area */}
               <div className="p-4 md:p-6 bg-white dark:bg-[#0a0a0c] border-t border-slate-100 dark:border-white/5 relative">
+                {/* v17.0 Reply Preview */}
+                {replyingTo && (
+                  <div className="absolute bottom-full mb-2 left-0 w-full px-4 md:px-6 animate-in slide-in-from-bottom-2 duration-300" dir="rtl">
+                     <div className="bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 flex items-center justify-between border-r-4 border-brand-500 shadow-xl">
+                        <div className="overflow-hidden">
+                           <p className="text-[10px] font-black text-brand-500 mb-1 uppercase tracking-widest flex items-center gap-2">
+                              <Users size={12} /> رد على {replyingTo.sender?.firstName} {replyingTo.sender?.lastName}
+                           </p>
+                           <p className="text-xs font-bold text-slate-500 truncate max-w-md">{replyingTo.content}</p>
+                        </div>
+                        <button 
+                          onClick={() => setReplyingTo(null)}
+                          className="text-slate-400 hover:text-rose-500 p-2"
+                        >
+                          <X size={18} />
+                        </button>
+                     </div>
+                  </div>
+                )}
+
                 {showDrivePanel && (
                   <DriveLinkPanel
                     activeThread={activeThread}
