@@ -75,10 +75,23 @@ const LanguageInitializer = () => {
   return null;
 };
 
+import { 
+  fetchProfileAPI,
+  markAllAsReadAPI 
+} from './store/api';
+
 function AppContent() {
   const navigate = useNavigate();
   const { token, user, fetchProfile } = useAuthStore();
-  const { addNotification, activeThreadId, incrementUnreadMessages, resetUnreadMessages, setGlobalCountVisible, globalCountVisible } = useNotificationStore();
+  const { 
+    addNotification, 
+    activeThreadId, 
+    incrementUnreadMessages, 
+    resetUnreadMessages, 
+    setGlobalCountVisible, 
+    globalCountVisible,
+    resetAllGlobalUnread
+  } = useNotificationStore();
   const { t } = useTranslation();
   const activeThreadRef = useRef(null);
   
@@ -112,7 +125,7 @@ function AppContent() {
   };
 
   useEffect(() => {
-    console.log("%c Creziax Portal v17.5.2-ELITE %c Loaded ", "background: #1e293b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #22c55e; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
+    console.log("%c Creziax Portal v17.6-SUPREME %c Ready ", "background: #1e293b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #ef4444; color: #fff; border-radius: 0 5px 5px 0; padding: 2px 5px;");
     if (token) {
       fetchProfile();
     }
@@ -138,21 +151,25 @@ function AppContent() {
   const location = useLocation();
 
   useEffect(() => {
-    // Hide global unread badge on sidebar when entering any messages page
+    // v17.6-SUPREME: Immediate Global Reset on navigation
     const messagesPaths = ['/admin/messages', '/team/messages', '/client/messages'];
     if (messagesPaths.includes(location.pathname)) {
-      setGlobalCountVisible(false); 
+      console.log("🛠️ Supreme Reset: Clearing global unread count on mount.");
+      resetAllGlobalUnread();
     }
-  }, [location.pathname, setGlobalCountVisible]);
+  }, [location.pathname, resetAllGlobalUnread]);
 
   useEffect(() => {
     if (!token || !user || !socket) return;
 
-    const notifyClickable = (msg, icon, path) => {
+    const notifyClickable = (msg, icon, path, customId) => {
+      // FIXED TOAST ID FOR ALL INCOMING CHAT NOTIFICATIONS
+      const finalId = 'global-chat-toast'; 
+      
       playNotificationSound();
       rToast(msg, {
         icon: icon,
-        toastId: `global-${msg.substring(0, 15)}`, // Strict ID to prevent duplicate toasts
+        toastId: finalId, // v17.6 Single Toast Hardening
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,
@@ -162,7 +179,7 @@ function AppContent() {
         theme: "dark",
         onClick: () => {
           navigate(path);
-          rToast.dismiss();
+          rToast.dismiss(finalId);
         }
       });
     };
