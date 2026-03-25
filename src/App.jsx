@@ -78,7 +78,7 @@ const LanguageInitializer = () => {
 function AppContent() {
   const navigate = useNavigate();
   const { token, user, fetchProfile } = useAuthStore();
-  const { addNotification, activeThreadId, incrementUnreadMessages, resetUnreadMessages, setGlobalCountVisible } = useNotificationStore();
+  const { addNotification, activeThreadId, incrementUnreadMessages, resetUnreadMessages, setGlobalCountVisible, globalCountVisible } = useNotificationStore();
   const { t } = useTranslation();
   const activeThreadRef = useRef(null);
   
