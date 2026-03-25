@@ -12,9 +12,9 @@ import {
   clearMessagesAPI,
   deleteTeamGroupAPI,
   removeGroupMemberAPI,
-  markAsReadAPI,
   togglePinAPI,
-  deleteSpecificMessageAPI
+  deleteSpecificMessageAPI,
+  markAllAsReadAPI
 } from '../../store/api';
 import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
@@ -43,7 +43,14 @@ const MessagesPage = () => {
     }
   }, [user, navigate]);
 
-  const { setActiveThreadId, resetUnreadMessages, unreadThreads } = useNotificationStore();
+  const { setActiveThreadId, resetUnreadMessages, unreadThreads, setGlobalCountVisible } = useNotificationStore();
+
+  useEffect(() => {
+    // v17.5.3 Zero-Out Logic: Mark all as read on mount
+    markAllAsReadAPI().catch(() => {});
+    resetUnreadMessages(); // Reset all global unread counts
+    setGlobalCountVisible(false); // Hide global badge
+  }, [resetUnreadMessages, setGlobalCountVisible]);
   
   const [clients, setClients] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -185,7 +192,8 @@ const MessagesPage = () => {
     });
 
     socket.on('message_deleted', ({ id }) => {
-      setMessages(prev => prev.map(m => m.id === id ? { ...m, content: '🚫 تم حذف هذه الرسالة من قبل الإدارة', isDeleted: true } : m));
+      // v17.5.3 Iron Deletion: Filter out deleted messages completely for a clean "disappear" effect
+      setMessages(prev => prev.filter(m => m.id !== id));
     });
 
     socket.on('message_pinned', ({ id, isPinned }) => {

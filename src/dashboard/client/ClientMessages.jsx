@@ -30,7 +30,6 @@ import {
   CalendarPlus2,
   Link as LinkIcon
 } from 'lucide-react';
-import { markAsReadAPI, togglePinAPI, deleteSpecificMessageAPI } from '../../store/api';
 
 // ──────────────────────────────────────────────
 // Meeting Scheduler Pop-up
@@ -184,7 +183,14 @@ const DriveLinkPanel = ({ activeThread, user, onClose, onSend }) => {
 const ClientMessages = () => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
-  const { setActiveThreadId, resetUnreadMessages, unreadThreads } = useNotificationStore();
+  const { setActiveThreadId, resetUnreadMessages, unreadThreads, setGlobalCountVisible } = useNotificationStore();
+
+  useEffect(() => {
+    // v17.5.3 Zero-Out Logic: Mark all as read on mount
+    markAllAsReadAPI().catch(() => {});
+    resetUnreadMessages();
+    setGlobalCountVisible(false);
+  }, [resetUnreadMessages, setGlobalCountVisible]);
   
   const [supportContact, setSupportContact] = useState(null);
   const [projects, setProjects] = useState([]);
@@ -298,7 +304,8 @@ const ClientMessages = () => {
     });
 
     socket.on('message_deleted', ({ id }) => {
-      setMessages(prev => prev.map(m => m.id === id ? { ...m, content: '🚫 تم حذف هذه الرسالة', isDeleted: true } : m));
+      // v17.5.3 Iron Deletion: Filter out deleted messages completely for a clean "disappear" effect
+      setMessages(prev => prev.filter(m => m.id !== id));
     });
 
     socket.on('message_pinned', ({ id, isPinned }) => {
