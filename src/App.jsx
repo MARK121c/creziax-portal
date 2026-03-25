@@ -118,7 +118,7 @@ function AppContent() {
     try {
       // Local stable notification sound
       const audio = new Audio('/sounds/notification.mp3');
-      audio.volume = 0.5;
+      audio.volume = 1.0; // v17.1 Max volume inside app and out
       audio.play().catch(() => {});
     } catch(e) {}
   }, []);
@@ -157,7 +157,7 @@ function AppContent() {
       if (now - lastSoundTriggerRef.current < 2500) return; 
       
       const audio = new Audio('/sounds/notification.mp3'); 
-      audio.volume = 1.0; // v17.1 Max volume always
+      audio.volume = 1.0; 
       audio.play()
         .then(() => { lastSoundTriggerRef.current = now; })
         .catch(() => {});

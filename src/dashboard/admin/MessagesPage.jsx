@@ -11,7 +11,10 @@ import {
   getTeamGroupsAPI,
   clearMessagesAPI,
   deleteTeamGroupAPI,
-  removeGroupMemberAPI
+  removeGroupMemberAPI,
+  markAsReadAPI,
+  togglePinAPI,
+  deleteSpecificMessageAPI
 } from '../../store/api';
 import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
@@ -22,7 +25,7 @@ import {
   Send, MessageSquare, Search, MoreHorizontal, Smile, Link as LinkIcon,
   Loader2, UserCircle, Plus, Filter, Clock, CheckCircle2, AlertCircle,
   Tag, ChevronRight, Briefcase, Calendar, ExternalLink, ShieldAlert,
-  UserPlus, X, Users, Check, Trash2, UserMinus, Paperclip
+  UserPlus, X, Users, Check, Trash2, UserMinus, Paperclip, Pin, MessageSquareReply
 } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 import axios from 'axios';
@@ -131,8 +134,9 @@ const MessagesPage = () => {
       resetUnreadMessages(clearId);
       toast.dismiss();
     } catch (err) {
-      console.error("Messages Load Error:", err);
-      // Silently fail - don't show toast for normal load
+      if (err.response?.status !== 404) {
+        console.error("Messages Load Error (v17.1 Silent):", err);
+      }
     } finally {
       setLoadingMessages(false);
     }
@@ -187,9 +191,14 @@ const MessagesPage = () => {
           };
           
           setMessages(prev => {
-            if (prev.find(m => m.id === newMsg.id)) return prev;
+            if (prev.some(m => m.id === newMsg.id)) return prev;
             return [...prev, processedMsg];
           });
+          
+          // v17.1 Badge Sync: If Admin is actively viewing the thread, zero out the badge to prevent ghost unreads
+          const tid = current.type === 'DM' || current.type === 'TEAM' ? current.userId : current.id;
+          resetUnreadMessages(tid);
+          markAsReadAPI({ threadId: tid }).catch(() => {});
         }
       }
     };
@@ -882,24 +891,54 @@ Availability: ${bookingData.dates}`;
                             )}
 
                             <div className="group relative">
-                              {/* v17.0 Action Icons on Hover */}
-                              <div className={`invisible group-hover:visible absolute top-1/2 -translate-y-1/2 flex items-center gap-2 px-3 ${m.senderId === user?.id ? 'right-full' : 'left-full'}`}>
+                              {/* v17.1 Action Icons on Hover (Admin & Client: Reply and Pin) */}
+                              <div className={`invisible group-hover:visible absolute top-[10px] flex items-center gap-2 px-3 ${m.senderId === user?.id ? 'right-full' : 'left-full'} transition-all`} style={{ minWidth: 'max-content' }}>
+                                <button 
+                                  onClick={() => {
+                                    toast((t) => (
+                                      <div className="flex flex-col gap-3 p-2 font-black text-xs text-right w-full" dir="rtl">
+                                        <p className="text-slate-700">خيارات حذف الرسالة:</p>
+                                        <div className="flex gap-2 justify-center">
+                                           <button onClick={async () => {
+                                             toast.dismiss(t.id);
+                                             try {
+                                               await deleteSpecificMessageAPI(m.id, 'me');
+                                               setMessages(prev => prev.filter(msg => msg.id !== m.id));
+                                             } catch(e) { toast.error("فشل الحذف"); }
+                                           }} className="bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-xl hover:bg-slate-200">حذف لدي فقط</button>
+                                           
+                                           <button onClick={async () => {
+                                             toast.dismiss(t.id);
+                                             try {
+                                               await deleteSpecificMessageAPI(m.id, 'everyone');
+                                               setMessages(prev => prev.map(msg => msg.id === m.id ? { ...msg, content: '🚫 تم حذف هذه الرسالة من قبل الإدارة', isDeleted: true } : msg));
+                                             } catch(e) { toast.error("فشل الحذف للجميع"); }
+                                           }} className="bg-rose-500/10 text-rose-500 font-black px-3 py-1.5 rounded-xl border border-rose-500/20 hover:bg-rose-500 hover:text-white">حذف للجميع</button>
+                                           
+                                           <button onClick={() => toast.dismiss(t.id)} className="bg-transparent text-slate-400 px-3 py-1.5 rounded-xl underline">إلغاء</button>
+                                        </div>
+                                      </div>
+                                    ), { duration: 10000, style: { background: '#fff', color: '#000' } });
+                                  }}
+                                  className="w-8 h-8 rounded-full bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/20 shadow-sm flex items-center justify-center text-rose-400 hover:text-white hover:bg-rose-500 hover:scale-110 active:scale-95 transition-all"
+                                  title="حذف الرسالة"
+                                >
+                                  <Trash2 size={14} /> 
+                                </button>
                                 <button 
                                   onClick={() => setReplyingTo(m)}
-                                  className="w-8 h-8 rounded-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm flex items-center justify-center text-slate-400 hover:text-brand-500 hover:scale-110 transition-all"
+                                  className="w-8 h-8 rounded-full bg-white dark:bg-[#121215] border border-slate-200 dark:border-white/10 shadow-sm flex items-center justify-center text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:scale-110 active:scale-95 transition-all"
                                   title="رد"
                                 >
-                                  <Users size={14} /> 
+                                  <MessageSquareReply size={14} /> 
                                 </button>
-                                {(user.role === 'ADMIN' || user.role === 'OWNER') && (
-                                  <button 
-                                    onClick={() => handleTogglePin(m.id)}
-                                    className={`w-8 h-8 rounded-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm flex items-center justify-center hover:scale-110 transition-all ${m.isPinned ? 'text-brand-500' : 'text-slate-400 hover:text-brand-500'}`}
-                                    title={m.isPinned ? "إلغاء التثبيت" : "تثبيت"}
-                                  >
-                                    <Clock size={14} />
-                                  </button>
-                                )}
+                                <button 
+                                  onClick={() => handleTogglePin(m.id)}
+                                  className={`w-8 h-8 rounded-full bg-white dark:bg-[#121215] border border-slate-200 dark:border-white/10 shadow-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-all ${m.isPinned ? 'text-brand-500 bg-brand-50 dark:bg-brand-500/10' : 'text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10'}`}
+                                  title={m.isPinned ? "إلغاء التثبيت" : "تثبيت"}
+                                >
+                                  <Pin size={14} className={m.isPinned ? 'fill-current' : ''} />
+                                </button>
                               </div>
 
                               <div className={`px-6 py-4 rounded-[1rem] md:rounded-[1.5rem] text-sm font-bold leading-relaxed shadow-xl ${m.senderId === user?.id ? 'bg-brand-600 text-white rounded-tr-none shadow-brand-600/10' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-none border border-slate-100 dark:border-white/5'} ${isBookingCard ? 'border-2 border-brand-500/30 ring-4 ring-brand-500/10' : ''} ${m.isPinned ? 'ring-2 ring-brand-500/20 bg-brand-50/50 dark:bg-brand-500/5' : ''}`}>
@@ -979,10 +1018,10 @@ Availability: ${bookingData.dates}`;
                   {/* v17.0 Reply Preview */}
                   {replyingTo && (
                     <div className="absolute bottom-full mb-2 left-0 w-full px-4 md:px-8 animate-in slide-in-from-bottom-2 duration-300" dir="rtl">
-                       <div className="bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 flex items-center justify-between border-r-4 border-brand-500">
+                       <div className="bg-slate-100 dark:bg-[#121215] border border-slate-200 dark:border-white/10 rounded-2xl p-4 flex items-center justify-between border-r-4 border-brand-500 shadow-xl">
                           <div className="overflow-hidden">
                              <p className="text-[10px] font-black text-brand-500 mb-1 uppercase tracking-widest flex items-center gap-2">
-                                <Users size={12} /> رد على {replyingTo.sender?.firstName} {replyingTo.sender?.lastName}
+                                <MessageSquareReply size={12} /> رد على {replyingTo.sender?.firstName} {replyingTo.sender?.lastName}
                              </p>
                              <p className="text-xs font-bold text-slate-500 truncate max-w-md">{replyingTo.content}</p>
                           </div>
