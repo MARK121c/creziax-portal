@@ -36,6 +36,33 @@ import {
 } from 'lucide-react';
 
 // ──────────────────────────────────────────────
+// Pinned Message Bar (V17.6 Supreme)
+// ──────────────────────────────────────────────
+const PinnedBar = ({ message, onUnpin }) => {
+  if (!message) return null;
+  return (
+    <div className="sticky top-0 z-20 bg-brand-500/10 backdrop-blur-md border-b border-brand-500/20 px-6 py-3 flex items-center justify-between animate-in slide-in-from-top duration-300 -mx-10 px-10">
+      <div className="flex items-center gap-3 overflow-hidden">
+        <Pin size={16} className="text-brand-500 shrink-0 fill-brand-500/20" />
+        <div className="overflow-hidden">
+           <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest mb-0.5">رسالة مثبتة</p>
+           <p className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate max-w-sm md:max-w-md">{message.content}</p>
+        </div>
+      </div>
+      {/* Clients can see but usually only unpin if they have permission, but per user request functional for all roles */}
+      <button 
+        onClick={() => onUnpin(message.id)} 
+        className="p-2 hover:bg-brand-500/20 rounded-xl text-slate-400 hover:text-brand-500 transition-all font-black text-[10px] uppercase tracking-widest flex items-center gap-2"
+        title="إلغاء التثبيت"
+      >
+        <span>إلغاء التثبيت</span>
+        <X size={14} />
+      </button>
+    </div>
+  );
+};
+
+// ──────────────────────────────────────────────
 // Meeting Scheduler Pop-up
 // ──────────────────────────────────────────────
 const MeetingModal = ({ onClose, onSubmit }) => {
@@ -190,8 +217,7 @@ const ClientMessages = () => {
   const { setActiveThreadId, resetUnreadMessages, unreadThreads, setGlobalCountVisible } = useNotificationStore();
 
   useEffect(() => {
-    // v17.5.3 Zero-Out Logic: Mark all as read on mount
-    markAllAsReadAPI().catch(() => {});
+    // v17.6 Supreme Zero-Out Sidebar Logic
     resetUnreadMessages();
     setGlobalCountVisible(false);
   }, [resetUnreadMessages, setGlobalCountVisible]);
@@ -250,6 +276,68 @@ const ClientMessages = () => {
       setLoadingMessages(false);
     }
   };
+
+  const handleTogglePin = async (id) => {
+    try {
+      await togglePinAPI(id);
+    } catch (err) {
+      rToast.error("فشل تغيير حالة التثبيت");
+    }
+  };
+
+  const handleDeleteMessage = async (id, type) => {
+    try {
+      await deleteSpecificMessageAPI(id, type);
+      if (type === 'everyone') {
+        rToast.success("تم الحذف لدى الجميع");
+      }
+    } catch (err) {
+      rToast.error(err.response?.data?.message || "فشل حذف الرسالة");
+    }
+  };
+
+  useEffect(() => {
+    if (!socket) return;
+    
+    const handleReceiveMessage = (newMsg) => {
+      const current = activeThreadRef.current;
+      if (!current) return;
+      const targetId = current.type === 'GROUP' ? current.id : user.id;
+      const isCorrectThread = 
+        (newMsg.type === 'GROUP' && newMsg.threadId === current.id) ||
+        (newMsg.type === 'PRIVATE' && (newMsg.senderId === user.id || newMsg.receiverId === user.id));
+      
+      if (isCorrectThread && newMsg.senderId !== user.id) {
+        setMessages(prev => {
+          if (prev.some(m => m.id === newMsg.id)) return prev;
+          return [...prev, newMsg];
+        });
+        resetUnreadMessages(targetId);
+        markAsReadAPI({ threadId: targetId });
+      }
+    };
+
+    socket.on('receive_message', handleReceiveMessage);
+    
+    socket.on('message_deleted', ({ id }) => {
+      setMessages(prev => prev.filter(m => m.id !== id));
+    });
+
+    socket.on('message_pinned', ({ id, isPinned }) => {
+      setMessages(prev => {
+        if (isPinned) {
+          return prev.map(m => m.id === id ? { ...m, isPinned: true } : { ...m, isPinned: false });
+        }
+        return prev.map(m => m.id === id ? { ...m, isPinned: false } : m);
+      });
+    });
+
+    return () => {
+      socket.off('receive_message', handleReceiveMessage);
+      socket.off('message_deleted');
+      socket.off('message_pinned');
+    };
+  }, [socket, user?.id, resetUnreadMessages]);
 
   useEffect(() => {
     if (!socket || loadingSidebar) return;
@@ -528,7 +616,7 @@ const ClientMessages = () => {
                         <p className="text-[11px] font-black text-slate-300">خيار الحذف:</p>
                         <div className="flex gap-2">
                            <button onClick={async () => { closeToast(); try { await deleteSpecificMessageAPI(m.id, 'me'); setMessages(prev => prev.filter(msg => msg.id !== m.id)); } catch(e) {} }} className="bg-white/10 text-[10px] font-bold px-3 py-1 rounded-md text-white">لدي</button>
-                           {isMine && <button onClick={async () => { closeToast(); try { await deleteSpecificMessageAPI(m.id, 'everyone'); setMessages(prev => prev.map(msg => msg.id === m.id ? { ...msg, content: '🚫 تم حذف هذه الرسالة', isDeleted: true } : msg)); } catch(e) {} }} className="bg-rose-500 text-[10px] font-bold px-3 py-1 rounded-md text-white">للجميع</button>}
+                           {isMine && <button onClick={async () => { closeToast(); try { await deleteSpecificMessageAPI(m.id, 'everyone'); setMessages(prev => prev.filter(msg => msg.id !== m.id)); } catch(e) {} }} className="bg-rose-500 text-[10px] font-bold px-3 py-1 rounded-md text-white">للجميع</button>}
                         </div>
                      </div>
                    ), { theme: 'dark', autoClose: 5000 });
@@ -664,7 +752,11 @@ const ClientMessages = () => {
                 </div>
               </div>
               
-              <div className="flex-1 overflow-y-auto px-6 md:px-10 py-8 space-y-8 custom-scrollbar bg-slate-50/30 dark:bg-[#08080a]">
+              <div className="flex-1 overflow-y-auto px-6 md:px-10 py-8 space-y-8 custom-scrollbar bg-slate-50/30 dark:bg-[#08080a] relative">
+               <PinnedBar 
+                  message={messages.find(m => m.isPinned)} 
+                  onUnpin={(id) => handleTogglePin(id)} 
+               />
                 {messages.some(m => m.isPinned) && (
                   <div className="sticky top-0 z-10 -mx-10 px-10 py-3 bg-brand-500/10 backdrop-blur-md border-b border-brand-500/20 mb-6 flex items-center justify-between animate-in slide-in-from-top duration-500">
                     <div className="flex items-center gap-4 overflow-hidden">
