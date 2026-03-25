@@ -73,7 +73,8 @@ const MessagesPage = () => {
   const { setActiveThreadId, resetUnreadMessages, unreadThreads, setGlobalCountVisible } = useNotificationStore();
 
   useEffect(() => {
-    // v17.6 Supreme Zero-Out Sidebar Logic
+    // v17.7-OVERHAUL Zero-Out Logic
+    markAllAsReadAPI().catch(() => {});
     resetUnreadMessages(); // Reset all global unread counts
     setGlobalCountVisible(false); // Hide global badge
   }, [resetUnreadMessages, setGlobalCountVisible]);
@@ -208,35 +209,37 @@ const MessagesPage = () => {
       }
     };
 
-    socket.on('receive_message', handleReceiveMessage);
-    socket.on('chat_deleted', ({ threadId }) => {
+    const handleChatDeleted = ({ threadId }) => {
       if (activeThreadRef.current?.id === threadId) {
         setMessages([]);
         setActiveThread(null);
         rToast.success("تم مسح هذه المحادثة من قبل الإدارة");
       }
-    });
+    };
 
-    socket.on('message_deleted', ({ id }) => {
-      // v17.6-SUPREME Iron Deletion: Direct Filter
+    const handleMessageDeleted = ({ id }) => {
       setMessages(prev => prev.filter(m => m.id !== id));
-    });
+    };
 
-    socket.on('message_pinned', ({ id, isPinned }) => {
+    const handleMessagePinned = ({ id, isPinned }) => {
       setMessages(prev => {
-        // v17.6-SUPREME: Only one pinned message per thread allowed
         if (isPinned) {
           return prev.map(m => m.id === id ? { ...m, isPinned: true } : { ...m, isPinned: false });
         }
         return prev.map(m => m.id === id ? { ...m, isPinned: false } : m);
       });
-    });
+    };
+
+    socket.on('receive_message', handleReceiveMessage);
+    socket.on('chat_deleted', handleChatDeleted);
+    socket.on('message_deleted', handleMessageDeleted);
+    socket.on('message_pinned', handleMessagePinned);
 
     return () => {
       socket.off('receive_message', handleReceiveMessage);
-      socket.off('chat_deleted');
-      socket.off('message_deleted');
-      socket.off('message_pinned');
+      socket.off('chat_deleted', handleChatDeleted);
+      socket.off('message_deleted', handleMessageDeleted);
+      socket.off('message_pinned', handleMessagePinned);
     };
   }, [user?.id, socket, resetUnreadMessages]);
 
