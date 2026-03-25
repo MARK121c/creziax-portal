@@ -1,6 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
-import useNotificationStore from '../store/notificationStore';
 import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
@@ -17,8 +16,7 @@ import {
   ExternalLink,
   ShieldAlert,
   FileBadge,
-  FileSignature,
-  Bell
+  FileSignature
 } from 'lucide-react';
 
 const adminLinks = [
@@ -33,7 +31,6 @@ const adminLinks = [
   { to: '/admin/contracts', icon: FileBadge, labelKey: 'contracts' },
   { to: '/admin/payments', icon: CreditCard, labelKey: 'payments' },
   { to: '/admin/profile', icon: UserRound, labelKey: 'my_profile' },
-  { to: '/admin/notifications', icon: Bell, labelKey: 'notifications' },
 ];
 
 const teamLinks = [
@@ -41,7 +38,6 @@ const teamLinks = [
   { to: '/team/tasks', icon: CheckSquare, labelKey: 'my_tasks' },
   { to: '/team/files', icon: FileText, labelKey: 'files' },
   { to: '/team/profile', icon: UserRound, labelKey: 'my_profile' },
-  { to: '/team/notifications', icon: Bell, labelKey: 'notifications' },
 ];
 
 const clientLinks = [
@@ -52,12 +48,10 @@ const clientLinks = [
   { to: '/client/contracts', icon: FileSignature, labelKey: 'contracts' },
   { to: '/client/invoices', icon: Receipt, labelKey: 'invoices' },
   { to: '/client/profile', icon: UserRound, labelKey: 'my_profile' },
-  { to: '/client/notifications', icon: Bell, labelKey: 'notifications' },
 ];
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuthStore();
-  const { unreadMessagesCount } = useNotificationStore();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
@@ -68,7 +62,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         return adminLinks;
       case 'ADMIN':
         return adminLinks.filter(link => {
-          if (link.to === '/admin/profile' || link.to === '/admin' || link.to === '/admin/notifications') return true;
+          if (link.to === '/admin/profile' || link.to === '/admin') return true;
           if (link.to === '/admin/clients' && user?.permissions?.includes('CLIENTS')) return true;
           if (link.to === '/admin/team' && user?.permissions?.includes('TEAM')) return true;
           if (link.to === '/admin/projects' && user?.permissions?.includes('PROJECTS')) return true;
@@ -108,8 +102,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           <span className="text-base font-bold tracking-tight text-slate-800 dark:text-white">
             Creziax
           </span>
-          <span className="text-[9px] font-black text-brand-500 uppercase tracking-[0.2em] -mt-0.5">
-            v17.0 - ELITE
+          <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] -mt-0.5">
+            {t('agency_portal')}
           </span>
         </div>
       </div>
@@ -123,23 +117,15 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             end={to === '/admin' || to === '/team' || to === '/client'}
             onClick={closeMobileMenu}
             className={({ isActive }) =>
-              `flex items-center gap-4 px-5 py-4 rounded-2xl text-[14px] font-bold transition-all duration-300 group ${
+              `flex items-center gap-3.5 px-4 py-3 rounded-2xl text-[13px] font-bold transition-all duration-300 group ${
                 isActive
-                  ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/20'
+                  ? 'bg-brand-600 text-white shadow-md shadow-brand-500/10'
                   : 'text-slate-500 dark:text-slate-500 hover:text-brand-600 dark:hover:text-slate-200 hover:bg-brand-50/50 dark:hover:bg-white/5'
               }`
             }
           >
-            <div className="flex items-center gap-3.5 flex-1">
-              <Icon size={18} className="transition-transform group-hover:scale-110" />
-              <span className="truncate">{t(labelKey)}</span>
-            </div>
-            
-            {unreadMessagesCount > 0 && to.includes('messages') && (
-              <span className="ml-auto bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-lg shadow-rose-500/20 animate-pulse">
-                {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
-              </span>
-            )}
+            <Icon size={18} className={`transition-transform group-hover:scale-110 ${isRTL ? 'ml-0.5' : ''}`} />
+            {t(labelKey)}
           </NavLink>
         ))}
         {user?.clientInfo?.notionLink && (

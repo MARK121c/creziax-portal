@@ -157,7 +157,7 @@ function AppContent() {
       if (now - lastSoundTriggerRef.current < 2500) return; 
       
       const audio = new Audio('/sounds/notification.mp3'); 
-      audio.volume = 0.4;
+      audio.volume = 1.0; // v17.1 Max volume always
       audio.play()
         .then(() => { lastSoundTriggerRef.current = now; })
         .catch(() => {});
@@ -240,14 +240,15 @@ function AppContent() {
       notifyClickable(t('task_updated_global', 'تم تحديث حالة فيديو المشروع'), '🎥', '/client');
     };
 
+
     socket.on('receive_message', handleReceiveMessage);
-    socket.on('smart_notification', handleSmartNotification);
+    // NOTE: smart_notification removed - receive_message already handles badges
+    // to avoid double-counting unread counts (v17.1 fix)
     socket.on('task_updated', handleTaskUpdate);
-    socket.on('workspace_updated', handleTaskUpdate); // Reuse same logic
+    socket.on('workspace_updated', handleTaskUpdate);
 
     return () => {
       socket.off('receive_message', handleReceiveMessage);
-      socket.off('smart_notification', handleSmartNotification);
       socket.off('task_updated', handleTaskUpdate);
       socket.off('workspace_updated', handleTaskUpdate);
     };

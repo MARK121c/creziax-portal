@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// v16.0: STRICTLY HARDCODED API URL - NO ENV FALLBACK
-const API_URL = 'https://api.creziax.cloud/api';
-// Version: 16.0 (Golden Release - Strictly Hardcoded)
+// Use environment variable or fallback to relative path (best for Coolify/Docker)
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+// Version: 1.3.2 (Session-safe 401 handling)
 
 const api = axios.create({
   baseURL: API_URL,
@@ -79,8 +79,6 @@ export const getTeamGroupsAPI = () => api.get('/messages/groups');
 export const deleteTeamGroupAPI = (groupId) => api.delete(`/messages/groups/${groupId}`);
 export const removeGroupMemberAPI = (groupId, userId) => api.delete(`/messages/groups/${groupId}/members/${userId}`);
 export const clearMessagesAPI = (threadId) => api.delete(threadId ? `/messages/clear?threadId=${threadId}` : '/messages/clear');
-export const markAsReadAPI = (data) => api.post('/messages/mark-read', data); // NEW (v17.0)
-export const togglePinAPI = (id) => api.patch(`/messages/${id}/pin`); // NEW (v17.0)
 
 // Invoices
 export const getInvoicesAPI = () => api.get('/invoices');

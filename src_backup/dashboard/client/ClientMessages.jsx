@@ -7,16 +7,14 @@ import {
   createTicketAPI
 } from '../../store/api';
 import useAuthStore from '../../store/authStore';
-import useNotificationStore from '../../store/notificationStore';
-import { useSocket } from '../../context/SocketContext';
+import { io } from 'socket.io-client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import { 
   Send, MessageSquare, Loader2, UserCircle, 
   Briefcase, Headset, Link as LinkIcon, ExternalLink,
-  ShieldAlert, X, Calendar, Clock, CalendarPlus2, Users
+  ShieldAlert, X, Calendar, Clock, CalendarPlus2
 } from 'lucide-react';
-import { markAsReadAPI } from '../../store/api';
 
 // ──────────────────────────────────────────────
 // Meeting Scheduler Pop-up
@@ -170,23 +168,20 @@ const DriveLinkPanel = ({ activeThread, user, onClose, onSend }) => {
 const ClientMessages = () => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
-  const { setActiveThreadId, resetUnreadMessages, unreadThreads } = useNotificationStore();
   
   const [supportContact, setSupportContact] = useState(null);
   const [projects, setProjects] = useState([]);
   const [messages, setMessages] = useState([]);
   const [content, setContent] = useState('');
   const [activeThread, setActiveThread] = useState(null);
+  const [unreadThreads, setUnreadThreads] = useState({});
   
   const [loadingSidebar, setLoadingSidebar] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [showDrivePanel, setShowDrivePanel] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   
-  // v17.0 Elite
-  const [replyingTo, setReplyingTo] = useState(null);
-  
-  const socket = useSocket(); // v14.0 Shared Singleton
+  const socketRef = useRef();
   const scrollRef = useRef();
   const activeThreadRef = useRef(activeThread);
   activeThreadRef.current = activeThread;
@@ -208,16 +203,13 @@ const ClientMessages = () => {
   }, []);
 
   const fetchThreadMessages = async (threadId) => {
-    if (!threadId) return;
     setLoadingMessages(true);
     try {
       const { data } = await getMessagesAPI(threadId);
       setMessages(data || []);
-      
-      // Auto-Clear (v17.0)
-      markAsReadAPI({ threadId });
-      resetUnreadMessages(threadId);
-      toast.dismiss();
+      if (socketRef.current) {
+        socketRef.current.emit('join_thread', threadId);
+      }
     } catch (err) {
       toast.error("فشل تحميل الرسائل");
     } finally {
@@ -225,78 +217,32 @@ const ClientMessages = () => {
     }
   };
 
-  // V12.0 ZERO DROP: Emit explicitly on connect & reconnects
-  useEffect(() => {
-    if (!socket || loadingSidebar) return;
-
-    const handleJoinRooms = () => {
-      if (user?.id) {
-        socket.emit('join_rooms', {
-          userId: user.id,
-          role: user.role,
-          projectIds: projects.map(p => p.id)
-        });
-        console.log("Client Room Sync: Joined User Room & Projects (Singleton)");
-      }
-    };
-
-    handleJoinRooms();
-    socket.on('connect', handleJoinRooms);
-    return () => socket.off('connect', handleJoinRooms);
-  }, [projects, user, loadingSidebar, socket]);
-
   useEffect(() => {
     fetchData();
-    if (!socket) return;
 
-    const handleReceiveMessage = (newMsg) => {
+    socketRef.current = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', {
+      transports: ['websocket'],
+    });
+
+    socketRef.current.on('receive_message', (msg) => {
       const current = activeThreadRef.current;
-      if (!current) return;
-      
-      const isCorrectThread = 
-        (newMsg.type === 'GROUP' && newMsg.threadId === current.id && current.type === 'GROUP') ||
-        (newMsg.type === 'PRIVATE' && current.type !== 'GROUP');
+      const currentExpectedThreadId = current?.type === 'GROUP' ? current.id : user?.id;
 
-      if (isCorrectThread) {
-        if (newMsg.senderId !== user?.id) {
+      if (msg.threadId === currentExpectedThreadId) {
+        if (msg.senderId !== user?.id) {
           setMessages(prev => {
-            if (prev.find(m => m.id === newMsg.id)) return prev;
-            return [...prev, { 
-              ...newMsg, 
-              sender: newMsg.sender || { firstName: newMsg.senderName || 'الدعم الفني', role: 'ADMIN' },
-              parent: newMsg.parent // v17.0 Support
-            }];
+            if (prev.find(m => m.id === msg.id)) return prev;
+            return [...prev, msg];
           });
         }
-      }
-    };
-
-    socket.on('receive_message', handleReceiveMessage);
-    socket.on('chat_deleted', ({ threadId }) => {
-      const current = activeThreadRef.current;
-      if (current?.id === threadId || threadId === user?.id) {
-        setMessages([]);
-        setActiveThread(null);
-        toast.success("تم مسح هذه المحادثة بالكامل من قبل الإدارة");
+      } else {
+        // Mark thread as having unread messages (pulse)
+        setUnreadThreads(prev => ({ ...prev, [msg.threadId]: (prev[msg.threadId] || 0) + 1 }));
       }
     });
 
-    return () => {
-       socket.off('receive_message', handleReceiveMessage);
-       socket.off('chat_deleted');
-    };
-  }, [user?.id, socket, fetchData]); // Only re-connect if user ID changes
-
-  // Track active thread for global silence logic
-  useEffect(() => {
-    if (activeThread) {
-      const tid = activeThread.type === 'GROUP' ? activeThread.id : user?.id;
-      setActiveThreadId(tid);
-      resetUnreadMessages(tid);
-    } else {
-      setActiveThreadId(null);
-    }
-  }, [activeThread, user?.id, setActiveThreadId, resetUnreadMessages]);
+    return () => socketRef.current?.disconnect();
+  }, [fetchData, user?.id]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -315,32 +261,14 @@ const ClientMessages = () => {
 
   const doSendMessage = async (msgContent) => {
     if (!activeThread) return;
-    
-    // v10.0 Standard Socket Architecture Payload
-    const isGroup = activeThread.type === 'GROUP';
-    const type = isGroup ? 'GROUP' : 'PRIVATE';
-    const threadIdToSend = isGroup ? activeThread.id : null;
-    const receiverIdToSend = !isGroup ? activeThread.userId : null;
-    
+    const threadIdToSend = activeThread.type === 'GROUP' ? activeThread.id : user.id;
     const { data } = await sendMessageAPI({ 
       content: msgContent, 
-      type,
       threadId: threadIdToSend,
-      receiverId: receiverIdToSend,
-      parentId: replyingTo?.id || null // v17.0 Reply
+      receiverId: activeThread.type === 'DM' ? activeThread.userId : null
     });
-    
-    // Build socket payload (v10.0 Standard Architecture)
-    socket.emit('send_message', { 
-      ...data, 
-      type,
-      threadId: threadIdToSend,
-      receiverId: receiverIdToSend,
-      senderName: `${user?.firstName} ${user?.lastName}`,
-      parent: replyingTo // Pass for local UI update
-    });
-    setReplyingTo(null);
-    setMessages(prev => [...prev, { ...data, sender: user, parent: replyingTo }]);
+    socketRef.current?.emit('send_message', { ...data, threadId: threadIdToSend });
+    setMessages(prev => [...prev, { ...data, sender: user }]);
   };
 
   const handleSend = async (e) => {
@@ -373,13 +301,7 @@ const ClientMessages = () => {
       type: 'MEETING',
       status: 'OPEN',
     });
-
-    if (activeThread) {
-      const cardContent = `[MEETING_BOOKING]\nTopic: ${form.subject}\nAvailability: ${form.date} ${form.time}`;
-      await doSendMessage(cardContent);
-    }
-
-    toast.success('تم إرسال طلب الموعد للإدارة بنجاح ✅');
+    toast.success(isRTL ? 'تم إرسال طلب الموعد للإدارة بنجاح ✅' : 'Meeting request sent to management. ✅');
   };
 
   const selectThread = (item, type) => {
@@ -392,10 +314,8 @@ const ClientMessages = () => {
     };
     setActiveThread(thread);
     const threadIdToFetch = type === 'GROUP' ? item.id : user.id;
-    
-    // Clear global unread for this thread
-    resetUnreadMessages(threadIdToFetch);
-    
+    // Clear unread for this thread
+    setUnreadThreads(prev => { const n = { ...prev }; delete n[threadIdToFetch]; return n; });
     fetchThreadMessages(threadIdToFetch);
     setShowDrivePanel(false);
   };
@@ -404,20 +324,10 @@ const ClientMessages = () => {
     const isDriveLink = m.content?.startsWith('[DRIVE_LINK]');
     const driveUrl = isDriveLink ? m.content.replace('[DRIVE_LINK]', '') : null;
     const isFileCard = m.content?.startsWith('[FILE]');
-    const isBookingCard = m.content?.startsWith('[MEETING_BOOKING]');
-    
     let fileUrl = null;
-    let bookingDetails = null;
-
     if (isFileCard) {
       const lines = m.content.split('\n');
       fileUrl = lines[0].replace('[FILE]', '');
-    } else if (isBookingCard) {
-      const lines = m.content.split('\n');
-      bookingDetails = {
-        topic: lines[1]?.replace('Topic: ', ''),
-        dates: lines[2]?.replace('Availability: ', '')
-      };
     }
     const isMine = m.senderId === user?.id;
 
@@ -428,30 +338,8 @@ const ClientMessages = () => {
             <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
               {m.sender?.firstName} {m.sender?.lastName} {isMine && '(أنت)'}
             </span>
-            {m.isPinned && <Clock size={12} className="text-brand-500" />}
           </div>
-
-          {/* v17.0 Reply Quote */}
-          {m.parent && (
-            <div className={`mb-1 px-4 py-2 rounded-t-2xl bg-slate-100 dark:bg-white/5 border-r-4 border-brand-500/50 max-w-full overflow-hidden opacity-80 ${isMine ? 'mr-2' : 'ml-2'}`}>
-              <p className="text-[10px] font-black text-brand-500 mb-1">{m.parent.sender?.firstName} {m.parent.sender?.lastName}</p>
-              <p className="text-[11px] font-bold text-slate-500 truncate">{m.parent.content}</p>
-            </div>
-          )}
-
-          <div className="group relative">
-            {/* v17.0 Action Icons on Hover (Client: Reply Only) */}
-            <div className={`invisible group-hover:visible absolute top-1/2 -translate-y-1/2 flex items-center gap-2 px-3 ${isMine ? 'right-full' : 'left-full'}`}>
-              <button 
-                onClick={() => setReplyingTo(m)}
-                className="w-8 h-8 rounded-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-sm flex items-center justify-center text-slate-400 hover:text-brand-500 hover:scale-110 transition-all"
-                title="رد"
-              >
-                <Users size={14} /> 
-              </button>
-            </div>
-
-            <div className={`px-6 py-4 rounded-[1.25rem] text-sm font-bold leading-relaxed shadow-sm ${isMine ? 'bg-brand-600 text-white rounded-tr-none shadow-brand-600/10' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-none border border-slate-100 dark:border-white/5'} ${isBookingCard ? 'border-2 border-brand-500/30 ring-4 ring-brand-500/10' : ''} ${m.isPinned ? 'ring-2 ring-brand-500/20 bg-brand-50/50 dark:bg-brand-500/5' : ''}`}>
+          <div className={`px-6 py-4 rounded-[1.25rem] text-sm font-bold leading-relaxed shadow-sm ${isMine ? 'bg-brand-600 text-white rounded-tr-sm shadow-brand-600/10' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-sm border border-slate-100 dark:border-white/5'}`}>
             {isDriveLink ? (
               <a
                 href={driveUrl}
@@ -471,27 +359,6 @@ const ClientMessages = () => {
                 </div>
                 <ExternalLink size={14} className="opacity-60 flex-shrink-0" />
               </a>
-            ) : isBookingCard ? (
-              <div className="space-y-4 min-w-[200px] text-right" dir="rtl">
-                 <div className="flex items-center gap-3 pb-3 border-b border-white/20">
-                    <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-                       <Calendar size={16} />
-                    </div>
-                    <span className="text-[10px] uppercase font-black tracking-widest">طلب ميتنج جديد</span>
-                 </div>
-                 <div className="space-y-1">
-                    <p className="text-[9px] opacity-70 uppercase font-black tracking-widest">موضوع النقاش</p>
-                    <p className="text-xs font-black">{bookingDetails?.topic}</p>
-                 </div>
-                 <div className="space-y-1">
-                    <p className="text-[9px] opacity-70 uppercase font-black tracking-widest">المواعيد المقترحة</p>
-                    <p className="text-xs font-black bg-white/10 p-3 rounded-xl border border-white/5">{bookingDetails?.dates}</p>
-                 </div>
-                 <div className="flex items-center gap-2 pt-2 text-[8px] font-black opacity-60 uppercase tracking-widest">
-                    <Clock size={10} />
-                    انتظار التأكيد من الإدارة
-                 </div>
-              </div>
             ) : isFileCard ? (
               <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 underline text-sm">
                 📎 مرفق
@@ -506,7 +373,6 @@ const ClientMessages = () => {
           </span>
         </div>
       </div>
-    </div>
     );
   };
 
@@ -543,11 +409,8 @@ const ClientMessages = () => {
                         <h4 className="text-xs font-black truncate">{t('support_team_contact')}</h4>
                         <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.userId === supportContact.id ? 'text-white' : 'text-slate-400'}`}>{t('support_always_help')}</p>
                       </div>
-                      
-                      {unreadThreads[user?.id] > 0 && activeThread?.userId !== supportContact.id && (
-                        <span className="min-w-[18px] h-[18px] rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center px-1 animate-pulse shrink-0">
-                          {unreadThreads[user?.id]}
-                        </span>
+                      {unreadThreads[user?.id] > 0 && (
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse flex-shrink-0" />
                       )}
                     </button>
                   </div>
@@ -569,9 +432,8 @@ const ClientMessages = () => {
                           <h4 className="text-xs font-black truncate">{p.name}</h4>
                           <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.id === p.id ? 'text-white' : 'text-slate-400'}`}>{t('project_workgroup')}</p>
                         </div>
-                        
-                        {unreadThreads[p.id] > 0 && activeThread?.id !== p.id && (
-                          <span className="min-w-[18px] h-[18px] rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center px-1 animate-pulse shrink-0">
+                        {unreadThreads[p.id] > 0 && (
+                          <span className="min-w-[18px] h-[18px] rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center px-1 animate-pulse">
                             {unreadThreads[p.id]}
                           </span>
                         )}
@@ -628,23 +490,6 @@ const ClientMessages = () => {
               
               {/* Messages Area */}
               <div className="flex-1 overflow-y-auto px-6 md:px-10 py-8 space-y-8 custom-scrollbar bg-slate-50/30 dark:bg-[#08080a]">
-                {/* v17.0 Pinned Message Banner */}
-                {messages.some(m => m.isPinned) && (
-                  <div className="sticky top-0 z-10 -mx-10 px-10 py-3 bg-brand-500/10 backdrop-blur-md border-b border-brand-500/20 mb-6 flex items-center justify-between animate-in slide-in-from-top duration-500">
-                    <div className="flex items-center gap-4 overflow-hidden">
-                      <div className="w-8 h-8 rounded-lg bg-brand-500 text-white flex items-center justify-center flex-shrink-0 shadow-lg shadow-brand-500/20">
-                         <Clock size={16} />
-                      </div>
-                      <div className="text-right overflow-hidden">
-                        <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest leading-none mb-1">رسالة مثبتة من الإدارة</p>
-                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">
-                          {messages.find(m => m.isPinned)?.content.substring(0, 100)}...
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 {loadingMessages ? (
                   <div className="h-full flex flex-col items-center justify-center opacity-50"><Loader2 size={32} className="animate-spin text-brand-500" /></div>
                 ) : messages.length === 0 ? (
@@ -658,26 +503,6 @@ const ClientMessages = () => {
 
               {/* Input Area */}
               <div className="p-4 md:p-6 bg-white dark:bg-[#0a0a0c] border-t border-slate-100 dark:border-white/5 relative">
-                {/* v17.0 Reply Preview */}
-                {replyingTo && (
-                  <div className="absolute bottom-full mb-2 left-0 w-full px-4 md:px-6 animate-in slide-in-from-bottom-2 duration-300" dir="rtl">
-                     <div className="bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 flex items-center justify-between border-r-4 border-brand-500 shadow-xl">
-                        <div className="overflow-hidden">
-                           <p className="text-[10px] font-black text-brand-500 mb-1 uppercase tracking-widest flex items-center gap-2">
-                              <Users size={12} /> رد على {replyingTo.sender?.firstName} {replyingTo.sender?.lastName}
-                           </p>
-                           <p className="text-xs font-bold text-slate-500 truncate max-w-md">{replyingTo.content}</p>
-                        </div>
-                        <button 
-                          onClick={() => setReplyingTo(null)}
-                          className="text-slate-400 hover:text-rose-500 p-2"
-                        >
-                          <X size={18} />
-                        </button>
-                     </div>
-                  </div>
-                )}
-
                 {showDrivePanel && (
                   <DriveLinkPanel
                     activeThread={activeThread}
