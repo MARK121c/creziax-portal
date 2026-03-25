@@ -217,7 +217,8 @@ const ClientMessages = () => {
   const { setActiveThreadId, resetUnreadMessages, unreadThreads, setGlobalCountVisible } = useNotificationStore();
 
   useEffect(() => {
-    // v17.6 Supreme Zero-Out Sidebar Logic
+    // v17.7-OVERHAUL Zero-Out Logic - Force DB clean up
+    markAllAsReadAPI().catch(() => {});
     resetUnreadMessages();
     setGlobalCountVisible(false);
   }, [resetUnreadMessages, setGlobalCountVisible]);
@@ -297,49 +298,6 @@ const ClientMessages = () => {
   };
 
   useEffect(() => {
-    if (!socket) return;
-    
-    const handleReceiveMessage = (newMsg) => {
-      const current = activeThreadRef.current;
-      if (!current) return;
-      const targetId = current.type === 'GROUP' ? current.id : user.id;
-      const isCorrectThread = 
-        (newMsg.type === 'GROUP' && newMsg.threadId === current.id) ||
-        (newMsg.type === 'PRIVATE' && (newMsg.senderId === user.id || newMsg.receiverId === user.id));
-      
-      if (isCorrectThread && newMsg.senderId !== user.id) {
-        setMessages(prev => {
-          if (prev.some(m => m.id === newMsg.id)) return prev;
-          return [...prev, newMsg];
-        });
-        resetUnreadMessages(targetId);
-        markAsReadAPI({ threadId: targetId });
-      }
-    };
-
-    socket.on('receive_message', handleReceiveMessage);
-    
-    socket.on('message_deleted', ({ id }) => {
-      setMessages(prev => prev.filter(m => m.id !== id));
-    });
-
-    socket.on('message_pinned', ({ id, isPinned }) => {
-      setMessages(prev => {
-        if (isPinned) {
-          return prev.map(m => m.id === id ? { ...m, isPinned: true } : { ...m, isPinned: false });
-        }
-        return prev.map(m => m.id === id ? { ...m, isPinned: false } : m);
-      });
-    });
-
-    return () => {
-      socket.off('receive_message', handleReceiveMessage);
-      socket.off('message_deleted');
-      socket.off('message_pinned');
-    };
-  }, [socket, user?.id, resetUnreadMessages]);
-
-  useEffect(() => {
     if (!socket || loadingSidebar) return;
 
     const handleJoinRooms = () => {
@@ -385,30 +343,38 @@ const ClientMessages = () => {
       }
     };
 
-    socket.on('receive_message', handleReceiveMessage);
-    socket.on('chat_deleted', ({ threadId }) => {
+    const handleChatDeleted = ({ threadId }) => {
       const current = activeThreadRef.current;
       if (current?.id === threadId || threadId === user?.id) {
         setMessages([]);
         setActiveThread(null);
         rToast.success("تم مسح هذه المحادثة بالكامل من قبل الإدارة");
       }
-    });
+    };
 
-    socket.on('message_deleted', ({ id }) => {
-      // v17.5.3 Iron Deletion: Filter out deleted messages completely for a clean "disappear" effect
+    const handleMessageDeleted = ({ id }) => {
       setMessages(prev => prev.filter(m => m.id !== id));
-    });
+    };
 
-    socket.on('message_pinned', ({ id, isPinned }) => {
-      setMessages(prev => prev.map(m => m.id === id ? { ...m, isPinned } : m));
-    });
+    const handleMessagePinned = ({ id, isPinned }) => {
+      setMessages(prev => {
+        if (isPinned) {
+          return prev.map(m => m.id === id ? { ...m, isPinned: true } : { ...m, isPinned: false });
+        }
+        return prev.map(m => m.id === id ? { ...m, isPinned: false } : m);
+      });
+    };
+
+    socket.on('receive_message', handleReceiveMessage);
+    socket.on('chat_deleted', handleChatDeleted);
+    socket.on('message_deleted', handleMessageDeleted);
+    socket.on('message_pinned', handleMessagePinned);
 
     return () => {
        socket.off('receive_message', handleReceiveMessage);
-       socket.off('chat_deleted');
-       socket.off('message_deleted');
-       socket.off('message_pinned');
+       socket.off('chat_deleted', handleChatDeleted);
+       socket.off('message_deleted', handleMessageDeleted);
+       socket.off('message_pinned', handleMessagePinned);
     };
   }, [user?.id, socket, resetUnreadMessages]);
 
