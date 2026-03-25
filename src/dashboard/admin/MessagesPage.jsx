@@ -184,9 +184,19 @@ const MessagesPage = () => {
       }
     });
 
+    socket.on('message_deleted', ({ id }) => {
+      setMessages(prev => prev.map(m => m.id === id ? { ...m, content: '🚫 تم حذف هذه الرسالة من قبل الإدارة', isDeleted: true } : m));
+    });
+
+    socket.on('message_pinned', ({ id, isPinned }) => {
+      setMessages(prev => prev.map(m => m.id === id ? { ...m, isPinned } : m));
+    });
+
     return () => {
       socket.off('receive_message', handleReceiveMessage);
       socket.off('chat_deleted');
+      socket.off('message_deleted');
+      socket.off('message_pinned');
     };
   }, [user?.id, socket, resetUnreadMessages]);
 
@@ -593,6 +603,24 @@ const MessagesPage = () => {
               </div>
 
               <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-white/5">
+                <button onClick={() => setExpandedSections(p => ({...p, team: !p.team}))} className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all">
+                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">شات الفريق</h3>
+                   <ChevronRight size={14} className={`transition-transform duration-300 ${expandedSections.team ? 'rotate-180' : ''}`} />
+                </button>
+                {expandedSections.team && teamMembers.filter(tm => tm.id !== user.id && `${tm.firstName} ${tm.lastName}`.toLowerCase().includes(searchQuery.toLowerCase())).map(tm => (
+                  <button key={tm.id} onClick={() => selectThread(tm, 'TEAM')} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeThread?.userId === tm.id ? 'bg-brand-600 text-white shadow-lg' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}>
+                    <div className="flex-1 text-right overflow-hidden">
+                      <h4 className="text-xs font-black truncate">{tm.firstName} {tm.lastName}</h4>
+                      <p className={`text-[9px] font-bold truncate opacity-60 ${activeThread?.userId === tm.id ? 'text-white' : 'text-slate-400'}`}>{tm.position || 'فريق العمل'}</p>
+                    </div>
+                    {unreadThreads[tm.id] > 0 && activeThread?.userId !== tm.id && (
+                      <span className="bg-rose-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-pulse shrink-0">{unreadThreads[tm.id]}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-white/5">
                 <button onClick={() => setExpandedSections(p => ({...p, clients: !p.clients}))} className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all">
                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">شات العملاء</h3>
                    <ChevronRight size={14} className={`transition-transform duration-300 ${expandedSections.clients ? 'rotate-180' : ''}`} />
@@ -638,6 +666,17 @@ const MessagesPage = () => {
               </div>
               
               <div className="flex items-center gap-2">
+                 {activeThread.driveUrl && (
+                   <a 
+                     href={activeThread.driveUrl}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-white rounded-xl font-black text-[10px] uppercase transition-all shadow-sm"
+                   >
+                     <Briefcase size={14} />
+                     <span>ملفات المشروع</span>
+                   </a>
+                 )}
                  <button onClick={() => setIsAddMemberModalOpen(true)} className="p-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all shadow-sm" title="إضافة عضو"><UserPlus size={18} /></button>
                  <button onClick={handleClearChat} className="p-3 bg-rose-500/10 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-sm" title="مسح المحادثة"><Trash2 size={18} /></button>
                  <button onClick={() => setIsBookingModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-black text-[10px] uppercase shadow-lg"><Calendar size={14}/><span>حجز موعد</span></button>

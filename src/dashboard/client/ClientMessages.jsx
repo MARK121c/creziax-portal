@@ -297,9 +297,19 @@ const ClientMessages = () => {
       }
     });
 
+    socket.on('message_deleted', ({ id }) => {
+      setMessages(prev => prev.map(m => m.id === id ? { ...m, content: '🚫 تم حذف هذه الرسالة', isDeleted: true } : m));
+    });
+
+    socket.on('message_pinned', ({ id, isPinned }) => {
+      setMessages(prev => prev.map(m => m.id === id ? { ...m, isPinned } : m));
+    });
+
     return () => {
        socket.off('receive_message', handleReceiveMessage);
        socket.off('chat_deleted');
+       socket.off('message_deleted');
+       socket.off('message_pinned');
     };
   }, [user?.id, socket, resetUnreadMessages]);
 
