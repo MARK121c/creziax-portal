@@ -57,7 +57,7 @@ const clientLinks = [
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuthStore();
-  const { unreadMessagesCount } = useNotificationStore();
+  const { unreadMessagesCount, globalCountVisible, addNotification, activeThreadId, incrementUnreadMessages, resetUnreadMessages, setGlobalCountVisible } = useNotificationStore();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
