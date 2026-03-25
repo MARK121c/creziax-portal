@@ -891,8 +891,8 @@ Availability: ${bookingData.dates}`;
                             )}
 
                             <div className="group relative">
-                              {/* v17.1 Action Icons on Hover (Admin & Client: Reply and Pin) */}
-                              <div className={`invisible group-hover:visible absolute top-[10px] flex items-center gap-2 px-3 ${m.senderId === user?.id ? 'right-full' : 'left-full'} transition-all`} style={{ minWidth: 'max-content' }}>
+                              {/* v17.3 Action Icons on Hover (Admin & Client: Reply and Pin) */}
+                              <div className={`invisible group-hover:visible absolute top-[10px] flex flex-row flex-nowrap items-center gap-2 px-3 z-20 ${m.senderId === user?.id ? 'right-[95%]' : 'left-[95%]'} transition-all`} style={{ minWidth: 'max-content' }}>
                                 <button 
                                   onClick={() => {
                                     toast((t) => (
