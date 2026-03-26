@@ -1,94 +1,74 @@
-import { useEffect, useState, useCallback } from 'react';
-import { getProjectsAPI } from '../../store/api';
+import { getProjectsAPI, getContractsAPI } from '../../store/api';
 import { io } from 'socket.io-client';
 import { useTranslation } from 'react-i18next';
-import { FolderKanban, Loader2, CheckCircle2, PlayCircle, Clock, Film, AlertCircle } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { FolderKanban, Loader2, CheckCircle2, PlayCircle, Clock, Film, AlertCircle, Calendar } from 'lucide-react';
 
-// ── Progress + Stage helpers ──────────────────────────────────────────────────
-const getTimelineStage = (status) => {
-  switch (status) {
-    case 'SCRIPT': return 1;
-    case 'EDITING': case 'IN_PROGRESS': return 2;
-    case 'THUMBNAIL': return 3;
-    case 'PUBLISHING': return 4;
-    case 'COMPLETED': return 5;
-    default: return 1;
+const STAGE_LABELS_AR = {
+  EDITING: 'قيد المونتاج',
+  REVIEW: 'مراجعة',
+  COMPLETED: 'منجز',
+};
+
+const STAGE_LABELS_EN = {
+  EDITING: 'Editing',
+  REVIEW: 'Review',
+  COMPLETED: 'Done',
+};
+
+const getClientTaskStatus = (status) => {
+  if (status === 'COMPLETED' || status === 'DELIVERED') return 'COMPLETED';
+  if (status === 'REVIEW') return 'REVIEW';
+  return 'EDITING'; // Default for IDEA, SCRIPTING, SHOOTING, EDITING
+};
+
+const TaskMinimalRow = ({ task, isRTL }) => {
+  const clientStatusKey = getClientTaskStatus(task.status);
+  const label = isRTL ? STAGE_LABELS_AR[clientStatusKey] : STAGE_LABELS_EN[clientStatusKey];
+  const isDone = clientStatusKey === 'COMPLETED';
+  const isReview = clientStatusKey === 'REVIEW';
+
+  let dotColor = 'bg-brand-500';
+  let badgeClasses = 'bg-brand-50 text-brand-600 border border-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:border-brand-500/20';
+
+  if (isDone) {
+    dotColor = 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]';
+    badgeClasses = 'bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20';
+  } else if (isReview) {
+    dotColor = 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]';
+    badgeClasses = 'bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20';
   }
-};
-
-const getProgressPercent = (stage) => {
-  const map = { 1: 10, 2: 40, 3: 65, 4: 85, 5: 100 };
-  return map[stage] || 10;
-};
-
-const STAGE_LABELS = ['Script', 'Editing', 'Thumbnail', 'Publishing', 'Done'];
-const STAGE_LABELS_AR = ['سكريبت', 'مونتاج', 'ثمبنيل', 'نشر', 'منجز'];
-
-const TaskProgressCard = ({ task, isRTL }) => {
-  const stage = getTimelineStage(task.status);
-  const progress = getProgressPercent(stage);
-  const isDone = stage === 5;
-  const labels = isRTL ? STAGE_LABELS_AR : STAGE_LABELS;
 
   return (
-    <div className={`rounded-3xl p-6 border transition-all duration-300 ${isDone
-      ? 'bg-emerald-50 dark:bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/20'
-      : 'bg-white dark:bg-white/[0.025] border-slate-100 dark:border-white/[0.06]'}`}
-    >
-      {/* Title row */}
-      <div className="flex items-start justify-between gap-3 mb-5">
-        <div className="flex items-center gap-2.5">
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${isDone ? 'bg-emerald-500 text-white' : 'bg-brand-500/15 text-brand-500'}`}>
-            {isDone ? <CheckCircle2 size={14} /> : <Film size={14} />}
-          </div>
-          <p className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-tight leading-tight">
+    <div className={`group flex items-center justify-between p-5 md:p-6 rounded-[2rem] border transition-all duration-300 ${
+      isDone ? 'bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-100 dark:border-emerald-500/10' 
+             : 'bg-white dark:bg-white/[0.02] border-slate-100 dark:border-white/[0.05] hover:border-slate-200 dark:hover:border-white/10'
+    }`}>
+      <div className="flex items-center gap-5 w-full">
+        {/* Animated dot indicator */}
+        <div className="relative flex items-center justify-center flex-shrink-0 w-4 h-4">
+          {!isDone && <span className={`absolute w-full h-full rounded-full opacity-40 animate-ping ${dotColor}`} />}
+          <span className={`relative w-2.5 h-2.5 rounded-full ${dotColor}`} />
+        </div>
+        
+        {/* Video Icon */}
+        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110 ${
+          isDone ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400'
+        }`}>
+          {isReview ? <PlayCircle size={20} /> : isDone ? <CheckCircle2 size={20} /> : <Film size={20} />}
+        </div>
+        
+        {/* Task Title */}
+        <div className="flex-1 min-w-0 mx-2">
+          <p className="text-sm md:text-base font-bold text-slate-800 dark:text-white truncate">
             {task.title}
           </p>
         </div>
-        <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full flex-shrink-0 ${
-          isDone
-            ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-            : 'bg-brand-100 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400'
-        }`}>
-          {labels[stage - 1]}
-        </span>
-      </div>
 
-      {/* Progress bar */}
-      <div className="h-2 w-full bg-slate-100 dark:bg-white/[0.05] rounded-full overflow-hidden mb-4">
-        <div
-          className={`h-full rounded-full transition-all duration-1000 ease-out ${
-            isDone
-              ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
-              : 'bg-gradient-to-r from-brand-400 to-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.3)]'
-          }`}
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-
-      {/* Stage dots */}
-      <div className="flex justify-between items-center">
-        {labels.map((label, idx) => (
-          <div key={idx} className="flex flex-col items-center gap-1.5">
-            <div className={`w-2.5 h-2.5 rounded-full border-2 transition-all ${
-              stage > idx
-                ? 'border-brand-500 bg-brand-500 shadow-[0_0_6px_rgba(99,102,241,0.4)]'
-                : stage === idx + 1
-                  ? 'border-brand-400 bg-white dark:bg-slate-900 animate-pulse'
-                  : 'border-slate-200 dark:border-white/10 bg-transparent'
-            }`} />
-            <span className={`text-[8px] font-black uppercase tracking-tighter leading-none ${stage > idx ? 'text-brand-500' : 'text-slate-400 dark:text-slate-600'}`}>
-              {label}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Progress percentage label */}
-      <div className="flex justify-end mt-3">
-        <span className={`text-[10px] font-black ${isDone ? 'text-emerald-500' : 'text-slate-400'}`}>
-          {progress}%
-        </span>
+        {/* Status Badge */}
+        <div className={`px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] flex-shrink-0 transition-all shadow-sm ${badgeClasses}`}>
+          {label}
+        </div>
       </div>
     </div>
   );
@@ -100,66 +80,99 @@ const ClientProjects = () => {
   const isRTL = i18n.language === 'ar';
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeContract, setActiveContract] = useState(null);
 
-  const fetchProjects = useCallback(async (silent = false) => {
+  const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const res = await getProjectsAPI();
-      setProjects(res.data?.data || res.data || []);
+      const [pRes, cRes] = await Promise.all([getProjectsAPI(), getContractsAPI()]);
+      setProjects(pRes.data?.data || pRes.data || []);
+      const myContracts = cRes.data?.data || cRes.data || [];
+      if (myContracts.length > 0) {
+        // Find latest contract
+        const latest = myContracts.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+        setActiveContract(latest);
+      }
     } catch (err) {
-      console.error('Projects fetch error:', err);
+      console.error('Data fetch error:', err);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchProjects();
+    fetchData();
     const socket = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', { transports: ['websocket'] });
-    socket.on('task_updated', () => fetchProjects(true));
-    socket.on('workspace_updated', () => fetchProjects(true));
+    socket.on('task_updated', () => {
+      fetchData(true);
+      toast.success(t('video_status_updated'));
+    });
+    socket.on('workspace_updated', () => {
+      fetchData(true);
+      toast.info(t('syncing'));
+    });
     return () => socket.disconnect();
-  }, [fetchProjects]);
+  }, [fetchData, t]);
 
   // Compute total stats
   const totalTasks = projects.reduce((a, p) => a + (p.phases?.reduce((b, ph) => b + (ph.tasks?.length || 0), 0) || 0), 0);
-  const doneTasks = projects.reduce((a, p) => a + (p.phases?.reduce((b, ph) => b + (ph.tasks?.filter(t => t.status === 'COMPLETED').length || 0), 0) || 0), 0);
+  const doneTasks = projects.reduce((a, p) => a + (p.phases?.reduce((b, ph) => b + (ph.tasks?.filter(t => t.status === 'DELIVERED').length || 0), 0) || 0), 0);
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-700 pb-24">
+    <div className="space-y-16 md:space-y-24 animate-in fade-in duration-1000 pb-24">
       {/* Header */}
-      <div className="flex flex-col gap-2 py-8">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-500">
-            <FolderKanban size={24} />
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 py-12 md:py-20 border-b border-slate-100 dark:border-white/[0.05]">
+        <div className="flex flex-col gap-5">
+          <div className="flex items-center gap-5">
+            <div className="w-16 h-16 rounded-[2rem] bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-500 shadow-xl shadow-brand-500/5 transition-transform hover:rotate-3">
+              <FolderKanban size={32} />
+            </div>
+            <div>
+              <h1 className="text-4xl md:text-6xl font-black text-slate-800 dark:text-white tracking-tighter uppercase leading-none">
+                {isRTL ? 'مشاريعي ومسار الإنتاج' : 'My Projects & Production'}
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 text-lg md:text-xl font-bold mt-2 opacity-80 italic">
+                {isRTL ? 'تتبع حالة كل فيديو في الوقت الفعلي' : 'Track every video in real-time'}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white tracking-tight uppercase">
-              {isRTL ? 'مشاريعي ومسار الإنتاج' : 'My Projects & Production'}
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mt-0.5">
-              {isRTL ? 'تتبع حالة كل فيديو في الوقت الفعلي' : 'Track every video in real-time'}
-            </p>
-          </div>
+
+          {/* Quick stats bar */}
+          {!loading && projects.length > 0 && (
+            <div className="flex flex-wrap items-center gap-6 mt-4 px-1">
+              <div className="flex items-center gap-2.5 text-sm font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 px-4 py-2 rounded-2xl">
+                <FolderKanban size={16} className="text-brand-500" />
+                <span>{projects.length} {isRTL ? 'مشروع' : 'Projects'}</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-sm font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/5 px-4 py-2 rounded-2xl">
+                <Film size={16} className="text-indigo-500" />
+                <span>{totalTasks} {isRTL ? 'فيديو' : 'Videos'}</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-sm font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-4 py-2 rounded-2xl border border-emerald-500/20">
+                <CheckCircle2 size={16} />
+                <span>{doneTasks} {isRTL ? 'منجز' : 'Done'}</span>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Quick stats bar */}
-        {!loading && projects.length > 0 && (
-          <div className="flex items-center gap-6 mt-4 px-1">
-            <div className="flex items-center gap-2 text-sm font-black text-slate-600 dark:text-slate-300">
-              <FolderKanban size={15} className="text-brand-500" />
-              <span>{projects.length} {isRTL ? 'مشروع' : 'Projects'}</span>
-            </div>
-            <div className="w-1 h-1 bg-slate-300 rounded-full" />
-            <div className="flex items-center gap-2 text-sm font-black text-slate-600 dark:text-slate-300">
-              <Film size={15} className="text-indigo-500" />
-              <span>{totalTasks} {isRTL ? 'فيديو' : 'Videos'}</span>
-            </div>
-            <div className="w-1 h-1 bg-slate-300 rounded-full" />
-            <div className="flex items-center gap-2 text-sm font-black text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 size={15} />
-              <span>{doneTasks} {isRTL ? 'منجز' : 'Done'}</span>
-            </div>
+        {/* Contract Period Badge */}
+        {activeContract && (
+          <div className="flex-shrink-0">
+             <div className="bg-slate-900 dark:bg-white text-white dark:text-black rounded-[2rem] p-6 shadow-2xl flex flex-col gap-2 min-w-[240px]">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] opacity-60">
+                   <Calendar size={12} />
+                   {t('contract_period')}
+                </div>
+                <div className="text-lg font-black tracking-tighter">
+                   {new Date(activeContract.startDate).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short' })}
+                   <span className="mx-2 opacity-40">→</span>
+                   {activeContract.endDate ? new Date(activeContract.endDate).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '∞'}
+                </div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-brand-500">
+                   {t('active_since')} {new Date(activeContract.createdAt).getFullYear()}
+                </div>
+             </div>
           </div>
         )}
       </div>
@@ -188,7 +201,7 @@ const ClientProjects = () => {
         <div className="space-y-14">
           {projects.map((project, pIdx) => {
             const total = project.phases?.reduce((a, ph) => a + (ph.tasks?.length || 0), 0) || 0;
-            const done = project.phases?.reduce((a, ph) => a + (ph.tasks?.filter(t => t.status === 'COMPLETED').length || 0), 0) || 0;
+            const done = project.phases?.reduce((a, ph) => a + (ph.tasks?.filter(t => t.status === 'DELIVERED').length || 0), 0) || 0;
             const overallPct = total > 0 ? Math.round((done / total) * 100) : 0;
 
             return (
@@ -242,35 +255,33 @@ const ClientProjects = () => {
                   </div>
                 </div>
 
-                {/* Phases */}
-                {project.phases?.map((phase) => (
-                  <div key={phase.id} className="space-y-4 px-2">
-                    {/* Phase label */}
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-brand-500 flex-shrink-0" />
-                      <h3 className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em]">
-                        {phase.name}
-                      </h3>
-                      <div className="flex-1 h-px bg-slate-100 dark:bg-white/[0.05]" />
-                      <span className="text-[10px] font-black text-slate-400">
-                        {phase.tasks?.filter(t => t.status === 'COMPLETED').length || 0} / {phase.tasks?.length || 0}
-                      </span>
-                    </div>
-
-                    {/* Task cards grid */}
-                    {phase.tasks && phase.tasks.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                        {phase.tasks.map((task) => (
-                          <TaskProgressCard key={task.id} task={task} isRTL={isRTL} />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-slate-400 text-sm">
-                        {isRTL ? 'لا توجد فيديوهات في هذه المرحلة بعد' : 'No videos in this phase yet'}
-                      </div>
-                    )}
+                {/* Videos / Tasks List */}
+                <div className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/[0.06] rounded-3xl p-6">
+                  <div className="flex items-center gap-3 mb-6">
+                    <Film size={18} className="text-slate-400" />
+                    <h3 className="text-sm font-black text-slate-800 dark:text-white tracking-widest uppercase">
+                      {isRTL ? 'فيديوهات المشروع' : 'Project Videos'}
+                    </h3>
                   </div>
-                ))}
+
+                  {project.phases && project.phases.some(ph => ph.tasks?.length > 0) ? (
+                    <div className="space-y-4">
+                      {project.phases
+                        .sort((a,b) => new Date(b.startDate || b.createdAt) - new Date(a.startDate || a.createdAt))
+                        .map(phase => (
+                          <div key={phase.id} className="space-y-4">
+                            {phase.tasks?.map(task => (
+                              <TaskMinimalRow key={task.id} task={task} isRTL={isRTL} />
+                            ))}
+                          </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-slate-400 text-sm font-medium">
+                      {isRTL ? 'لا توجد فيديوهات في هذا المشروع بعد' : 'No videos in this project yet'}
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}

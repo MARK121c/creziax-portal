@@ -4,20 +4,63 @@ import {
   sendMessageAPI,
   getClientContactsAPI,
   getProjectsAPI,
-  createTicketAPI
+  createTicketAPI,
+  markAsReadAPI,
+  markAllAsReadAPI,
+  togglePinAPI,
+  deleteSpecificMessageAPI
 } from '../../store/api';
 import useAuthStore from '../../store/authStore';
 import useNotificationStore from '../../store/notificationStore';
-import { useSocket } from '../../context/SocketContext';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'react-hot-toast';
-import { 
-  Send, MessageSquare, Loader2, UserCircle, 
-  Briefcase, Headset, Link as LinkIcon, ExternalLink,
-  ShieldAlert, X, Calendar, Clock, CalendarPlus2, Users, Pin, MessageSquareReply, Trash2
+import { toast as rToast } from 'react-toastify';
+import { useSocket } from '../../context/SocketContext';
+import {
+  CheckCircle2,
+  Clock,
+  Pin,
+  MessageSquareReply,
+  Trash2,
+  ExternalLink,
+  Calendar,
+  X,
+  ShieldAlert,
+  Headset,
+  Briefcase,
+  Send,
+  MessageSquare,
+  Loader2,
+  UserCircle,
+  CalendarPlus2,
+  Link as LinkIcon
 } from 'lucide-react';
-import { markAsReadAPI, togglePinAPI, deleteSpecificMessageAPI } from '../../store/api';
 
+// ──────────────────────────────────────────────
+// Pinned Message Bar (V17.6 Supreme)
+// ──────────────────────────────────────────────
+const PinnedBar = ({ message, onUnpin }) => {
+  if (!message) return null;
+  return (
+    <div className="sticky top-0 z-20 bg-brand-500/10 backdrop-blur-md border-b border-brand-500/20 px-6 py-3 flex items-center justify-between animate-in slide-in-from-top duration-300 -mx-10 px-10">
+      <div className="flex items-center gap-3 overflow-hidden">
+        <Pin size={16} className="text-brand-500 shrink-0 fill-brand-500/20" />
+        <div className="overflow-hidden">
+           <p className="text-[10px] font-black text-brand-500 uppercase tracking-widest mb-0.5">رسالة مثبتة</p>
+           <p className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate max-w-sm md:max-w-md">{message.content}</p>
+        </div>
+      </div>
+      {/* Clients can see but usually only unpin if they have permission, but per user request functional for all roles */}
+      <button 
+        onClick={() => onUnpin(message.id)} 
+        className="p-2 hover:bg-brand-500/20 rounded-xl text-slate-400 hover:text-brand-500 transition-all font-black text-[10px] uppercase tracking-widest flex items-center gap-2"
+        title="إلغاء التثبيت"
+      >
+        <span>إلغاء التثبيت</span>
+        <X size={14} />
+      </button>
+    </div>
+  );
+};
 
 // ──────────────────────────────────────────────
 // Meeting Scheduler Pop-up
@@ -29,7 +72,7 @@ const MeetingModal = ({ onClose, onSubmit }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.subject || !form.date || !form.time) {
-      toast.error('يرجى تعبئة جميع الحقول');
+      rToast.error('يرجى تعبئة جميع الحقول');
       return;
     }
     setSending(true);
@@ -118,9 +161,9 @@ const DriveLinkPanel = ({ activeThread, user, onClose, onSend }) => {
   const [sending, setSending] = useState(false);
 
   const handleSend = async () => {
-    if (!link.trim()) { toast.error('الرجاء لصق رابط Google Drive أولاً'); return; }
+    if (!link.trim()) { rToast.error('الرجاء لصق رابط Google Drive أولاً'); return; }
     if (!link.includes('drive.google.com') && !link.startsWith('http')) {
-      toast.error('الرجاء إدخال رابط صحيح');
+      rToast.error('الرجاء إدخال رابط صحيح');
       return;
     }
     setSending(true);
@@ -171,7 +214,14 @@ const DriveLinkPanel = ({ activeThread, user, onClose, onSend }) => {
 const ClientMessages = () => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
-  const { setActiveThreadId, resetUnreadMessages, unreadThreads } = useNotificationStore();
+  const { setActiveThreadId, resetUnreadMessages, unreadThreads, setGlobalCountVisible } = useNotificationStore();
+
+  useEffect(() => {
+    // v17.7-OVERHAUL Zero-Out Logic - Force DB clean up
+    markAllAsReadAPI().catch(() => {});
+    resetUnreadMessages();
+    setGlobalCountVisible(false);
+  }, [resetUnreadMessages, setGlobalCountVisible]);
   
   const [supportContact, setSupportContact] = useState(null);
   const [projects, setProjects] = useState([]);
@@ -184,10 +234,9 @@ const ClientMessages = () => {
   const [showDrivePanel, setShowDrivePanel] = useState(false);
   const [showMeetingModal, setShowMeetingModal] = useState(false);
   
-  // v17.0 Elite
   const [replyingTo, setReplyingTo] = useState(null);
   
-  const socket = useSocket(); // v14.0 Shared Singleton
+  const socket = useSocket();
   const scrollRef = useRef();
   const activeThreadRef = useRef(activeThread);
   activeThreadRef.current = activeThread;
@@ -202,11 +251,15 @@ const ClientMessages = () => {
       setSupportContact(contactsRes.data.support);
       setProjects(projectsRes.data || []);
     } catch (err) {
-      toast.error("فشل تحميل جهات الاتصال");
+      rToast.error("فشل تحميل جهات الاتصال");
     } finally {
       setLoadingSidebar(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const fetchThreadMessages = async (threadId) => {
     if (!threadId) return;
@@ -214,21 +267,36 @@ const ClientMessages = () => {
     try {
       const { data } = await getMessagesAPI(threadId);
       setMessages(data || []);
-      
-      // Auto-Clear (v17.0)
       markAsReadAPI({ threadId });
       resetUnreadMessages(threadId);
-      toast.dismiss();
     } catch (err) {
       if (err.response?.status !== 404) {
-        console.error("Fetch Messages Error (v17.1 Silent):", err);
+        console.error("Fetch Messages Error:", err);
       }
     } finally {
       setLoadingMessages(false);
     }
   };
 
-  // V12.0 ZERO DROP: Emit explicitly on connect & reconnects
+  const handleTogglePin = async (id) => {
+    try {
+      await togglePinAPI(id);
+    } catch (err) {
+      rToast.error("فشل تغيير حالة التثبيت");
+    }
+  };
+
+  const handleDeleteMessage = async (id, type) => {
+    try {
+      await deleteSpecificMessageAPI(id, type);
+      if (type === 'everyone') {
+        rToast.success("تم الحذف لدى الجميع");
+      }
+    } catch (err) {
+      rToast.error(err.response?.data?.message || "فشل حذف الرسالة");
+    }
+  };
+
   useEffect(() => {
     if (!socket || loadingSidebar) return;
 
@@ -239,7 +307,6 @@ const ClientMessages = () => {
           role: user.role,
           projectIds: projects.map(p => p.id)
         });
-        console.log("Client Room Sync: Joined User Room & Projects (Singleton)");
       }
     };
 
@@ -249,7 +316,6 @@ const ClientMessages = () => {
   }, [projects, user, loadingSidebar, socket]);
 
   useEffect(() => {
-    fetchData();
     if (!socket) return;
 
     const handleReceiveMessage = (newMsg) => {
@@ -267,11 +333,9 @@ const ClientMessages = () => {
             return [...prev, { 
               ...newMsg, 
               sender: newMsg.sender || { firstName: newMsg.senderName || 'الدعم الفني', role: 'ADMIN' },
-              parent: newMsg.parent // v17.0 Support
+              parent: newMsg.parent
             }];
           });
-          
-          // v17.1 Real-Time Badge Sync: Clear unread counts for messages arriving while chat is focused
           const targetResetId = current.type === 'GROUP' ? current.id : user?.id;
           resetUnreadMessages(targetResetId);
           markAsReadAPI({ threadId: targetResetId }).catch(() => {});
@@ -279,23 +343,41 @@ const ClientMessages = () => {
       }
     };
 
-    socket.on('receive_message', handleReceiveMessage);
-    socket.on('chat_deleted', ({ threadId }) => {
+    const handleChatDeleted = ({ threadId }) => {
       const current = activeThreadRef.current;
       if (current?.id === threadId || threadId === user?.id) {
         setMessages([]);
         setActiveThread(null);
-        toast.success("تم مسح هذه المحادثة بالكامل من قبل الإدارة");
+        rToast.success("تم مسح هذه المحادثة بالكامل من قبل الإدارة");
       }
-    });
+    };
+
+    const handleMessageDeleted = ({ id }) => {
+      setMessages(prev => prev.filter(m => m.id !== id));
+    };
+
+    const handleMessagePinned = ({ id, isPinned }) => {
+      setMessages(prev => {
+        if (isPinned) {
+          return prev.map(m => m.id === id ? { ...m, isPinned: true } : { ...m, isPinned: false });
+        }
+        return prev.map(m => m.id === id ? { ...m, isPinned: false } : m);
+      });
+    };
+
+    socket.on('receive_message', handleReceiveMessage);
+    socket.on('chat_deleted', handleChatDeleted);
+    socket.on('message_deleted', handleMessageDeleted);
+    socket.on('message_pinned', handleMessagePinned);
 
     return () => {
        socket.off('receive_message', handleReceiveMessage);
-       socket.off('chat_deleted');
+       socket.off('chat_deleted', handleChatDeleted);
+       socket.off('message_deleted', handleMessageDeleted);
+       socket.off('message_pinned', handleMessagePinned);
     };
-  }, [user?.id, socket, fetchData]); // Only re-connect if user ID changes
+  }, [user?.id, socket, resetUnreadMessages]);
 
-  // Track active thread for global silence logic
   useEffect(() => {
     if (activeThread) {
       const tid = activeThread.type === 'GROUP' ? activeThread.id : user?.id;
@@ -315,7 +397,7 @@ const ClientMessages = () => {
     const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
     const socialRegex = /(t\.me|wa\.me|whatsapp|telegram)/i;
     if (phoneRegex.test(text) || emailRegex.test(text) || socialRegex.test(text)) {
-      toast.error('عذراً، يمنع مشاركة بيانات التواصل الخارجية لضمان خصوصية المنصة.', { duration: 5000 });
+      rToast.error('عذراً، يمنع مشاركة بيانات التواصل الخارجية لضمان خصوصية المنصة.', { duration: 5000 });
       return false;
     }
     return true;
@@ -323,8 +405,6 @@ const ClientMessages = () => {
 
   const doSendMessage = async (msgContent) => {
     if (!activeThread) return;
-    
-    // v10.0 Standard Socket Architecture Payload
     const isGroup = activeThread.type === 'GROUP';
     const type = isGroup ? 'GROUP' : 'PRIVATE';
     const threadIdToSend = isGroup ? activeThread.id : null;
@@ -335,17 +415,16 @@ const ClientMessages = () => {
       type,
       threadId: threadIdToSend,
       receiverId: receiverIdToSend,
-      parentId: replyingTo?.id || null // v17.0 Reply
+      parentId: replyingTo?.id || null
     });
     
-    // Build socket payload (v10.0 Standard Architecture)
     socket.emit('send_message', { 
       ...data, 
       type,
       threadId: threadIdToSend,
       receiverId: receiverIdToSend,
       senderName: `${user?.firstName} ${user?.lastName}`,
-      parent: replyingTo // Pass for local UI update
+      parent: replyingTo
     });
     setReplyingTo(null);
     setMessages(prev => [...prev, { ...data, sender: user, parent: replyingTo }]);
@@ -360,16 +439,16 @@ const ClientMessages = () => {
       setContent('');
     } catch (err) {
       if (err.response?.status === 403) {
-        toast.error(err.response.data.message);
+        rToast.error(err.response.data.message);
       } else {
-        toast.error("فشل إرسال الرسالة");
+        rToast.error("فشل إرسال الرسالة");
       }
     }
   };
 
   const handleSendDriveLink = async (link) => {
     await doSendMessage(link);
-    toast.success('تم إرسال رابط الملف بنجاح');
+    rToast.success('تم إرسال رابط الملف بنجاح');
   };
 
   const handleMeetingSubmit = async (form) => {
@@ -386,8 +465,7 @@ const ClientMessages = () => {
       const cardContent = `[MEETING_BOOKING]\nTopic: ${form.subject}\nAvailability: ${form.date} ${form.time}`;
       await doSendMessage(cardContent);
     }
-
-    toast.success('تم إرسال طلب الموعد للإدارة بنجاح ✅');
+    rToast.success('تم إرسال طلب الموعد للإدارة بنجاح ✅');
   };
 
   const selectThread = (item, type) => {
@@ -400,10 +478,7 @@ const ClientMessages = () => {
     };
     setActiveThread(thread);
     const threadIdToFetch = type === 'GROUP' ? item.id : user.id;
-    
-    // Clear global unread for this thread
     resetUnreadMessages(threadIdToFetch);
-    
     fetchThreadMessages(threadIdToFetch);
     setShowDrivePanel(false);
   };
@@ -436,10 +511,9 @@ const ClientMessages = () => {
             <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
               {m.sender?.firstName} {m.sender?.lastName} {isMine && '(أنت)'}
             </span>
-            {m.isPinned && <Clock size={12} className="text-brand-500" />}
+            {m.isPinned && <Pin size={10} className="text-brand-500 fill-current" />}
           </div>
 
-          {/* v17.0 Reply Quote */}
           {m.parent && (
             <div className={`mb-1 px-4 py-2 rounded-t-2xl bg-slate-100 dark:bg-white/5 border-r-4 border-brand-500/50 max-w-full overflow-hidden opacity-80 ${isMine ? 'mr-2' : 'ml-2'}`}>
               <p className="text-[10px] font-black text-brand-500 mb-1">{m.parent.sender?.firstName} {m.parent.sender?.lastName}</p>
@@ -448,120 +522,87 @@ const ClientMessages = () => {
           )}
 
           <div className="group relative">
-            {/* v17.1 Action Icons on Hover (Admin & Client: Reply and Pin) */}
-            <div className={`invisible group-hover:visible absolute top-[10px] flex items-center gap-2 px-3 ${isMine ? 'right-full' : 'left-full'} transition-all`} style={{ minWidth: 'max-content' }}>
-              <button 
-                onClick={() => {
-                  toast((t) => (
-                    <div className="flex flex-col gap-3 p-2 font-black text-xs text-right w-full" dir="rtl">
-                      <p className="text-slate-700">خيارات حذف الرسالة:</p>
-                      <div className="flex gap-2 justify-center">
-                         <button onClick={async () => {
-                           toast.dismiss(t.id);
-                           try {
-                             await deleteSpecificMessageAPI(m.id, 'me');
-                             setMessages(prev => prev.filter(msg => msg.id !== m.id));
-                           } catch(e) { toast.error("فشل الحذف"); }
-                         }} className="bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-xl hover:bg-slate-200">حذف لدي فقط</button>
-                         
-                         {isMine && <button onClick={async () => {
-                           toast.dismiss(t.id);
-                           try {
-                             await deleteSpecificMessageAPI(m.id, 'everyone');
-                             setMessages(prev => prev.map(msg => msg.id === m.id ? { ...msg, content: '🚫 تم حذف هذه الرسالة من قبل المرسل', isDeleted: true } : msg));
-                           } catch(e) { toast.error("فشل الحذف للجميع"); }
-                         }} className="bg-rose-500/10 text-rose-500 font-black px-3 py-1.5 rounded-xl border border-rose-500/20 hover:bg-rose-500 hover:text-white">حذف للجميع</button>}
-                         
-                         <button onClick={() => toast.dismiss(t.id)} className="bg-transparent text-slate-400 px-3 py-1.5 rounded-xl underline">إلغاء</button>
-                      </div>
-                    </div>
-                  ), { duration: 10000, style: { background: '#fff', color: '#000' } });
-                }}
-                className="w-8 h-8 rounded-full bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/20 shadow-sm flex items-center justify-center text-rose-400 hover:text-white hover:bg-rose-500 hover:scale-110 active:scale-95 transition-all"
-                title="حذف الرسالة"
-              >
-                <Trash2 size={14} /> 
-              </button>
-              <button 
-                onClick={() => setReplyingTo(m)}
-                className="w-8 h-8 rounded-full bg-white dark:bg-[#121215] border border-slate-200 dark:border-white/10 shadow-sm flex items-center justify-center text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:scale-110 active:scale-95 transition-all"
-                title="رد"
-              >
-                <MessageSquareReply size={14} /> 
+            <div className={`px-6 py-4 rounded-[1.25rem] text-sm font-bold leading-relaxed shadow-sm ${
+              isMine 
+                ? 'bg-brand-600 text-white rounded-tr-none shadow-brand-600/10' 
+                : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-none border border-slate-100 dark:border-white/5'
+            } ${isBookingCard ? 'border-2 border-brand-500/30 ring-4 ring-brand-500/10' : ''} ${m.isPinned ? 'ring-2 ring-brand-500/20 bg-brand-50/50 dark:bg-brand-500/5' : ''}`}>
+              {isDriveLink ? (
+                <a href={driveUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl border border-white/20 bg-black/10 dark:bg-white/5 hover:bg-black/20 transition-all" dir="ltr">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg,#4285F4,#34A853)' }}>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="white"><path d="M4.5 21L9 13.5L13.5 21H4.5ZM13.5 21L18 13.5L22.5 21H13.5ZM9 13.5L13.5 6L18 13.5H9ZM1.5 21L6 13.5L10.5 21H1.5Z"/></svg>
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[10px] uppercase tracking-widest opacity-70 font-black">Google Drive</span>
+                    <span className="text-xs font-bold underline underline-offset-2 truncate max-w-[180px]">{driveUrl}</span>
+                  </div>
+                  <ExternalLink size={14} className="opacity-60 flex-shrink-0" />
+                </a>
+              ) : isBookingCard ? (
+                <div className="space-y-4 min-w-[200px] text-right" dir="rtl">
+                   <div className="flex items-center gap-3 pb-3 border-b border-white/20">
+                      <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0"><Calendar size={16} /></div>
+                      <span className="text-[12px] uppercase font-black tracking-widest leading-none">طلب اجتماعي</span>
+                   </div>
+                   <div className="space-y-1">
+                      <p className="text-[9px] opacity-70 uppercase font-black tracking-widest">الموضوع</p>
+                      <p className="text-xs font-black">{bookingDetails?.topic}</p>
+                   </div>
+                </div>
+              ) : isFileCard ? (
+                <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 underline text-sm transition-all hover:text-brand-300">
+                  <ExternalLink size={16} /> ملف مرفق
+                </a>
+              ) : (
+                <p className="whitespace-pre-wrap break-words">{m.content}</p>
+              )}
+            </div>
+
+            <div className={`absolute -bottom-8 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 z-30 ${isMine ? 'right-0' : 'left-0'} bg-white dark:bg-[#1a1a1e] p-1 rounded-full border border-slate-100 dark:border-white/10 shadow-xl`}>
+              <button onClick={() => setReplyingTo(m)} className="p-2 rounded-full hover:bg-brand-500/10 text-slate-400 hover:text-brand-500 transition-colors" title="رد">
+                <MessageSquareReply size={14} />
               </button>
               <button 
                 onClick={async () => {
-                  try {
-                    const { data } = await togglePinAPI(m.id);
-                    setMessages(prev => prev.map(msg => msg.id === m.id ? { ...msg, isPinned: data.isPinned } : msg));
-                    toast.success(data.isPinned ? "تم تثبيت الرسالة" : "تم إلغاء التثبيت");
-                  } catch (err) {
-                    toast.error("فشل تعديل تثبيت الرسالة");
-                  }
+                   try {
+                     const { data } = await togglePinAPI(m.id);
+                     setMessages(prev => prev.map(msg => msg.id === m.id ? { ...msg, isPinned: data.isPinned } : msg));
+                     rToast.success(data.isPinned ? "تم التثبيت" : "تم إلغاء التثبيت");
+                   } catch(e) { rToast.error("فشل"); }
                 }}
-                className={`w-8 h-8 rounded-full bg-white dark:bg-[#121215] border border-slate-200 dark:border-white/10 shadow-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-all ${m.isPinned ? 'text-brand-500 bg-brand-50 dark:bg-brand-500/10' : 'text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10'}`}
-                title={m.isPinned ? "إلغاء التثبيت" : "تثبيت"}
+                className={`p-2 rounded-full hover:bg-brand-500/10 transition-colors ${m.isPinned ? 'text-brand-500' : 'text-slate-400 hover:text-brand-500'}`}
+                title="تثبيت"
               >
                 <Pin size={14} className={m.isPinned ? 'fill-current' : ''} />
               </button>
-            </div>
-
-            <div className={`px-6 py-4 rounded-[1.25rem] text-sm font-bold leading-relaxed shadow-sm ${isMine ? 'bg-brand-600 text-white rounded-tr-none shadow-brand-600/10' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-none border border-slate-100 dark:border-white/5'} ${isBookingCard ? 'border-2 border-brand-500/30 ring-4 ring-brand-500/10' : ''} ${m.isPinned ? 'ring-2 ring-brand-500/20 bg-brand-50/50 dark:bg-brand-500/5' : ''}`}>
-            {isDriveLink ? (
-              <a
-                href={driveUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-3 rounded-xl border border-white/20 bg-black/10 dark:bg-white/5 hover:bg-black/20 transition-all"
-                dir="ltr"
+              <button 
+                onClick={() => {
+                   rToast(({ closeToast }) => (
+                     <div className="flex flex-col gap-3 p-1 text-right" dir="rtl">
+                        <p className="text-[11px] font-black text-slate-300">خيار الحذف:</p>
+                        <div className="flex gap-2">
+                           <button onClick={async () => { closeToast(); try { await deleteSpecificMessageAPI(m.id, 'me'); setMessages(prev => prev.filter(msg => msg.id !== m.id)); } catch(e) {} }} className="bg-white/10 text-[10px] font-bold px-3 py-1 rounded-md text-white">لدي</button>
+                           {isMine && <button onClick={async () => { closeToast(); try { await deleteSpecificMessageAPI(m.id, 'everyone'); setMessages(prev => prev.filter(msg => msg.id !== m.id)); } catch(e) {} }} className="bg-rose-500 text-[10px] font-bold px-3 py-1 rounded-md text-white">للجميع</button>}
+                        </div>
+                     </div>
+                   ), { theme: 'dark', autoClose: 5000 });
+                }}
+                className="p-2 rounded-full hover:bg-rose-500/10 text-slate-400 hover:text-rose-500 transition-colors"
+                title="حذف"
               >
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg,#4285F4,#34A853)' }}>
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="white">
-                    <path d="M4.5 21L9 13.5L13.5 21H4.5ZM13.5 21L18 13.5L22.5 21H13.5ZM9 13.5L13.5 6L18 13.5H9ZM1.5 21L6 13.5L10.5 21H1.5Z"/>
-                  </svg>
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-[10px] uppercase tracking-widest opacity-70 font-black">Google Drive</span>
-                  <span className="text-xs font-bold underline underline-offset-2 truncate max-w-[180px]">{driveUrl}</span>
-                </div>
-                <ExternalLink size={14} className="opacity-60 flex-shrink-0" />
-              </a>
-            ) : isBookingCard ? (
-              <div className="space-y-4 min-w-[200px] text-right" dir="rtl">
-                 <div className="flex items-center gap-3 pb-3 border-b border-white/20">
-                    <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-                       <Calendar size={16} />
-                    </div>
-                    <span className="text-[10px] uppercase font-black tracking-widest">طلب ميتنج جديد</span>
-                 </div>
-                 <div className="space-y-1">
-                    <p className="text-[9px] opacity-70 uppercase font-black tracking-widest">موضوع النقاش</p>
-                    <p className="text-xs font-black">{bookingDetails?.topic}</p>
-                 </div>
-                 <div className="space-y-1">
-                    <p className="text-[9px] opacity-70 uppercase font-black tracking-widest">المواعيد المقترحة</p>
-                    <p className="text-xs font-black bg-white/10 p-3 rounded-xl border border-white/5">{bookingDetails?.dates}</p>
-                 </div>
-                 <div className="flex items-center gap-2 pt-2 text-[8px] font-black opacity-60 uppercase tracking-widest">
-                    <Clock size={10} />
-                    انتظار التأكيد من الإدارة
-                 </div>
-              </div>
-            ) : isFileCard ? (
-              <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 underline text-sm">
-                📎 مرفق
-              </a>
-            ) : (
-              <p className="whitespace-pre-wrap break-words">{m.content}</p>
-            )}
+                <Trash2 size={14} />
+              </button>
+            </div>
           </div>
-          <span className="text-[8px] font-black text-slate-400 mt-2 px-2 uppercase tracking-[0.2em] flex items-center gap-1">
-            {new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            {isMine && <span className="ml-1 opacity-70">✓✓</span>}
-          </span>
+
+          <div className="mt-2 px-2 flex items-center gap-1.5 opacity-60">
+             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+               {new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+             </span>
+             {isMine && <CheckCircle2 size={10} className={m.isRead ? "text-brand-400" : "text-slate-500"} />}
+          </div>
         </div>
       </div>
-    </div>
     );
   };
 
@@ -572,7 +613,6 @@ const ClientMessages = () => {
       )}
 
       <div className="h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-4 md:gap-8 animate-in fade-in duration-700">
-        {/* ─── Sidebar ─── */}
         <div className="w-full lg:w-80 bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] flex flex-col overflow-hidden shadow-xl shadow-slate-200/20 dark:shadow-none max-h-[45vh] lg:max-h-none">
           <div className="p-6 md:p-8 border-b border-slate-100 dark:border-white/5 bg-brand-600">
             <h2 className="text-xl font-black text-white uppercase tracking-tight mb-2">{t('support_and_contact')}</h2>
@@ -639,7 +679,6 @@ const ClientMessages = () => {
           </div>
         </div>
 
-        {/* ─── Chat Panel ─── */}
         <div className="flex-1 bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] flex flex-col overflow-hidden shadow-sm dark:shadow-none min-h-0">
           {!activeThread ? (
             <div className="h-full flex flex-col items-center justify-center opacity-40 p-10 text-center">
@@ -651,7 +690,6 @@ const ClientMessages = () => {
             </div>
           ) : (
             <>
-              {/* Chat Header */}
               <div className="px-6 md:px-10 py-4 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01] flex flex-col gap-3" dir="rtl">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
@@ -669,7 +707,6 @@ const ClientMessages = () => {
                     </div>
                   </div>
 
-                  {/* Schedule Meeting Button */}
                   <button
                     onClick={() => setShowMeetingModal(true)}
                     className="flex items-center gap-2 px-4 py-2.5 bg-brand-50 dark:bg-brand-500/10 hover:bg-brand-100 dark:hover:bg-brand-500/20 text-brand-600 dark:text-brand-400 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all border border-brand-100 dark:border-brand-500/20 flex-shrink-0"
@@ -681,9 +718,11 @@ const ClientMessages = () => {
                 </div>
               </div>
               
-              {/* Messages Area */}
-              <div className="flex-1 overflow-y-auto px-6 md:px-10 py-8 space-y-8 custom-scrollbar bg-slate-50/30 dark:bg-[#08080a]">
-                {/* v17.0 Pinned Message Banner */}
+              <div className="flex-1 overflow-y-auto px-6 md:px-10 py-8 space-y-8 custom-scrollbar bg-slate-50/30 dark:bg-[#08080a] relative">
+               <PinnedBar 
+                  message={messages.find(m => m.isPinned)} 
+                  onUnpin={(id) => handleTogglePin(id)} 
+               />
                 {messages.some(m => m.isPinned) && (
                   <div className="sticky top-0 z-10 -mx-10 px-10 py-3 bg-brand-500/10 backdrop-blur-md border-b border-brand-500/20 mb-6 flex items-center justify-between animate-in slide-in-from-top duration-500">
                     <div className="flex items-center gap-4 overflow-hidden">
@@ -703,13 +742,13 @@ const ClientMessages = () => {
                             if (pinnedMsg) {
                               const { data } = await togglePinAPI(pinnedMsg.id);
                               setMessages(prev => prev.map(msg => msg.id === pinnedMsg.id ? { ...msg, isPinned: data.isPinned } : msg));
-                              toast.success("تم إلغاء التثبيت");
+                              rToast.success("تم إلغاء التثبيت");
                             }
                           } catch (err) {}
                         }}
                         className="text-[10px] font-black text-slate-400 hover:text-brand-500 transition-colors uppercase tracking-widest px-3 py-1 bg-white/50 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/10 ml-2"
                       >
-                        إلغاء التثبيت
+                        إلغاء
                       </button>
                     </div>
                   </div>
@@ -726,9 +765,7 @@ const ClientMessages = () => {
                 <div ref={scrollRef} />
               </div>
 
-              {/* Input Area */}
               <div className="p-4 md:p-6 bg-white dark:bg-[#0a0a0c] border-t border-slate-100 dark:border-white/5 relative">
-                {/* v17.0 Reply Preview */}
                 {replyingTo && (
                   <div className="absolute bottom-full mb-2 left-0 w-full px-4 md:px-6 animate-in slide-in-from-bottom-2 duration-300" dir="rtl">
                      <div className="bg-slate-100 dark:bg-[#121215] border border-slate-200 dark:border-white/10 rounded-2xl p-4 flex items-center justify-between border-r-4 border-brand-500 shadow-xl">
@@ -772,7 +809,6 @@ const ClientMessages = () => {
                       rows={1}
                     />
                     
-                    {/* Drive Link Button */}
                     <button 
                       type="button" 
                       onClick={() => setShowDrivePanel(p => !p)}

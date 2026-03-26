@@ -57,7 +57,7 @@ const clientLinks = [
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuthStore();
-  const { unreadMessagesCount } = useNotificationStore();
+  const { unreadMessagesCount, globalCountVisible, addNotification, activeThreadId, incrementUnreadMessages, resetUnreadMessages, setGlobalCountVisible } = useNotificationStore();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'ar';
@@ -135,7 +135,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               <span className="truncate">{t(labelKey)}</span>
             </div>
             
-            {unreadMessagesCount > 0 && to.includes('messages') && (
+            {unreadMessagesCount > 0 && globalCountVisible && to.includes('messages') && (
               <span className="ml-auto bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-lg shadow-rose-500/20 animate-pulse">
                 {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
               </span>
@@ -158,8 +158,24 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       {/* User Area - Clean Border Box */}
       <div className="p-4 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01]">
         <div className="flex items-center gap-3 px-2 py-3 rounded-2xl">
-          <div className="w-10 h-10 rounded-2xl bg-slate-200 dark:bg-white/5 flex items-center justify-center text-xs font-bold text-slate-600 dark:text-slate-400">
-            {user?.firstName?.[0]}{user?.lastName?.[0]}
+          <div className="relative group/avatar">
+            {user?.avatarUrl ? (
+              <img 
+                src={user.avatarUrl} 
+                alt="Profile" 
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+                className="w-10 h-10 rounded-2xl object-cover border border-slate-200 dark:border-white/10 shadow-sm" 
+              />
+            ) : null}
+            <div 
+              style={{ display: user?.avatarUrl ? 'none' : 'flex' }}
+              className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#D4AF37] via-[#996515] to-black flex items-center justify-center text-[10px] font-black text-white shadow-lg border border-white/10 uppercase tracking-tighter"
+            >
+              {user?.firstName?.[0]}{user?.lastName?.[0]}
+            </div>
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-slate-800 dark:text-white truncate leading-tight">

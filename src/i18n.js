@@ -759,7 +759,11 @@ const resources = {
       "read_only": "Read-only",
       "manage_account_desc": "Manage company details and security settings",
       "core_profile": "Core Profile",
-      "security_settings": "Security Settings"
+      "security_settings": "Security Settings",
+      "video_status_updated": "Production Update: Video status has been changed.",
+      "contract_period": "Contract Period",
+      "active_since": "Active Since",
+      "remaining_days": "Remaining Days"
     }
   },
   ar: {
@@ -1520,7 +1524,11 @@ const resources = {
       "read_only": "للقراءة فقط",
       "manage_account_desc": "إدارة بيانات الشركة وإعدادات الأمان",
       "core_profile": "البيانات الأساسية",
-      "security_settings": "إعدادات الأمان"
+      "security_settings": "إعدادات الأمان",
+      "video_status_updated": "تحديث الإنتاج: تم تغيير حالة الفيديو.",
+      "contract_period": "مدة العقد",
+      "active_since": "نشط منذ",
+      "remaining_days": "الأيام المتبقية"
     }
   }
 };

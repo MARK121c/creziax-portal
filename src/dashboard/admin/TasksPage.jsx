@@ -149,6 +149,7 @@ const TasksPage = () => {
       const res = await updateWorkspaceTaskAPI(taskId, updates);
       const updated = res.data?.data || res.data;
       setProductionTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updated } : t));
+      toast.success(t('saved_successfully'));
     } catch (err) { toast.error(t('error_general')); }
   };
 
@@ -395,6 +396,7 @@ const TasksPage = () => {
                   <th className="px-4 py-6 text-center w-20">{t('edit_col', 'المونتاج')}</th>
                   <th className="px-4 py-6 text-center w-20">{t('publish_col', 'النشر')}</th>
                   <th className="px-8 py-6 text-center">{t('publish_date_col', 'تاريخ النشر')}</th>
+                  <th className="px-8 py-6 text-center w-64">{t('status_col', 'حالة العميل (Live)')}</th>
                   <th className="px-4 py-6 text-right w-16"></th>
                 </tr>
               </thead>
@@ -439,6 +441,28 @@ const TasksPage = () => {
                            if (isNaN(d.getTime())) return '--';
                            return d.toLocaleDateString('ar-EG', { day: '2-digit', month: 'short' }).toUpperCase();
                          })()}
+                      </td>
+                      <td className="px-8 py-6 text-center bg-slate-50/50 dark:bg-black/20 border-x border-slate-100 dark:border-white/5">
+                        <div className="flex bg-slate-200/50 dark:bg-white/5 p-1 rounded-xl shadow-inner">
+                          <button 
+                            onClick={() => handleProdTaskUpdate(task.id, { status: 'EDITING' })}
+                            className={`flex-1 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                              ['IDEA', 'SCRIPTING', 'SHOOTING', 'EDITING'].includes(task.status) || !task.status ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                            }`}
+                          >مونتاج</button>
+                          <button 
+                            onClick={() => handleProdTaskUpdate(task.id, { status: 'REVIEW' })}
+                            className={`flex-1 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                              task.status === 'REVIEW' ? 'bg-white dark:bg-slate-700 text-amber-500 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                            }`}
+                          >مراجعة</button>
+                          <button 
+                            onClick={() => handleProdTaskUpdate(task.id, { status: 'DELIVERED' })}
+                            className={`flex-1 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                              task.status === 'DELIVERED' || task.status === 'COMPLETED' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                            }`}
+                          >منجز</button>
+                        </div>
                       </td>
                       <td className="px-4 py-6 text-right">
                          <button onClick={() => setShowNotes(task.id)} className="p-3 text-slate-300 hover:text-brand-500 transition-all"><MessageSquare size={18} /></button>

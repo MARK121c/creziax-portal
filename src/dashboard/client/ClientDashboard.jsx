@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { getProjectsAPI, getInvoicesAPI, updateInvoiceAPI } from '../../store/api';
+import { getProjectsAPI, getInvoicesAPI, updateInvoiceAPI, getContractsAPI } from '../../store/api';
 import { FolderKanban, Receipt, CheckCircle2, PlayCircle, Loader2, CreditCard, Briefcase, DollarSign, Clock, ArrowUpRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -45,9 +45,10 @@ const ClientDashboard = () => {
   const fetchData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     try {
-      const [pRes, iRes] = await Promise.all([getProjectsAPI(), getInvoicesAPI()]);
+      const [pRes, iRes, cRes] = await Promise.all([getProjectsAPI(), getInvoicesAPI(), getContractsAPI()]);
       const myProjects = pRes.data?.data || pRes.data || [];
       const myInvoices = iRes.data?.data || iRes.data || [];
+      const myContracts = cRes.data?.data || cRes.data || [];
       
       setProjectData(myProjects);
       setInvoices(myInvoices);
@@ -67,15 +68,19 @@ const ClientDashboard = () => {
         }
       });
 
-      // Calculate Contract End Date based on latest paid invoice OR user profile fallback
-      const activeContracts = invoicesList.filter(inv => inv && inv.status === 'PAID' && inv.contractEnd);
+      // Calculate Contract End Date based on actual Contracts
       let daysLeft = 0;
-      
       let targetEndDate = null;
-      if (activeContracts.length > 0) {
-        targetEndDate = new Date(Math.max(...activeContracts.map(c => new Date(c.contractEnd))));
-      } else if (user?.clientInfo?.contractEnd) {
-        // Fallback to user profile contract date if no paid invoice has it
+
+      if (myContracts.length > 0) {
+        // Find latest contract with an end date
+        const datedContracts = myContracts.filter(c => c.endDate).sort((a,b) => new Date(b.endDate) - new Date(a.endDate));
+        if (datedContracts.length > 0) {
+          targetEndDate = new Date(datedContracts[0].endDate);
+        }
+      }
+
+      if (!targetEndDate && user?.clientInfo?.contractEnd) {
         targetEndDate = new Date(user.clientInfo.contractEnd);
       }
 
@@ -103,8 +108,16 @@ const ClientDashboard = () => {
   useEffect(() => {
     fetchData();
     const socket = io(import.meta.env.VITE_SOCKET_URL || 'https://api.creziax.cloud', { transports: ['websocket'] });
-    socket.on('task_updated', () => fetchData(true));
-    socket.on('workspace_updated', () => fetchData(true));
+    socket.on('task_updated', (data) => {
+      fetchData(true);
+      if (data?.userId !== user?.id) {
+        toast.success(t('video_status_updated'));
+      }
+    });
+    socket.on('workspace_updated', () => {
+      fetchData(true);
+      toast.info(t('syncing'));
+    });
     socket.on('new_ticket', () => fetchData(true));
     return () => socket.disconnect();
   }, [fetchData]);
@@ -228,61 +241,31 @@ const ClientDashboard = () => {
             </div>
           </div>
 
-          {/* 3. Projects & Deep Timeline */}
+          {/* 3. Projects Quick Access */}
           <section>
             <div className="flex items-center justify-between mb-8 px-2">
               <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-500 border border-brand-500/20"><Briefcase size={20} /></div>
-                {isRTL ? 'المشاريع والجدول الزمني العميق' : 'Projects & Deep Timeline'}
+                {isRTL ? 'المشاريع النشطة' : 'Active Projects'}
               </h2>
+              <Link to="/dashboard/client/projects" className="text-xs font-black text-brand-500 uppercase tracking-widest hover:underline">
+                {isRTL ? 'عرض التفاصيل ←' : 'View Details ←'}
+              </Link>
             </div>
 
-            <div className="grid grid-cols-1 gap-8">
-              {projectData.map(p => (
-                <div key={p.id} className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] overflow-hidden shadow-sm">
-                  <div className="p-8 border-b border-slate-50 dark:border-white/5 flex items-center justify-between">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {projectData.slice(0, 4).map(p => (
+                <Link key={p.id} to="/dashboard/client/projects" className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2rem] p-6 hover:border-brand-500/30 transition-all group">
+                  <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight mb-1">{p.name}</h3>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{p.phases?.length || 0} PHASES / MONTHS</p>
+                      <h3 className="font-black text-slate-800 dark:text-white uppercase tracking-tight group-hover:text-brand-500 transition-colors">{p.name}</h3>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                        {p.phases?.length || 0} {isRTL ? 'شهور إنتاج' : 'Production Months'}
+                      </p>
                     </div>
+                    <ArrowUpRight size={20} className="text-slate-300 dark:text-white/10 group-hover:text-brand-500 transition-colors" />
                   </div>
-                  <div className="p-8 space-y-8">
-                    {p.phases?.map(ph => (
-                      <div key={ph.id} className="space-y-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-2 h-2 rounded-full bg-brand-500"></div>
-                          <h4 className="text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest">{ph.name}</h4>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {ph.tasks?.map(task => {
-                            const currentStage = getTimelineStage(task.status);
-                            return (
-                              <div key={task.id} className="bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-3xl p-6">
-                                <p className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-tight mb-4">{task.title}</p>
-                                <div className="relative pt-2 pb-2">
-                                  <div className="h-2 w-full bg-slate-100 dark:bg-white/5 rounded-full mb-4 overflow-hidden relative">
-                                     <div 
-                                      className={`h-full transition-all duration-1000 ease-out rounded-full ${currentStage === 4 ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'bg-brand-500 shadow-[0_0_10px_rgba(245,158,11,0.2)]'}`}
-                                      style={{ width: `${getProgressPercentage(currentStage)}%` }}
-                                     ></div>
-                                  </div>
-                                  <div className="relative flex justify-between">
-                                    {['Rec', 'Proc', 'Rev', 'Del'].map((label, idx) => (
-                                      <div key={idx} className="flex flex-col items-center gap-2">
-                                        <div className={`w-3 h-3 rounded-full border-2 ${currentStage >= idx + 1 ? 'border-brand-500 bg-brand-500' : 'border-slate-200 dark:border-white/10'}`}></div>
-                                        <span className={`text-[8px] font-black uppercase tracking-tighter ${currentStage >= idx + 1 ? 'text-brand-500' : 'text-slate-400'}`}>{label}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                </Link>
               ))}
             </div>
           </section>

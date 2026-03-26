@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { toast as rToast } from 'react-toastify';
 
 // Using the local MP3 file downloaded to /public/sounds/notification.mp3
 const soundPath = "/sounds/notification.mp3";
@@ -13,16 +14,14 @@ if (typeof window !== 'undefined') {
 
   const unlockAudio = () => {
     if (!isAudioUnlocked && audioInstance) {
-      console.log("🔊 Interaction detected. Unlocking audio...");
-      // Play a tiny bit then pause to unlock
+      console.log("🔊 Supreme Interaction: Unlocking audio...");
       audioInstance.play()
         .then(() => {
           audioInstance.pause();
           audioInstance.currentTime = 0;
           isAudioUnlocked = true;
-          console.log("✅ Audio context UNLOCKED.");
+          console.log("✅ Audio context SUPREME UNLOCKED.");
           
-          // Remove listeners once unlocked
           document.removeEventListener('mousedown', unlockAudio);
           document.removeEventListener('keydown', unlockAudio);
           document.removeEventListener('touchstart', unlockAudio);
@@ -61,16 +60,15 @@ const useNotificationStore = create(
       activeThreadId: null,
       unreadThreads: {}, // { threadId: count }
       unreadMessagesCount: 0,
+      globalCountVisible: true,
       
       setActiveThreadId: (id) => set({ activeThreadId: id }),
+      setGlobalCountVisible: (visible) => set({ globalCountVisible: visible }),
       
       incrementUnreadMessages: (threadId) => set((state) => {
         const newUnreadThreads = { ...state.unreadThreads };
         newUnreadThreads[threadId] = (newUnreadThreads[threadId] || 0) + 1;
-        
-        // Calculate global count
         const globalCount = Object.values(newUnreadThreads).reduce((a, b) => a + b, 0);
-        
         return { 
           unreadThreads: newUnreadThreads,
           unreadMessagesCount: globalCount
@@ -82,24 +80,40 @@ const useNotificationStore = create(
         if (threadId) {
           delete newUnreadThreads[threadId];
         } else {
-          // If no threadId, reset everything
           return { unreadThreads: {}, unreadMessagesCount: 0 };
         }
-        
         const globalCount = Object.values(newUnreadThreads).reduce((a, b) => a + b, 0);
         return { 
           unreadThreads: newUnreadThreads,
           unreadMessagesCount: globalCount
         };
       }),
+
+      // V17.6-SUPREME: Global Kill Switch for Sidebar Badge ONLY
+      resetAllGlobalUnread: () => set({ 
+        unreadMessagesCount: 0, 
+        globalCountVisible: false 
+      }),
       
-      addNotification: (message, type = 'info') => {
-        // Trigger sound for all notifications except maybe very silent ones
-        // But the user asked for Success/Error specifically. 
-        // We'll play for all to be safe or filter.
-        // The user said: "تأكد إن الصوت بيشتغل تلقائياً مع كل (Success Toast) و (Error Toast)"
-        if (type === 'success' || type === 'error') {
+      addNotification: (message, type = 'info', toastId = null) => {
+        // v17.6 Single Sound & Single ToastId Hardening
+        const finalToastId = 'global-chat-toast';
+        
+        if (type === 'success' || type === 'error' || type === 'message') {
           playNotificationSound();
+        }
+
+        // Trigger rToast directly if not on messages page (decided by caller usually, but enforced here via ID)
+        if (type === 'message') {
+           rToast(message, { 
+             toastId: finalToastId, 
+             type: 'info',
+             autoClose: 3000,
+             hideProgressBar: false,
+             pauseOnHover: true,
+             draggable: true,
+             theme: "dark"
+           });
         }
         
         set((state) => {

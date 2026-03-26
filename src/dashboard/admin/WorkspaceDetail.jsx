@@ -154,6 +154,7 @@ const WorkspaceDetail = () => {
       } else {
         await loadPhaseTasks(phaseId);
       }
+      toast.success(t('saved_successfully'));
     } catch (err) {
       toast.error(t('error_general'));
     }
@@ -351,7 +352,7 @@ const WorkspaceDetail = () => {
                         <th className="px-4 py-6 text-center w-24">{t('edit_col', 'المونتاج')}</th>
                         <th className="px-4 py-6 text-center w-24">{t('publish_col', 'النشر')}</th>
                         <th className="px-8 py-6 text-center w-40">{t('publish_date_col', 'تاريخ النشر')}</th>
-                        <th className="px-8 py-6 text-center w-40">{t('status_col', 'الحالة النهائية')}</th>
+                        <th className="px-8 py-6 text-center w-64">{t('status_col', 'حالة العميل (Live)')}</th>
                         <th className="px-4 py-6 text-right w-16"></th>
                       </tr>
                     </thead>
@@ -398,17 +399,27 @@ const WorkspaceDetail = () => {
                                  return !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }).toUpperCase() : '--';
                                })()}
                             </td>
-                            <td className="px-8 py-6 text-center">
-                               {isFullyDone ? (
-                                 <div className="inline-flex items-center gap-2 px-6 py-2 bg-emerald-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20">
-                                   <CheckCircle2 size={12} strokeWidth={3} />
-                                   {t('completed', 'تم الانتهاء')}
-                                 </div>
-                               ) : (
-                                 <div className="inline-flex items-center gap-2 px-6 py-2 bg-slate-100 dark:bg-white/5 text-slate-400 border border-slate-200 dark:border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest opacity-40 italic">
-                                   {t('in_progress', 'تحت العمل')}
-                                 </div>
-                               )}
+                            <td className="px-8 py-6 text-center bg-slate-50/50 dark:bg-black/20 border-x border-slate-100 dark:border-white/5">
+                              <div className="flex bg-slate-200/50 dark:bg-white/5 p-1 rounded-xl shadow-inner">
+                                <button 
+                                  onClick={() => handleTaskUpdate(task.id, p.id, { status: 'EDITING' })}
+                                  className={`flex-1 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                                    ['IDEA', 'SCRIPTING', 'SHOOTING', 'EDITING'].includes(task.status) || !task.status ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                                  }`}
+                                >مونتاج</button>
+                                <button 
+                                  onClick={() => handleTaskUpdate(task.id, p.id, { status: 'REVIEW' })}
+                                  className={`flex-1 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                                    task.status === 'REVIEW' ? 'bg-white dark:bg-slate-700 text-amber-500 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                                  }`}
+                                >مراجعة</button>
+                                <button 
+                                  onClick={() => handleTaskUpdate(task.id, p.id, { status: 'DELIVERED' })}
+                                  className={`flex-1 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                                    task.status === 'DELIVERED' || task.status === 'COMPLETED' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+                                  }`}
+                                >منجز</button>
+                              </div>
                             </td>
                             <td className="px-4 py-6 text-right">
                                <button onClick={() => handleDeleteTask(task.id, p.id)} className="p-2 text-slate-300 hover:text-rose-500 transition-all"><Trash2 size={16} /></button>

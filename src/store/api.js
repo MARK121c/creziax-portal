@@ -79,9 +79,10 @@ export const getTeamGroupsAPI = () => api.get('/messages/groups');
 export const deleteTeamGroupAPI = (groupId) => api.delete(`/messages/groups/${groupId}`);
 export const removeGroupMemberAPI = (groupId, userId) => api.delete(`/messages/groups/${groupId}/members/${userId}`);
 export const clearMessagesAPI = (threadId) => api.delete(threadId ? `/messages/clear?threadId=${threadId}` : '/messages/clear');
-export const markAsReadAPI = (data) => api.post('/messages/mark-read', data); // NEW (v17.0)
-export const togglePinAPI = (id) => api.patch(`/messages/${id}/pin`); // NEW (v17.0)
-export const deleteSpecificMessageAPI = (id, type) => api.delete(`/messages/${id}?type=${type}`); // v17.2 WhatsApp Deletion
+export const markAsReadAPI = (data) => api.post('/messages/mark-read', data);
+export const markAllAsReadAPI = () => api.put('/messages/mark-all-read');
+export const togglePinAPI = (id) => api.patch(`/messages/${id}/pin`); // v17.6-SUPREME: uses auth api instance
+export const deleteSpecificMessageAPI = (id, type) => api.delete(`/messages/${id}?type=${type}`); // v17.6-SUPREME: uses auth api instance
 
 // Invoices
 export const getInvoicesAPI = () => api.get('/invoices');
