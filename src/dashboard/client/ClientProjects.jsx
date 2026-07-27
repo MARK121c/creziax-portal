@@ -222,8 +222,17 @@ const ClientVideoCard = ({ task, isRTL, onFeedbackSubmit }) => {
     { key: 'publish',   label: isRTL ? 'موعد النشر'    : 'Schedule',   icon: Calendar,   color: 'emerald', isPublish: true  },
   ];
 
-  const visibleStages = stagesList.filter(s => !!meta[s.key]?.visible);
-  if (visibleStages.length === 0) return null;
+  // A stage is visible if:
+  // 1) Explicitly marked visible === true
+  // 2) OR it has a link / datetime value entered by the team
+  // 3) OR visible is not explicitly set to false
+  const activeStages = stagesList.filter(s => {
+    const st = meta[s.key] || {};
+    if (st.visible === false) return false; // Explicitly hidden by admin
+    return true; // Show stage by default so client sees video progress
+  });
+
+  const displayStages = activeStages.length > 0 ? activeStages : stagesList;
 
   return (
     <div className="bg-white dark:bg-[#0a0a0c]/80 border border-slate-100 dark:border-white/[0.05] rounded-[2rem] overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
@@ -256,7 +265,7 @@ const ClientVideoCard = ({ task, isRTL, onFeedbackSubmit }) => {
       {/* Stage Cards Grid */}
       {expanded && (
         <div className="px-5 pb-5 grid grid-cols-1 md:grid-cols-2 gap-3 animate-in slide-in-from-top-2 duration-300">
-          {visibleStages.map(s => (
+          {displayStages.map(s => (
             <StageCard
               key={s.key}
               stageKey={s.key}
@@ -478,13 +487,8 @@ const ClientProjects = () => {
                 ) : (
                   <div className="space-y-6">
                     {sortedPhases.map(phase => {
-                      // Show all tasks in this phase (visible stages filtered inside the video card)
-                      const phaseTasks = (phase.tasks || []).filter(task => {
-                        try {
-                          const m = JSON.parse(task.description || '{}');
-                          return ['script', 'edit', 'thumbnail', 'publish'].some(k => m[k]?.visible);
-                        } catch (_) { return false; }
-                      });
+                      // Show all tasks in this phase/month
+                      const phaseTasks = phase.tasks || [];
 
                       if (phaseTasks.length === 0) return null;
 
