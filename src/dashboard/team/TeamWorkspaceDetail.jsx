@@ -139,8 +139,8 @@ const TeamStagePanel = ({ stage, meta, taskId, phaseId, userPosition, onMetaChan
         [stage.key]: { 
           ...stageMeta, 
           [stage.fieldKey]: localValue,
-          // If revision was requested, re-saving link resets status back to PENDING for client review
-          ...(approvalStatus === 'REVISION_REQUESTED' && { approvalStatus: 'PENDING' })
+          // If revision was requested, re-saving link sets status to REVISION_DONE so client gets notified
+          ...(approvalStatus === 'REVISION_REQUESTED' && { approvalStatus: 'REVISION_DONE' })
         } 
       };
       await updateWorkspaceTaskAPI(taskId, { description: JSON.stringify(newMeta) });
@@ -162,7 +162,7 @@ const TeamStagePanel = ({ stage, meta, taskId, phaseId, userPosition, onMetaChan
         [stage.key]: { 
           ...stageMeta, 
           [stage.fieldKey]: localValue,
-          approvalStatus: 'PENDING'
+          approvalStatus: 'REVISION_DONE'
         } 
       };
       await updateWorkspaceTaskAPI(taskId, { description: JSON.stringify(newMeta) });

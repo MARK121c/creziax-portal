@@ -34,13 +34,19 @@ const parseVideoMeta = (description) => {
 // ─── Approval Status Badge ────────────────────────────────────────────────────
 const ApprovalBadge = ({ status }) => {
   if (!status || status === 'PENDING') return null;
+  if (status === 'APPROVED') return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/15 text-emerald-600 border border-emerald-500/25">
+      <CheckCircle2 size={9} /> تم الاعتماد
+    </span>
+  );
+  if (status === 'REVISION_DONE') return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-500/15 text-amber-600 border border-amber-500/25 animate-pulse">
+      🔔 تم التعديل
+    </span>
+  );
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
-      status === 'APPROVED'
-        ? 'bg-emerald-500/15 text-emerald-600 border border-emerald-500/25'
-        : 'bg-rose-500/15 text-rose-600 border border-rose-500/25'
-    }`}>
-      {status === 'APPROVED' ? <><CheckCircle2 size={9} /> تم الاعتماد</> : <><Edit3 size={9} /> مطلوب تعديل</>}
+    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-rose-500/15 text-rose-600 border border-rose-500/25">
+      <Edit3 size={9} /> مطلوب تعديل
     </span>
   );
 };
@@ -129,7 +135,20 @@ const StageCard = ({ stageKey, stageMeta, stageLabel, stageIcon: Icon, stageColo
         )}
       </div>
 
-      {/* Feedback Actions — only if PENDING or REVISION_REQUESTED */}
+      {/* REVISION_DONE Banner — team has completed the revision, prompt client to re-review */}
+      {approvalStatus === 'REVISION_DONE' && (
+        <div className="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-xl space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🔔</span>
+            <div>
+              <p className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">تم التعديل — راجع الآن!</p>
+              <p className="text-[9px] text-amber-600 dark:text-amber-500 font-bold">قام الفريق بتعديل هذه المرحلة، يرجى مراجعتها واعتمادها أو طلب تعديل إضافي.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Feedback Actions — only if not APPROVED */}
       {approvalStatus !== 'APPROVED' && (
         <div className="space-y-2 pt-1">
           {/* Revision note box */}
