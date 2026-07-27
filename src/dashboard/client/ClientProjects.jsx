@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getClientWorkspacesAPI, getContractsAPI, submitClientFeedbackAPI } from '../../store/api';
+import { getProjectsAPI, getContractsAPI, submitClientFeedbackAPI } from '../../store/api';
 import { io } from 'socket.io-client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
@@ -288,8 +288,10 @@ const ClientProjects = () => {
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [pRes, cRes] = await Promise.all([getClientWorkspacesAPI(), getContractsAPI()]);
-      setProjects(pRes.data?.data || pRes.data || []);
+      const [pRes, cRes] = await Promise.all([getProjectsAPI(), getContractsAPI()]);
+      // getProjects returns array directly OR wrapped — handle both
+      const rawProjects = pRes.data?.data || pRes.data || [];
+      setProjects(Array.isArray(rawProjects) ? rawProjects : []);
       const myContracts = cRes.data?.data || cRes.data || [];
       if (myContracts.length > 0) {
         const latest = myContracts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
@@ -416,16 +418,13 @@ const ClientProjects = () => {
             const done = project.phases?.reduce((a, ph) => a + (ph.tasks?.filter(t => t.status === 'DELIVERED').length || 0), 0) || 0;
             const overallPct = total > 0 ? Math.round((done / total) * 100) : 0;
 
-            // Collect all tasks with at least one visible stage
-            const allVisibleTasks = (project.phases || [])
-              .sort((a, b) => new Date(b.startDate || b.createdAt) - new Date(a.startDate || a.createdAt))
-              .flatMap(ph => (ph.tasks || []).map(t => ({ ...t, phaseName: ph.name })))
-              .filter(task => {
-                try {
-                  const m = JSON.parse(task.description || '{}');
-                  return ['script', 'edit', 'thumbnail', 'publish'].some(k => m[k]?.visible);
-                } catch (_) { return false; }
-              });
+            // Sort phases from newest to oldest (latest month first)
+            const sortedPhases = (project.phases || [])
+              .slice()
+              .sort((a, b) => new Date(b.startDate || b.createdAt) - new Date(a.startDate || a.createdAt));
+
+            // Check if project has any content at all
+            const hasAnyTasks = sortedPhases.some(ph => (ph.tasks || []).length > 0);
 
             return (
               <div key={project.id} className="space-y-6">
@@ -469,32 +468,64 @@ const ClientProjects = () => {
                   </div>
                 </div>
 
-                {/* Video Cards */}
-                <div className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/[0.06] rounded-3xl p-6">
-                  <div className="flex items-center gap-3 mb-6">
-                    <Film size={18} className="text-slate-400" />
-                    <h3 className="text-sm font-black text-slate-800 dark:text-white tracking-widest uppercase">
-                      {isRTL ? 'فيديوهات المشروع' : 'Project Videos'}
-                    </h3>
+                {/* Phases (Months) with Videos */}
+                {!hasAnyTasks ? (
+                  <div className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/[0.06] rounded-3xl p-10 text-center">
+                    <p className="text-slate-400 text-sm font-bold">
+                      {isRTL ? 'لا توجد فيديوهات بعد، يعمل الفريق على تجهيزها.' : 'No videos yet. The team is preparing them.'}
+                    </p>
                   </div>
+                ) : (
+                  <div className="space-y-6">
+                    {sortedPhases.map(phase => {
+                      // Show all tasks in this phase (visible stages filtered inside the video card)
+                      const phaseTasks = (phase.tasks || []).filter(task => {
+                        try {
+                          const m = JSON.parse(task.description || '{}');
+                          return ['script', 'edit', 'thumbnail', 'publish'].some(k => m[k]?.visible);
+                        } catch (_) { return false; }
+                      });
 
-                  {allVisibleTasks.length > 0 ? (
-                    <div className="space-y-4">
-                      {allVisibleTasks.map(task => (
-                        <ClientVideoCard
-                          key={task.id}
-                          task={task}
-                          isRTL={isRTL}
-                          onFeedbackSubmit={handleFeedbackSubmit}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-10 text-slate-400 text-sm font-bold">
-                      {isRTL ? 'لا توجد مراحل متاحة للمراجعة بعد، يعمل الفريق على تجهيزها.' : 'No stages ready for review yet. The team is preparing them.'}
-                    </div>
-                  )}
-                </div>
+                      if (phaseTasks.length === 0) return null;
+
+                      return (
+                        <div key={phase.id} className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/[0.06] rounded-3xl p-6">
+                          {/* Phase / Month Header */}
+                          <div className="flex items-center gap-3 mb-5">
+                            <div className="w-8 h-8 rounded-xl bg-brand-500/10 flex items-center justify-center flex-shrink-0">
+                              <Calendar size={15} className="text-brand-500" />
+                            </div>
+                            <div>
+                              <h3 className="text-sm font-black text-slate-800 dark:text-white tracking-widest uppercase">
+                                {phase.name}
+                              </h3>
+                              {phase.startDate && (
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                                  {new Date(phase.startDate).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}
+                                </p>
+                              )}
+                            </div>
+                            <span className="ml-auto text-[9px] font-black text-slate-400 bg-slate-100 dark:bg-white/5 px-2.5 py-1 rounded-full">
+                              {phaseTasks.length} {isRTL ? 'فيديو' : 'videos'}
+                            </span>
+                          </div>
+
+                          {/* Video Cards */}
+                          <div className="space-y-4">
+                            {phaseTasks.map(task => (
+                              <ClientVideoCard
+                                key={task.id}
+                                task={task}
+                                isRTL={isRTL}
+                                onFeedbackSubmit={handleFeedbackSubmit}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
