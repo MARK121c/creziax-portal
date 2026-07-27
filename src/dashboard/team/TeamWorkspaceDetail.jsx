@@ -19,16 +19,15 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 
 // ─── Role → Stage Permission Map ─────────────────────────────────────────────
-// Only the matching stage is editable per role title
-const ROLE_STAGE_PERMISSION = {
-  'Scriptwriter':    'script',
-  'Video Editor':    'edit',
-  'Graphic Designer':'thumbnail',
-  'Strategist':      null,  // read-only on all (no input access)
-  'Manager':         null,  // read-only on all
+const getEditableStage = (position) => {
+  if (!position) return null;
+  const p = String(position).toLowerCase().trim();
+  if (p.includes('script') || p.includes('كاتب') || p.includes('سكريبت')) return 'script';
+  if (p.includes('edit') || p.includes('مونت') || p.includes('فيديو')) return 'edit';
+  if (p.includes('design') || p.includes('thumb') || p.includes('مصمم') || p.includes('جرافيك')) return 'thumbnail';
+  if (p.includes('manager') || p.includes('مدير') || p.includes('strategist') || p.includes('استراتيجي')) return 'publish';
+  return null;
 };
-
-const getEditableStage = (position) => ROLE_STAGE_PERMISSION[position] ?? null;
 
 // ─── Stage Definitions ────────────────────────────────────────────────────────
 const STAGES = [
@@ -78,7 +77,7 @@ const STAGES = [
     inputType: 'datetime-local',
     placeholder: '',
     fieldKey: 'datetime',
-    allowedRole: null, // Managers/Strategists handle this — no team member edits
+    allowedRole: 'Manager',
   },
 ];
 
