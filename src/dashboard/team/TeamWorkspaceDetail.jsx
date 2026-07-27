@@ -134,12 +134,42 @@ const TeamStagePanel = ({ stage, meta, taskId, phaseId, userPosition, onMetaChan
     if (!canEdit) return;
     setSaving(true);
     try {
-      const newMeta = { ...meta, [stage.key]: { ...stageMeta, [stage.fieldKey]: localValue } };
+      const newMeta = { 
+        ...meta, 
+        [stage.key]: { 
+          ...stageMeta, 
+          [stage.fieldKey]: localValue,
+          // If revision was requested, re-saving link resets status back to PENDING for client review
+          ...(approvalStatus === 'REVISION_REQUESTED' && { approvalStatus: 'PENDING' })
+        } 
+      };
       await updateWorkspaceTaskAPI(taskId, { description: JSON.stringify(newMeta) });
       onMetaChange(taskId, phaseId, newMeta);
       toast.success('تم رفع الرابط بنجاح ✓');
     } catch (_) {
       toast.error('فشل الحفظ');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleMarkRevisionDone = async () => {
+    if (!canEdit) return;
+    setSaving(true);
+    try {
+      const newMeta = { 
+        ...meta, 
+        [stage.key]: { 
+          ...stageMeta, 
+          [stage.fieldKey]: localValue,
+          approvalStatus: 'PENDING'
+        } 
+      };
+      await updateWorkspaceTaskAPI(taskId, { description: JSON.stringify(newMeta) });
+      onMetaChange(taskId, phaseId, newMeta);
+      toast.success('تم تأكيد التعديل وإعادة إرساله للعميل ✓');
+    } catch (_) {
+      toast.error('فشل تأكيد التعديل');
     } finally {
       setSaving(false);
     }
@@ -191,11 +221,25 @@ const TeamStagePanel = ({ stage, meta, taskId, phaseId, userPosition, onMetaChan
         </div>
       </div>
 
-      {/* Client Revision Notes (always visible if REVISION_REQUESTED) */}
-      {approvalStatus === 'REVISION_REQUESTED' && clientNotes && (
-        <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl">
-          <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest mb-1">⚠️ ملاحظات التعديل من العميل:</p>
-          <p className="text-[11px] font-bold text-rose-700 dark:text-rose-300 leading-relaxed">{clientNotes}</p>
+      {/* Client Revision Notes */}
+      {approvalStatus === 'REVISION_REQUESTED' && (
+        <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest">⚠️ ملاحظات التعديل من العميل:</p>
+            {canEdit && (
+              <button
+                onClick={handleMarkRevisionDone}
+                disabled={saving}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md shadow-emerald-500/20 transition-all active:scale-95 flex-shrink-0"
+              >
+                {saving ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle2 size={11} />}
+                تم التعديل ✓
+              </button>
+            )}
+          </div>
+          {clientNotes && (
+            <p className="text-[11px] font-bold text-rose-700 dark:text-rose-300 leading-relaxed">{clientNotes}</p>
+          )}
         </div>
       )}
 
