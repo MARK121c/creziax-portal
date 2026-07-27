@@ -151,6 +151,7 @@ export const getFinanceStatsAPI = () => api.get('/finance/stats');
 
 // Workspaces (Professional Retainer Management)
 export const getWorkspacesAPI = () => api.get('/workspaces');
+export const getClientWorkspacesAPI = () => api.get('/workspaces/client/my'); // Client-facing: returns phases + tasks
 export const getWorkspaceAPI = (id) => api.get(`/workspaces/${id}`);
 export const getPhaseTasksAPI = (phaseId) => api.get(`/workspaces/phases/${phaseId}/tasks`);
 export const updateWorkspaceTaskAPI = (id, data) => api.put(`/workspaces/tasks/${id}`, data);

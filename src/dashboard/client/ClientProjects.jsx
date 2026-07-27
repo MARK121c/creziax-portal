@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getProjectsAPI, getContractsAPI } from '../../store/api';
-import { submitClientFeedbackAPI } from '../../store/api';
+import { getClientWorkspacesAPI, getContractsAPI, submitClientFeedbackAPI } from '../../store/api';
 import { io } from 'socket.io-client';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
@@ -289,7 +288,7 @@ const ClientProjects = () => {
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [pRes, cRes] = await Promise.all([getProjectsAPI(), getContractsAPI()]);
+      const [pRes, cRes] = await Promise.all([getClientWorkspacesAPI(), getContractsAPI()]);
       setProjects(pRes.data?.data || pRes.data || []);
       const myContracts = cRes.data?.data || cRes.data || [];
       if (myContracts.length > 0) {
