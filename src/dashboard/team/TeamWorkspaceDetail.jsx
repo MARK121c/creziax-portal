@@ -126,12 +126,15 @@ const TeamStagePanel = ({ stage, meta, taskId, phaseId, userPosition, onMetaChan
   const approvalStatus = stageMeta.approvalStatus || 'PENDING';
   const clientNotes = stageMeta.clientNotes || '';
 
+  const teamExpired = !!stageMeta.teamDeadlineExpired;
+  const isLockedOut = teamExpired;
+
   useEffect(() => {
     setLocalValue(stageMeta[stage.fieldKey] || '');
   }, [stageMeta[stage.fieldKey]]);
 
   const handleSave = async () => {
-    if (!canEdit) return;
+    if (!canEdit || isLockedOut) return;
     setSaving(true);
     try {
       const newMeta = { 
@@ -154,7 +157,7 @@ const TeamStagePanel = ({ stage, meta, taskId, phaseId, userPosition, onMetaChan
   };
 
   const handleMarkRevisionDone = async () => {
-    if (!canEdit) return;
+    if (!canEdit || isLockedOut) return;
     setSaving(true);
     try {
       const newMeta = { 
@@ -221,12 +224,24 @@ const TeamStagePanel = ({ stage, meta, taskId, phaseId, userPosition, onMetaChan
         </div>
       </div>
 
+      {/* Lockout & Penalty Warning Notice */}
+      {isLockedOut && (
+        <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl space-y-1">
+          <p className="text-[10px] font-black text-rose-600 dark:text-rose-400">
+            🔒 تم إغلاق التعديل لتجاوز الوقت المحدد (خصم 3% من الميزانية).
+          </p>
+          <p className="text-[9px] font-bold text-rose-500/80">
+            بانتظار موافقة الأدمن وإلغاء القفل لإتاحة إدخال البيانات مرة أخرى.
+          </p>
+        </div>
+      )}
+
       {/* Client Revision Notes */}
       {approvalStatus === 'REVISION_REQUESTED' && (
         <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl space-y-2">
           <div className="flex items-center justify-between gap-2">
             <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest">⚠️ ملاحظات التعديل من العميل:</p>
-            {canEdit && (
+            {canEdit && !isLockedOut && (
               <button
                 onClick={handleMarkRevisionDone}
                 disabled={saving}
@@ -243,7 +258,7 @@ const TeamStagePanel = ({ stage, meta, taskId, phaseId, userPosition, onMetaChan
         </div>
       )}
 
-      {/* Input — only editable if role matches this stage */}
+      {/* Input — only editable if role matches this stage AND not locked out */}
       <div className="flex items-center gap-2">
         {stage.inputType === 'datetime-local' ? (
           <input
@@ -251,12 +266,12 @@ const TeamStagePanel = ({ stage, meta, taskId, phaseId, userPosition, onMetaChan
             value={localValue}
             onChange={e => setLocalValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            disabled={!canEdit}
-            className={`flex-1 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-[11px] font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={!canEdit || isLockedOut}
+            className={`flex-1 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-[11px] font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all ${(!canEdit || isLockedOut) ? 'opacity-50 cursor-not-allowed' : ''}`}
           />
         ) : (
           <div className="relative flex-1">
-            {canEdit ? (
+            {canEdit && !isLockedOut ? (
               <LinkIcon size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />
             ) : (
               <Lock size={12} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />

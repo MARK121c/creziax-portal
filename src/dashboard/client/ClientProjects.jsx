@@ -33,6 +33,11 @@ const parseVideoMeta = (description) => {
 // ─── Approval Status Badge ────────────────────────────────────────────────────
 const ApprovalBadge = ({ status }) => {
   if (!status || status === 'PENDING') return null;
+  if (status === 'AUTO_APPROVED') return (
+    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/15 text-emerald-600 border border-emerald-500/25">
+      ⚡ تم الاعتماد تلقائياً
+    </span>
+  );
   if (status === 'APPROVED') return (
     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/15 text-emerald-600 border border-emerald-500/25">
       <CheckCircle2 size={9} /> تم الاعتماد
@@ -47,6 +52,47 @@ const ApprovalBadge = ({ status }) => {
     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-rose-500/15 text-rose-600 border border-rose-500/25">
       <Edit3 size={9} /> مطلوب تعديل
     </span>
+  );
+};
+
+// ─── Live Countdown Ticker Component ─────────────────────────────────────────
+const ClientCountdownTicker = ({ startedAt, reviewHours, onExpire }) => {
+  const [timeLeft, setTimeLeft] = useState('');
+  const [isExpired, setIsExpired] = useState(false);
+
+  useEffect(() => {
+    if (!startedAt || !reviewHours) return;
+    const startTime = new Date(startedAt).getTime();
+    const durationMs = (Number(reviewHours) || 12) * 60 * 60 * 1000;
+    const targetTime = startTime + durationMs;
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const diff = targetTime - now;
+      if (diff <= 0) {
+        setTimeLeft('00:00:00');
+        setIsExpired(true);
+        if (onExpire) onExpire();
+        return;
+      }
+      const hrs = String(Math.floor(diff / (1000 * 60 * 60))).padStart(2, '0');
+      const mins = String(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
+      const secs = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(2, '0');
+      setTimeLeft(`${hrs}:${mins}:${secs}`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [startedAt, reviewHours, onExpire]);
+
+  if (isExpired || !timeLeft) return null;
+
+  return (
+    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 rounded-xl text-[9px] font-black">
+      <Clock size={11} className="animate-spin text-amber-500" />
+      <span>المتبقي للاعتماد التلقائي: {timeLeft}</span>
+    </div>
   );
 };
 
@@ -134,6 +180,14 @@ const StageCard = ({ stageKey, stageMeta, stageLabel, stageIcon: Icon, stageColo
         )}
       </div>
 
+      {/* Live Countdown Ticker */}
+      {approvalStatus !== 'APPROVED' && approvalStatus !== 'AUTO_APPROVED' && stageMeta.clientTimerStartedAt && (
+        <ClientCountdownTicker
+          startedAt={stageMeta.clientTimerStartedAt}
+          reviewHours={stageMeta.clientReviewHours || 12}
+        />
+      )}
+
       {/* REVISION_DONE Banner — team has completed the revision, prompt client to re-review */}
       {approvalStatus === 'REVISION_DONE' && (
         <div className="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-xl space-y-2">
@@ -147,8 +201,8 @@ const StageCard = ({ stageKey, stageMeta, stageLabel, stageIcon: Icon, stageColo
         </div>
       )}
 
-      {/* Feedback Actions — only if not APPROVED */}
-      {approvalStatus !== 'APPROVED' && (
+      {/* Feedback Actions — only if not APPROVED / AUTO_APPROVED */}
+      {approvalStatus !== 'APPROVED' && approvalStatus !== 'AUTO_APPROVED' && (
         <div className="space-y-2 pt-1">
           {/* Revision note box */}
           {showRevisionBox && (

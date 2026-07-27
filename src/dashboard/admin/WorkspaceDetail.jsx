@@ -107,21 +107,34 @@ const STAGE_COLORS = {
 
 // ─── Stage Metadata Parser ───────────────────────────────────────────────────
 const parseVideoMeta = (description) => {
+  const emptyStage = {
+    link: '',
+    datetime: '',
+    visible: false,
+    approvalStatus: 'PENDING', // PENDING | APPROVED | AUTO_APPROVED | REVISION_REQUESTED | REVISION_DONE
+    clientNotes: '',
+    teamDeadlineHours: 24,
+    teamDeadlineStartedAt: null,
+    teamDeadlineExpired: false,
+    penaltyApplied: false,
+    clientReviewHours: 12,
+    clientTimerStartedAt: null,
+  };
   const empty = {
-    script:    { link: '', visible: false, approvalStatus: 'PENDING', clientNotes: '' },
-    edit:      { link: '', visible: false, approvalStatus: 'PENDING', clientNotes: '' },
-    thumbnail: { link: '', visible: false, approvalStatus: 'PENDING', clientNotes: '' },
-    publish:   { datetime: '', visible: false, approvalStatus: 'PENDING', clientNotes: '' },
+    script:    { ...emptyStage },
+    edit:      { ...emptyStage },
+    thumbnail: { ...emptyStage },
+    publish:   { ...emptyStage },
   };
   try {
     if (!description || description === 'null' || description === 'undefined') return empty;
     const parsed = JSON.parse(description);
     if (!parsed || typeof parsed !== 'object') return empty;
     return {
-      script:    { link: '', visible: false, approvalStatus: 'PENDING', clientNotes: '', ...parsed.script },
-      edit:      { link: '', visible: false, approvalStatus: 'PENDING', clientNotes: '', ...parsed.edit },
-      thumbnail: { link: '', visible: false, approvalStatus: 'PENDING', clientNotes: '', ...parsed.thumbnail },
-      publish:   { datetime: '', visible: false, approvalStatus: 'PENDING', clientNotes: '', ...parsed.publish },
+      script:    { ...emptyStage, ...parsed.script },
+      edit:      { ...emptyStage, ...parsed.edit },
+      thumbnail: { ...emptyStage, ...parsed.thumbnail },
+      publish:   { ...emptyStage, ...parsed.publish },
     };
   } catch (_) { return empty; }
 };
@@ -143,20 +156,59 @@ const StagePanel = ({ stage, meta, taskId, phaseId, isAdmin, onMetaChange, onVis
   const [localValue, setLocalValue] = useState(value);
   const [saving, setSaving] = useState(false);
 
-  // Sync local value when meta changes externally
+  // Timer configuration states for Admin
+  const [showConfig, setShowConfig] = useState(false);
+  const [teamHours, setTeamHours] = useState(stageMeta.teamDeadlineHours || 24);
+  const [clientHours, setClientHours] = useState(stageMeta.clientReviewHours || 12);
+
+  const teamExpired = !!stageMeta.teamDeadlineExpired;
+  const approvalStatus = stageMeta.approvalStatus || 'PENDING';
+
+  // Sync local values when meta changes externally
   useEffect(() => {
     setLocalValue(stageMeta[stage.fieldKey] || '');
-  }, [stageMeta[stage.fieldKey]]);
+    setTeamHours(stageMeta.teamDeadlineHours || 24);
+    setClientHours(stageMeta.clientReviewHours || 12);
+  }, [stageMeta]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const newMeta = { ...meta, [stage.key]: { ...stageMeta, [stage.fieldKey]: localValue } };
+      const newMeta = { 
+        ...meta, 
+        [stage.key]: { 
+          ...stageMeta, 
+          [stage.fieldKey]: localValue,
+          teamDeadlineHours: Number(teamHours) || 24,
+          clientReviewHours: Number(clientHours) || 12,
+        } 
+      };
       await updateWorkspaceTaskAPI(taskId, { description: JSON.stringify(newMeta) });
       onMetaChange(taskId, phaseId, newMeta);
       toast.success('تم الحفظ');
     } catch (_) {
       toast.error('فشل الحفظ');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAdminUnlock = async () => {
+    setSaving(true);
+    try {
+      const newMeta = {
+        ...meta,
+        [stage.key]: {
+          ...stageMeta,
+          teamDeadlineExpired: false,
+          teamDeadlineStartedAt: new Date().toISOString()
+        }
+      };
+      await updateWorkspaceTaskAPI(taskId, { description: JSON.stringify(newMeta) });
+      onMetaChange(taskId, phaseId, newMeta);
+      toast.success('تم إلغاء القفل وتمديد المهلة بنجاح ✓');
+    } catch (_) {
+      toast.error('فشل إلغاء القفل');
     } finally {
       setSaving(false);
     }
@@ -184,28 +236,105 @@ const StagePanel = ({ stage, meta, taskId, phaseId, isAdmin, onMetaChange, onVis
           </div>
         </div>
 
-        {/* Visibility Toggle — Admin Email Guard */}
-        {isAdmin && (
-          <button
-            onClick={() => onVisibilityToggle(taskId, phaseId, stage.key, !isVisible)}
-            disabled={isTogglingThis}
-            title={isVisible ? 'إخفاء من لوحة العميل' : 'إظهار إلى لوحة العميل'}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 border active:scale-95 ${
-              isVisible
-                ? 'bg-emerald-500 border-emerald-600 text-white shadow-lg shadow-emerald-500/30'
-                : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 hover:border-emerald-400 hover:text-emerald-500'
-            } ${isTogglingThis ? 'opacity-60 cursor-not-allowed' : ''}`}
-          >
-            {isTogglingThis ? (
-              <Loader2 size={12} className="animate-spin" />
-            ) : isVisible ? (
-              <><Eye size={12} />مرئي للعميل</>
-            ) : (
-              <><EyeOff size={12} />إظهار للعميل</>
-            )}
-          </button>
-        )}
+        {/* Action badges & Visibility Toggle */}
+        <div className="flex items-center gap-2">
+          {/* Status Badges */}
+          {approvalStatus === 'AUTO_APPROVED' && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/15 text-emerald-600 border border-emerald-500/25">
+              ⚡ تم الاعتماد تلقائياً
+            </span>
+          )}
+          {approvalStatus === 'APPROVED' && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-emerald-500/15 text-emerald-600 border border-emerald-500/25">
+              <CheckCircle2 size={9} /> تم الاعتماد
+            </span>
+          )}
+
+          {isAdmin && (
+            <button
+              onClick={() => setShowConfig(v => !v)}
+              className="p-1.5 rounded-xl bg-white dark:bg-white/5 text-slate-400 hover:text-brand-500 border border-slate-200 dark:border-white/10 text-[9px] font-black transition-all"
+              title="إعدادات المهل والتوقيتات"
+            >
+              ⏱️ المهل
+            </button>
+          )}
+
+          {/* Visibility Toggle — Admin Email Guard */}
+          {isAdmin && (
+            <button
+              onClick={() => onVisibilityToggle(taskId, phaseId, stage.key, !isVisible)}
+              disabled={isTogglingThis}
+              title={isVisible ? 'إخفاء من لوحة العميل' : 'إظهار إلى لوحة العميل'}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 border active:scale-95 ${
+                isVisible
+                  ? 'bg-emerald-500 border-emerald-600 text-white shadow-lg shadow-emerald-500/30'
+                  : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 hover:border-emerald-400 hover:text-emerald-500'
+              } ${isTogglingThis ? 'opacity-60 cursor-not-allowed' : ''}`}
+            >
+              {isTogglingThis ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : isVisible ? (
+                <><Eye size={12} />مرئي للعميل</>
+              ) : (
+                <><EyeOff size={12} />إظهار للعميل</>
+              )}
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Admin Timer Control Panel */}
+      {isAdmin && showConfig && (
+        <div className="p-3 bg-white dark:bg-black/30 border border-slate-200 dark:border-white/10 rounded-xl space-y-2 text-[10px] font-bold">
+          <div className="flex items-center justify-between gap-4">
+            <label className="text-slate-600 dark:text-slate-300">مهلة الفريق (ساعة):</label>
+            <input
+              type="number"
+              value={teamHours}
+              onChange={e => setTeamHours(e.target.value)}
+              className="w-20 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-2 py-1 text-center font-bold"
+            />
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <label className="text-slate-600 dark:text-slate-300">مهلة العميل للاعتماد (ساعة):</label>
+            <input
+              type="number"
+              value={clientHours}
+              onChange={e => setClientHours(e.target.value)}
+              className="w-20 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg px-2 py-1 text-center font-bold"
+            />
+          </div>
+          <div className="flex justify-end pt-1">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-3 py-1 bg-brand-600 text-white rounded-lg text-[9px] font-black uppercase"
+            >
+              حفظ التوقيتات
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Penalty Warning Banner if Team Deadline Expired */}
+      {teamExpired && (
+        <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 text-[10px] font-black">
+            <AlertCircle size={14} className="flex-shrink-0" />
+            <span>تحذير: تم تجاوز الوقت المحدد - خصم 3% من الميزانية</span>
+          </div>
+          {isAdmin && (
+            <button
+              onClick={handleAdminUnlock}
+              disabled={saving}
+              className="px-2.5 py-1 bg-rose-500 text-white rounded-lg text-[9px] font-black shadow-sm active:scale-95 flex-shrink-0"
+            >
+              إلغاء القفل
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Input Row */}
       <div className="flex items-center gap-2">
