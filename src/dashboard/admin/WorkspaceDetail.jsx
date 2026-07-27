@@ -515,8 +515,8 @@ const WorkspaceDetail = () => {
   const { t } = useTranslation();
   const { user } = useAuthStore();
 
-  // Admin Email Guard — visibility toggles only for admin.mark@creziax.com
-  const isAdmin = (user?.role === 'ADMIN' || user?.role === 'OWNER') && user?.email === ADMIN_EMAIL;
+  // Admin Email Guard — visibility toggles and controls for all Admin/Owner users
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'OWNER';
   const isStaff = user?.role === 'ADMIN' || user?.role === 'OWNER'; // can see all data
 
   const [workspace, setWorkspace] = useState(null);
