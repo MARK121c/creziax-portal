@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { getUsersAPI, createUserAPI, deleteUserAPI, updateClientAPI, uploadImageAPI } from '../../store/api';
-import { Trash2, Plus, X, Building2, Mail, Phone, Calendar, Loader2, Search, UserPlus, Edit2, Star, Camera, UploadCloud, ExternalLink, Bell, FileText, Briefcase, Filter, ChevronRight, Receipt } from 'lucide-react';
+import { getUsersAPI, createUserAPI, deleteUserAPI, updateUserAPI, updateClientAPI, uploadImageAPI } from '../../store/api';
+import { Trash2, Plus, X, Building2, Mail, Phone, Calendar, Loader2, Search, UserPlus, Edit2, Star, Camera, UploadCloud, ExternalLink, Bell, FileText, Briefcase, Filter, ChevronRight, Receipt, Pause, Play } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
@@ -222,6 +222,31 @@ const ClientsPage = () => {
     }
   };
 
+  const handleTogglePause = async (client) => {
+    const isCurrentlyActive = client.isActive !== false;
+    const newActiveState = !isCurrentlyActive;
+    const clientName = `${client.firstName || ''} ${client.lastName || ''}`.trim() || 'العميل';
+    const loadingToast = toast.loading(t('syncing'));
+    try {
+      await updateUserAPI(client.id, { isActive: newActiveState });
+      toast.success(
+        newActiveState 
+          ? `تم تنشيط حساب ${clientName} بنجاح ✓` 
+          : `تم إيقاف حساب ${clientName} مؤقتاً ⏸️`,
+        { id: loadingToast }
+      );
+      addNotification(
+        newActiveState 
+          ? `تم تنشيط حساب العميل ${clientName}` 
+          : `تم إيقاف حساب العميل ${clientName} مؤقتاً`,
+        newActiveState ? 'success' : 'info'
+      );
+      fetchClients();
+    } catch (err) {
+      toast.error(t('error_general'), { id: loadingToast });
+    }
+  };
+
   const handleLogoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -393,9 +418,10 @@ const ClientsPage = () => {
               {sortedClients.map(c => {
                 const contractStatus = getContractStatus(c.clientInfo?.contractEndDate);
                 const health = getHealthDisplay(c.clientInfo?.healthScore);
+                const isPaused = c.isActive === false;
                 
                 return (
-                  <div key={c.id} className={`p-5 rounded-3xl border bg-white dark:bg-white/[0.02] transition-all ${contractStatus?.isCritical ? 'border-rose-500/30' : 'border-slate-100 dark:border-white/5'}`}>
+                  <div key={c.id} className={`p-5 rounded-3xl border bg-white dark:bg-white/[0.02] transition-all ${isPaused ? 'opacity-75 border-amber-500/20 bg-amber-500/[0.01]' : contractStatus?.isCritical ? 'border-rose-500/30' : 'border-slate-100 dark:border-white/5'}`}>
                     <div className="flex items-start justify-between mb-4">
                       <Link to={`/admin/clients/${c.clientInfo?.id || c.id}`} className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-2xl bg-brand-500/10 flex items-center justify-center overflow-hidden border border-brand-500/20 relative group/logo">
@@ -406,7 +432,16 @@ const ClientsPage = () => {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <h4 className="text-sm font-black text-slate-800 dark:text-white truncate">{c.firstName} {c.lastName}</h4>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className={`text-sm font-black truncate ${isPaused ? 'text-slate-500' : 'text-slate-800 dark:text-white'}`}>
+                              {c.firstName} {c.lastName}
+                            </h4>
+                            {isPaused && (
+                              <span className="px-1.5 py-0.5 text-[8px] font-black uppercase rounded-md bg-amber-500/15 text-amber-600 border border-amber-500/20">
+                                ⏸️ موقف
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">{c.clientInfo?.company || 'Partner'}</p>
                         </div>
                       </Link>
@@ -430,9 +465,20 @@ const ClientsPage = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                       <Link to={`/admin/clients/${c.clientInfo?.id || c.id}`} className="flex-1 py-2.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white rounded-xl text-[10px] font-black uppercase text-center">{t('view_profile')}</Link>
-                       <button onClick={() => openEditModal(c)} className="p-2.5 bg-brand-500/10 text-brand-500 rounded-xl border border-brand-500/20"><Edit2 size={16} /></button>
-                       <button onClick={() => handleDelete(c.id, `${c.firstName} ${c.lastName}`)} className="p-2.5 bg-rose-500/10 text-rose-500 rounded-xl border border-rose-500/20"><Trash2 size={16} /></button>
+                       <Link to={`/admin/clients/${c.clientInfo?.id || c.id}`} className="flex-1 py-2.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white rounded-xl text-[10px] font-black uppercase text-center hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">{t('view_profile')}</Link>
+                       <button onClick={() => openEditModal(c)} className="p-2.5 bg-brand-500/10 text-brand-500 rounded-xl border border-brand-500/20" title={t('edit')}><Edit2 size={16} /></button>
+                       <button 
+                         onClick={() => handleTogglePause(c)} 
+                         className={`p-2.5 rounded-xl border transition-all ${
+                           !isPaused 
+                             ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20' 
+                             : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20'
+                         }`}
+                         title={!isPaused ? 'إيقاف مؤقت' : 'تنشيط'}
+                       >
+                         {!isPaused ? <Pause size={16} /> : <Play size={16} />}
+                       </button>
+                       <button onClick={() => handleDelete(c.id, `${c.firstName} ${c.lastName}`)} className="p-2.5 bg-rose-500/10 text-rose-500 rounded-xl border border-rose-500/20" title={t('delete')}><Trash2 size={16} /></button>
                     </div>
                   </div>
                 );
@@ -455,9 +501,10 @@ const ClientsPage = () => {
                   {sortedClients.map(c => {
                     const contractStatus = getContractStatus(c.clientInfo?.contractEndDate);
                     const health = getHealthDisplay(c.clientInfo?.healthScore);
+                    const isPaused = c.isActive === false;
                     
                     return (
-                      <tr key={c.id} className={`hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-all group ${contractStatus?.isCritical ? 'bg-rose-500/[0.02]' : ''}`}>
+                      <tr key={c.id} className={`hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-all group ${isPaused ? 'opacity-70 bg-amber-500/[0.01]' : contractStatus?.isCritical ? 'bg-rose-500/[0.02]' : ''}`}>
                         <td className="px-10 py-7">
                           <Link to={`/admin/clients/${c.clientInfo?.id || c.id}`} className="flex items-center gap-4 group/item">
                             <div className="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400 text-sm font-black shadow-sm border border-brand-100 dark:border-brand-500/20 flex-shrink-0 overflow-hidden relative group/logo">
@@ -476,7 +523,14 @@ const ClientsPage = () => {
                                 {getCountryFlagUrl(c.clientInfo?.phone) && (
                                   <img src={getCountryFlagUrl(c.clientInfo?.phone)} alt="flag" className="w-5 h-auto rounded-sm" />
                                 )}
-                                <p className="text-base font-bold text-slate-800 dark:text-white leading-tight group-hover/item:text-brand-500 transition-colors">{c.firstName} {c.lastName}</p>
+                                <p className={`text-base font-bold leading-tight group-hover/item:text-brand-500 transition-colors ${isPaused ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-white'}`}>
+                                  {c.firstName} {c.lastName}
+                                </p>
+                                {isPaused && (
+                                  <div className="flex items-center gap-1 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/25">
+                                    <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-tighter">⏸️ موقف مؤقتاً</span>
+                                  </div>
+                                )}
                                 {c.clientInfo?.isVip && (
                                   <div className="flex items-center gap-1 bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
                                     <Star size={10} className="fill-amber-500 text-amber-500" />
@@ -524,12 +578,36 @@ const ClientsPage = () => {
                           <div className="flex items-center justify-end gap-2">
                             <Link 
                               to={`/admin/clients/${c.clientInfo?.id || c.id}`}
+                              title={t('view_profile')}
                               className="p-2.5 text-slate-400 hover:text-brand-500 hover:bg-brand-500/10 rounded-xl transition-all border border-slate-200 dark:border-white/10 hover:border-brand-500/20"
                             >
                               <ExternalLink size={16} />
                             </Link>
-                            <button onClick={() => openEditModal(c)} className="p-2.5 text-slate-400 hover:text-brand-500 hover:bg-brand-500/10 rounded-xl transition-all border border-slate-200 dark:border-white/10 hover:border-brand-500/20"><Edit2 size={16} /></button>
-                            <button onClick={() => handleDelete(c.id, `${c.firstName} ${c.lastName}`)} className="p-2.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all border border-slate-200 dark:border-white/10 hover:border-rose-500/20"><Trash2 size={16} /></button>
+                            <button 
+                              onClick={() => openEditModal(c)} 
+                              title={t('edit')}
+                              className="p-2.5 text-slate-400 hover:text-brand-500 hover:bg-brand-500/10 rounded-xl transition-all border border-slate-200 dark:border-white/10 hover:border-brand-500/20"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button 
+                              onClick={() => handleTogglePause(c)} 
+                              title={!isPaused ? 'إيقاف مؤقت للعميل' : 'تنشيط العميل'}
+                              className={`p-2.5 rounded-xl transition-all border ${
+                                !isPaused 
+                                  ? 'text-amber-500 hover:bg-amber-500/10 border-slate-200 dark:border-white/10 hover:border-amber-500/20' 
+                                  : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 hover:bg-emerald-500/20'
+                              }`}
+                            >
+                              {!isPaused ? <Pause size={16} /> : <Play size={16} />}
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(c.id, `${c.firstName} ${c.lastName}`)} 
+                              title={t('delete')}
+                              className="p-2.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all border border-slate-200 dark:border-white/10 hover:border-rose-500/20"
+                            >
+                              <Trash2 size={16} />
+                            </button>
                           </div>
                         </td>
                       </tr>

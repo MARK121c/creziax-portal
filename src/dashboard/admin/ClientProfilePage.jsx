@@ -94,6 +94,9 @@ const ClientProfilePage = () => {
         ]);
         
         const clientData = clientRes.data;
+        const actualClientId = clientData?.id;
+        const actualUserId = clientData?.userId;
+
         // Flatten critical fields to root for 100% reliable prop access
         setClient({
           ...clientData,
@@ -102,11 +105,15 @@ const ClientProfilePage = () => {
           lastName: clientData?.user?.lastName
         });
 
-        // Use string comparison for UUIDs (parseInt was a bug)
-        setInvoices(invoicesRes.data.filter(inv => String(inv.clientId) === String(id)));
-        setProjects(projectsRes.data.filter(proj => String(proj.clientId) === String(id)));
-        setContracts(contractsRes.data.filter(cont => String(cont.clientId) === String(id)));
-        setActivities(activityRes.data.filter(log => String(log.entityId) === String(id) || log.userId === (clientData?.userId)));
+        const invoicesList = Array.isArray(invoicesRes.data) ? invoicesRes.data : (invoicesRes.data?.data || []);
+        const projectsList = Array.isArray(projectsRes.data) ? projectsRes.data : (projectsRes.data?.data || []);
+        const contractsList = Array.isArray(contractsRes.data) ? contractsRes.data : (contractsRes.data?.data || []);
+        const activityList = Array.isArray(activityRes.data) ? activityRes.data : (activityRes.data?.data || []);
+
+        setInvoices(invoicesList.filter(inv => String(inv.clientId) === String(actualClientId) || String(inv.clientId) === String(id)));
+        setProjects(projectsList.filter(proj => String(proj.clientId) === String(actualClientId) || String(proj.clientId) === String(id)));
+        setContracts(contractsList.filter(cont => String(cont.clientId) === String(actualClientId) || String(cont.clientId) === String(id)));
+        setActivities(activityList.filter(log => String(log.entityId) === String(actualClientId) || log.userId === actualUserId));
       } catch (err) {
         toast.error(t('error_general'));
         console.error(err);

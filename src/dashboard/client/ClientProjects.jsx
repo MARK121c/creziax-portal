@@ -97,11 +97,13 @@ const ClientCountdownTicker = ({ startedAt, reviewHours, onExpire }) => {
 };
 
 // ─── Stage Card with Feedback Controls ───────────────────────────────────────
-const StageCard = ({ stageKey, stageMeta, stageLabel, stageIcon: Icon, stageColor, taskId, isPublish, onFeedbackSubmit }) => {
+const StageCard = ({ stageKey, stageMeta = {}, stageLabel, stageIcon: Icon, stageColor, taskId, isPublish, isRTL, onFeedbackSubmit }) => {
   const [showRevisionBox, setShowRevisionBox] = useState(false);
   const [revisionNote, setRevisionNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const isVisible = !!stageMeta.visible;
+  const hasLinkOrValue = !!(stageMeta.link || stageMeta.datetime || stageMeta.hasLink);
   const value = isPublish ? stageMeta.datetime : stageMeta.link;
   const approvalStatus = stageMeta.approvalStatus || 'PENDING';
   const clientNotes = stageMeta.clientNotes || '';
@@ -114,14 +116,14 @@ const StageCard = ({ stageKey, stageMeta, stageLabel, stageIcon: Icon, stageColo
         approvalStatus: 'APPROVED',
         clientNotes: '',
       });
-      toast.success('تم الاعتماد بنجاح ✓');
+      toast.success(isRTL ? 'تم الاعتماد بنجاح ✓' : 'Approved successfully ✓');
       onFeedbackSubmit(taskId, res.data?.data);
-    } catch (_) { toast.error('فشل إرسال الاعتماد'); }
+    } catch (_) { toast.error(isRTL ? 'فشل إرسال الاعتماد' : 'Failed to submit approval'); }
     finally { setSubmitting(false); }
   };
 
   const handleRevisionSubmit = async () => {
-    if (!revisionNote.trim()) return toast.error('اكتب ملاحظات التعديل أولاً');
+    if (!revisionNote.trim()) return toast.error(isRTL ? 'اكتب ملاحظات التعديل أولاً' : 'Please enter revision notes');
     setSubmitting(true);
     try {
       const res = await submitClientFeedbackAPI(taskId, {
@@ -129,88 +131,119 @@ const StageCard = ({ stageKey, stageMeta, stageLabel, stageIcon: Icon, stageColo
         approvalStatus: 'REVISION_REQUESTED',
         clientNotes: revisionNote.trim(),
       });
-      toast.success('تم إرسال طلب التعديل للفريق ✏️');
+      toast.success(isRTL ? 'تم إرسال طلب التعديل للفريق ✏️' : 'Revision request sent ✏️');
       onFeedbackSubmit(taskId, res.data?.data);
       setShowRevisionBox(false);
       setRevisionNote('');
-    } catch (_) { toast.error('فشل إرسال الملاحظات'); }
+    } catch (_) { toast.error(isRTL ? 'فشل إرسال الملاحظات' : 'Failed to send notes'); }
     finally { setSubmitting(false); }
   };
 
   const colorMap = {
-    blue:    { bg: 'bg-blue-50 dark:bg-blue-500/10', border: 'border-blue-200 dark:border-blue-500/20', icon: 'bg-blue-500/15 text-blue-600 dark:text-blue-400', heading: 'text-blue-700 dark:text-blue-300' },
-    purple:  { bg: 'bg-purple-50 dark:bg-purple-500/10', border: 'border-purple-200 dark:border-purple-500/20', icon: 'bg-purple-500/15 text-purple-600 dark:text-purple-400', heading: 'text-purple-700 dark:text-purple-300' },
-    amber:   { bg: 'bg-amber-50 dark:bg-amber-500/10', border: 'border-amber-200 dark:border-amber-500/20', icon: 'bg-amber-500/15 text-amber-600 dark:text-amber-400', heading: 'text-amber-700 dark:text-amber-300' },
-    emerald: { bg: 'bg-emerald-50 dark:bg-emerald-500/10', border: 'border-emerald-200 dark:border-emerald-500/20', icon: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400', heading: 'text-emerald-700 dark:text-emerald-300' },
+    blue:    { bg: 'bg-blue-50/70 dark:bg-blue-500/10', border: 'border-blue-200 dark:border-blue-500/20', icon: 'bg-blue-500/15 text-blue-600 dark:text-blue-400', heading: 'text-blue-700 dark:text-blue-300' },
+    purple:  { bg: 'bg-purple-50/70 dark:bg-purple-500/10', border: 'border-purple-200 dark:border-purple-500/20', icon: 'bg-purple-500/15 text-purple-600 dark:text-purple-400', heading: 'text-purple-700 dark:text-purple-300' },
+    amber:   { bg: 'bg-amber-50/70 dark:bg-amber-500/10', border: 'border-amber-200 dark:border-amber-500/20', icon: 'bg-amber-500/15 text-amber-600 dark:text-amber-400', heading: 'text-amber-700 dark:text-amber-300' },
+    emerald: { bg: 'bg-emerald-50/70 dark:bg-emerald-500/10', border: 'border-emerald-200 dark:border-emerald-500/20', icon: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400', heading: 'text-emerald-700 dark:text-emerald-300' },
   };
   const c = colorMap[stageColor] || colorMap.blue;
 
   return (
-    <div className={`rounded-2xl border p-4 space-y-3 ${c.bg} ${c.border}`}>
+    <div className={`rounded-2xl border p-4 space-y-3 transition-all ${c.bg} ${c.border}`}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
           <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${c.icon}`}>
             <Icon size={15} />
           </div>
-          <div>
-            <p className={`text-[10px] font-black uppercase tracking-widest ${c.heading}`}>{stageLabel}</p>
-            {clientNotes && approvalStatus === 'REVISION_REQUESTED' && (
+          <div className="min-w-0">
+            <p className={`text-[10px] font-black uppercase tracking-widest truncate ${c.heading}`}>{stageLabel}</p>
+            {clientNotes && approvalStatus === 'REVISION_REQUESTED' && isVisible && (
               <p className="text-[9px] text-rose-500 font-bold mt-0.5 max-w-[180px] truncate">{clientNotes}</p>
             )}
           </div>
         </div>
-        <ApprovalBadge status={approvalStatus} />
-      </div>
 
-      {/* Value display */}
-      <div className="flex items-center gap-2">
-        <div className="flex-1 min-w-0 bg-white dark:bg-black/20 rounded-xl px-3 py-2 border border-slate-100 dark:border-white/5">
-          <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate">
-            {isPublish && value
-              ? new Date(value).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' })
-              : value || 'جاهز للمراجعة'}
-          </p>
-        </div>
-        {!isPublish && value && (
-          <a href={value} target="_blank" rel="noopener noreferrer"
-            className="p-2 bg-white dark:bg-white/5 text-slate-400 hover:text-brand-500 border border-slate-200 dark:border-white/10 rounded-xl transition-all flex-shrink-0">
-            <ExternalLink size={13} />
-          </a>
+        {/* Visibility Status Badge */}
+        {!isVisible ? (
+          !hasLinkOrValue ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/10 flex-shrink-0">
+              ⏳ {isRTL ? 'تحت الإنشاء' : 'Under Construction'}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/25 flex-shrink-0">
+              🔍 {isRTL ? 'تحت المراجعة من قبل الإدارة' : 'Under Management Review'}
+            </span>
+          )
+        ) : (
+          <ApprovalBadge status={approvalStatus} />
         )}
       </div>
 
-      {/* Live Countdown Ticker */}
-      {approvalStatus !== 'APPROVED' && approvalStatus !== 'AUTO_APPROVED' && stageMeta.clientTimerStartedAt && (
+      {/* Value display area */}
+      {!isVisible ? (
+        <div className="bg-white/60 dark:bg-black/20 rounded-xl px-3.5 py-2.5 border border-dashed border-slate-200 dark:border-white/10">
+          {!hasLinkOrValue ? (
+            <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 animate-pulse" />
+              {isRTL ? 'جاري العمل والتجهيز لهذه المرحلة...' : 'Work in progress by the team...'}
+            </p>
+          ) : (
+            <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              {isRTL ? 'المرحلة مكتملة وقيد المراجعة الإدارية (ستتاح قريباً)' : 'Completed & under review by management (available soon)'}
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0 bg-white dark:bg-black/20 rounded-xl px-3 py-2 border border-slate-100 dark:border-white/5">
+            <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 truncate">
+              {isPublish && value
+                ? new Date(value).toLocaleString(isRTL ? 'ar-EG' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' })
+                : value || (isRTL ? 'جاهز للمراجعة' : 'Ready for review')}
+            </p>
+          </div>
+          {!isPublish && value && (
+            <a href={value} target="_blank" rel="noopener noreferrer"
+              title={isRTL ? 'فتح الرابط' : 'Open link'}
+              className="p-2 bg-white dark:bg-white/5 text-slate-400 hover:text-brand-500 border border-slate-200 dark:border-white/10 rounded-xl transition-all flex-shrink-0 shadow-sm">
+              <ExternalLink size={13} />
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* Live Countdown Ticker — Only if visible */}
+      {isVisible && approvalStatus !== 'APPROVED' && approvalStatus !== 'AUTO_APPROVED' && stageMeta.clientTimerStartedAt && (
         <ClientCountdownTicker
           startedAt={stageMeta.clientTimerStartedAt}
           reviewHours={stageMeta.clientReviewHours || 12}
         />
       )}
 
-      {/* REVISION_DONE Banner — team has completed the revision, prompt client to re-review */}
-      {approvalStatus === 'REVISION_DONE' && (
+      {/* REVISION_DONE Banner — team has completed the revision */}
+      {isVisible && approvalStatus === 'REVISION_DONE' && (
         <div className="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/30 rounded-xl space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-lg">🔔</span>
             <div>
-              <p className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">تم التعديل — راجع الآن!</p>
-              <p className="text-[9px] text-amber-600 dark:text-amber-500 font-bold">قام الفريق بتعديل هذه المرحلة، يرجى مراجعتها واعتمادها أو طلب تعديل إضافي.</p>
+              <p className="text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest">{isRTL ? 'تم التعديل — راجع الآن!' : 'Revision Completed — Review now!'}</p>
+              <p className="text-[9px] text-amber-600 dark:text-amber-500 font-bold">{isRTL ? 'قام الفريق بتعديل هذه المرحلة، يرجى مراجعتها واعتمادها أو طلب تعديل إضافي.' : 'The team has updated this stage, please review and approve or request revision.'}</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Feedback Actions — only if not APPROVED / AUTO_APPROVED */}
-      {approvalStatus !== 'APPROVED' && approvalStatus !== 'AUTO_APPROVED' && (
+      {/* Feedback Actions — ONLY when Visible & not APPROVED / AUTO_APPROVED */}
+      {isVisible && approvalStatus !== 'APPROVED' && approvalStatus !== 'AUTO_APPROVED' && (
         <div className="space-y-2 pt-1">
           {/* Revision note box */}
           {showRevisionBox && (
-            <div className="bg-white dark:bg-black/20 rounded-xl border border-rose-200 dark:border-rose-500/20 p-3 space-y-2">
+            <div className="bg-white dark:bg-black/20 rounded-xl border border-rose-200 dark:border-rose-500/20 p-3 space-y-2 animate-in zoom-in-95 duration-200">
               <textarea
                 value={revisionNote}
                 onChange={e => setRevisionNote(e.target.value)}
-                placeholder="اكتب ملاحظاتك للفريق بالتفصيل..."
+                placeholder={isRTL ? 'اكتب ملاحظاتك للفريق بالتفصيل...' : 'Type your revision notes here...'}
                 rows={3}
                 className="w-full bg-transparent text-[11px] font-bold text-slate-700 dark:text-slate-200 resize-none focus:outline-none placeholder:opacity-40"
               />
@@ -224,7 +257,7 @@ const StageCard = ({ stageKey, stageMeta, stageLabel, stageIcon: Icon, stageColo
                   disabled={submitting}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-rose-500/20 active:scale-95 transition-all">
                   {submitting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-                  إرسال الملاحظات
+                  {isRTL ? 'إرسال الملاحظات' : 'Submit Notes'}
                 </button>
               </div>
             </div>
@@ -238,7 +271,7 @@ const StageCard = ({ stageKey, stageMeta, stageLabel, stageIcon: Icon, stageColo
                 disabled={submitting}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md shadow-emerald-500/20 active:scale-95 hover:bg-emerald-400 transition-all">
                 {submitting ? <Loader2 size={11} className="animate-spin" /> : <ThumbsUp size={11} />}
-                تأكيد واستلام
+                {isRTL ? 'تأكيد واستلام' : 'Approve & Accept'}
               </button>
               {/* ✏️ Request revision button */}
               <button
@@ -246,7 +279,7 @@ const StageCard = ({ stageKey, stageMeta, stageLabel, stageIcon: Icon, stageColo
                 disabled={submitting}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-white dark:bg-white/5 text-rose-500 border border-rose-300 dark:border-rose-500/30 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all">
                 <Edit3 size={11} />
-                طلب تعديل
+                {isRTL ? 'طلب تعديل' : 'Request Revision'}
               </button>
             </div>
           )}
@@ -254,10 +287,10 @@ const StageCard = ({ stageKey, stageMeta, stageLabel, stageIcon: Icon, stageColo
       )}
 
       {/* Approved confirmed note */}
-      {approvalStatus === 'APPROVED' && (
+      {isVisible && (approvalStatus === 'APPROVED' || approvalStatus === 'AUTO_APPROVED') && (
         <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 rounded-xl text-[10px] font-black text-emerald-600 dark:text-emerald-400">
           <CheckCircle2 size={12} />
-          تم الاعتماد واستلام هذه المرحلة
+          {isRTL ? 'تم الاعتماد واستلام هذه المرحلة بنجاح' : 'This stage has been approved and received'}
         </div>
       )}
     </div>
@@ -270,23 +303,11 @@ const ClientVideoCard = ({ task, isRTL, onFeedbackSubmit }) => {
   const meta = parseVideoMeta(task.description);
 
   const stagesList = [
-    { key: 'script',    label: isRTL ? 'السكريبت'      : 'Script',     icon: FileCode,   color: 'blue',    isPublish: false },
-    { key: 'edit',      label: isRTL ? 'المونتاج'      : 'Editing',    icon: Film,       color: 'purple',  isPublish: false },
-    { key: 'thumbnail', label: isRTL ? 'الصورة المصغرة': 'Thumbnail',  icon: ImageIcon,  color: 'amber',   isPublish: false },
-    { key: 'publish',   label: isRTL ? 'موعد النشر'    : 'Schedule',   icon: Calendar,   color: 'emerald', isPublish: true  },
+    { key: 'script',    label: isRTL ? 'مرحلة السكريبت'       : 'Script',     icon: FileCode,   color: 'blue',    isPublish: false },
+    { key: 'edit',      label: isRTL ? 'مرحلة المونتاج'       : 'Editing',    icon: Film,       color: 'purple',  isPublish: false },
+    { key: 'thumbnail', label: isRTL ? 'الصور المصغرة'        : 'Thumbnail',  icon: ImageIcon,  color: 'amber',   isPublish: false },
+    { key: 'publish',   label: isRTL ? 'مواعيد النشر'         : 'Schedule',   icon: Calendar,   color: 'emerald', isPublish: true  },
   ];
-
-  // A stage is visible if:
-  // 1) Explicitly marked visible === true
-  // 2) OR it has a link / datetime value entered by the team
-  // 3) OR visible is not explicitly set to false
-  const activeStages = stagesList.filter(s => {
-    const st = meta[s.key] || {};
-    if (st.visible === false) return false; // Explicitly hidden by admin
-    return true; // Show stage by default so client sees video progress
-  });
-
-  const displayStages = activeStages.length > 0 ? activeStages : stagesList;
 
   return (
     <div className="bg-white dark:bg-[#0a0a0c]/80 border border-slate-100 dark:border-white/[0.05] rounded-[2rem] overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
@@ -307,28 +328,31 @@ const ClientVideoCard = ({ task, isRTL, onFeedbackSubmit }) => {
         {/* Stage summary dots */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {stagesList.map(s => {
-            const st = meta[s.key];
-            if (!st?.visible) return <div key={s.key} className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10" />;
-            const dotColor = st.approvalStatus === 'APPROVED' ? 'bg-emerald-500' : st.approvalStatus === 'REVISION_REQUESTED' ? 'bg-rose-500' : 'bg-amber-400';
+            const st = meta[s.key] || {};
+            const isVis = !!st.visible;
+            const dotColor = !isVis ? 'bg-slate-200 dark:bg-white/10' :
+              st.approvalStatus === 'APPROVED' || st.approvalStatus === 'AUTO_APPROVED' ? 'bg-emerald-500' :
+              st.approvalStatus === 'REVISION_REQUESTED' ? 'bg-rose-500' : 'bg-amber-400';
             return <div key={s.key} className={`w-2 h-2 rounded-full ${dotColor}`} title={s.label} />;
           })}
         </div>
         <ChevronDown size={18} className={`text-slate-300 flex-shrink-0 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
       </div>
 
-      {/* Stage Cards Grid */}
+      {/* Stage Cards Grid — Shows all 4 stages with accurate states */}
       {expanded && (
         <div className="px-5 pb-5 grid grid-cols-1 md:grid-cols-2 gap-3 animate-in slide-in-from-top-2 duration-300">
-          {displayStages.map(s => (
+          {stagesList.map(s => (
             <StageCard
               key={s.key}
               stageKey={s.key}
-              stageMeta={meta[s.key]}
+              stageMeta={meta[s.key] || {}}
               stageLabel={s.label}
               stageIcon={s.icon}
               stageColor={s.color}
               taskId={task.id}
               isPublish={s.isPublish}
+              isRTL={isRTL}
               onFeedbackSubmit={onFeedbackSubmit}
             />
           ))}
@@ -347,6 +371,20 @@ const ClientProjects = () => {
   const [activeContract, setActiveContract] = useState(null);
   // phaseTasks: { [phaseId]: task[] }
   const [phaseTasks, setPhaseTasks] = useState({});
+  // Month Accordion State
+  const [expandedPhases, setExpandedPhases] = useState({});
+
+  const togglePhase = (phaseId) => {
+    setExpandedPhases(prev => ({
+      ...prev,
+      [phaseId]: prev[phaseId] === undefined ? false : !prev[phaseId]
+    }));
+  };
+
+  const isPhaseOpen = (phaseId) => {
+    if (expandedPhases[phaseId] !== undefined) return expandedPhases[phaseId];
+    return true; // Default open
+  };
 
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -540,45 +578,65 @@ const ClientProjects = () => {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {sortedPhases.map(phase => {
+                    {sortedPhases.map((phase, phIdx) => {
                       // Show all tasks in this phase/month
-                      const phaseTasks = phase.tasks || [];
-
-                      if (phaseTasks.length === 0) return null;
+                      const currentPhaseTasks = phase.tasks || [];
+                      if (currentPhaseTasks.length === 0) return null;
+                      const isOpen = isPhaseOpen(phase.id);
 
                       return (
-                        <div key={phase.id} className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/[0.06] rounded-3xl p-6">
-                          {/* Phase / Month Header */}
-                          <div className="flex items-center gap-3 mb-5">
-                            <div className="w-8 h-8 rounded-xl bg-brand-500/10 flex items-center justify-center flex-shrink-0">
-                              <Calendar size={15} className="text-brand-500" />
+                        <div key={phase.id} className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/[0.06] rounded-3xl p-6 transition-all duration-300">
+                          {/* Phase / Month Header with Accordion Toggle */}
+                          <div
+                            onClick={() => togglePhase(phase.id)}
+                            className="flex items-center justify-between gap-4 p-2 -m-2 rounded-2xl cursor-pointer hover:bg-slate-50/70 dark:hover:bg-white/[0.02] transition-colors select-none group"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-9 h-9 rounded-xl bg-brand-500/10 flex items-center justify-center flex-shrink-0 text-brand-500 group-hover:scale-105 transition-transform">
+                                <Calendar size={16} />
+                              </div>
+                              <div className="min-w-0">
+                                <h3 className="text-sm md:text-base font-black text-slate-800 dark:text-white tracking-widest uppercase truncate">
+                                  {phase.name}
+                                </h3>
+                                {phase.startDate && (
+                                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 truncate">
+                                    {new Date(phase.startDate).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                            <div>
-                              <h3 className="text-sm font-black text-slate-800 dark:text-white tracking-widest uppercase">
-                                {phase.name}
-                              </h3>
-                              {phase.startDate && (
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                                  {new Date(phase.startDate).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US', { month: 'long', year: 'numeric' })}
-                                </p>
-                              )}
+
+                            <div className="flex items-center gap-2.5 flex-shrink-0">
+                              <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-3 py-1 rounded-full border border-slate-200 dark:border-white/5">
+                                {currentPhaseTasks.length} {isRTL ? 'فيديو' : 'videos'}
+                              </span>
+                              <button
+                                type="button"
+                                className="p-2 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-400 group-hover:text-brand-500 transition-all flex items-center justify-center"
+                                title={isOpen ? (isRTL ? 'طي الفيديوهات' : 'Collapse videos') : (isRTL ? 'فتح الفيديوهات' : 'Expand videos')}
+                              >
+                                <ChevronDown
+                                  size={18}
+                                  className={`transition-transform duration-300 ${isOpen ? 'rotate-180 text-brand-500' : ''}`}
+                                />
+                              </button>
                             </div>
-                            <span className="ml-auto text-[9px] font-black text-slate-400 bg-slate-100 dark:bg-white/5 px-2.5 py-1 rounded-full">
-                              {phaseTasks.length} {isRTL ? 'فيديو' : 'videos'}
-                            </span>
                           </div>
 
-                          {/* Video Cards */}
-                          <div className="space-y-4">
-                            {phaseTasks.map(task => (
-                              <ClientVideoCard
-                                key={task.id}
-                                task={task}
-                                isRTL={isRTL}
-                                onFeedbackSubmit={handleFeedbackSubmit}
-                              />
-                            ))}
-                          </div>
+                          {/* Video Cards — Collapsible */}
+                          {isOpen && (
+                            <div className="space-y-4 pt-5 mt-3 border-t border-slate-100 dark:border-white/[0.04] animate-in slide-in-from-top-2 duration-300">
+                              {currentPhaseTasks.map(task => (
+                                <ClientVideoCard
+                                  key={task.id}
+                                  task={task}
+                                  isRTL={isRTL}
+                                  onFeedbackSubmit={handleFeedbackSubmit}
+                                />
+                              ))}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
