@@ -433,6 +433,11 @@ const TeamWorkspaceDetail = () => {
   const [phaseTasks, setPhaseTasks] = useState({});
   const [loadingTasks, setLoadingTasks] = useState({});
 
+  // Month Accordion Collapse State
+  const [collapsedMonths, setCollapsedMonths] = useState({});
+  const isMonthCollapsed = !!collapsedMonths[activePhaseId];
+  const toggleMonthCollapse = () => setCollapsedMonths(prev => ({ ...prev, [activePhaseId]: !prev[activePhaseId] }));
+
   // Mini-chat
   const [showMiniChat, setShowMiniChat] = useState(false);
   const [miniMessages, setMiniMessages] = useState([]);
@@ -684,51 +689,75 @@ const TeamWorkspaceDetail = () => {
             {activePhase && (
               <div className="space-y-4">
                 {/* Month Header */}
-                <div className="flex items-center justify-between mb-6 p-5 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-lg shadow-lg shadow-amber-500/30">
+                <div className="flex items-center justify-between mb-6 p-5 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 shadow-sm">
+                  <div 
+                    onClick={toggleMonthCollapse}
+                    className="flex items-center gap-4 cursor-pointer select-none group"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black text-lg shadow-lg shadow-amber-500/30 group-hover:scale-105 transition-transform">
                       {new Date(activePhase.createdAt).getMonth() + 1}
                     </div>
                     <div>
-                      <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">
-                        {activePhase.name}
-                      </h3>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight group-hover:text-amber-500 transition-colors">
+                          {activePhase.name}
+                        </h3>
+                        <ChevronDown 
+                          size={18} 
+                          className={`text-slate-400 transition-transform duration-300 ${isMonthCollapsed ? '-rotate-90' : 'rotate-0'}`} 
+                        />
+                      </div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
                         {(phaseTasks[activePhaseId] || []).length} فيديو •{' '}
                         {(phaseTasks[activePhaseId] || []).filter(t => t.assignedTo?.user?.id === user.id).length} مسند إليّ
+                        {isMonthCollapsed && (
+                          <span className="text-amber-500 mr-2 font-bold">(مطوي - انقر للفتح)</span>
+                        )}
                       </p>
                     </div>
                   </div>
+                  <button
+                    onClick={toggleMonthCollapse}
+                    className="px-4 py-2.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5"
+                    title={isMonthCollapsed ? 'فتح الشهر' : 'طي الشهر'}
+                  >
+                    <span>{isMonthCollapsed ? 'عرض الفيديوهات' : 'طي الفيديوهات'}</span>
+                    <ChevronDown size={14} className={`transition-transform duration-300 ${isMonthCollapsed ? '-rotate-90' : 'rotate-0'}`} />
+                  </button>
                 </div>
 
                 {/* Video Cards */}
-                {loadingTasks[activePhaseId] ? (
-                  <div className="py-24 flex flex-col items-center justify-center">
-                    <Loader2 size={40} className="animate-spin text-amber-500 opacity-30" />
-                  </div>
-                ) : (phaseTasks[activePhaseId] || []).length === 0 ? (
-                  <div className="py-24 text-center bg-white dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/5">
-                    <div className="w-16 h-16 bg-slate-50 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                      <Film size={28} className="text-slate-200 dark:text-slate-700" />
-                    </div>
-                    <p className="font-black text-slate-400 uppercase text-[11px] tracking-widest">
-                      لا توجد فيديوهات في هذا الشهر بعد
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {(phaseTasks[activePhaseId] || []).map((task, idx) => (
-                      <TeamVideoCard
-                        key={task.id}
-                        task={task}
-                        index={idx}
-                        phaseId={activePhaseId}
-                        userId={user?.id}
-                        userPosition={userPosition}
-                        onMetaChange={handleMetaChange}
-                      />
-                    ))}
-                  </div>
+                {!isMonthCollapsed && (
+                  <>
+                    {loadingTasks[activePhaseId] ? (
+                      <div className="py-24 flex flex-col items-center justify-center">
+                        <Loader2 size={40} className="animate-spin text-amber-500 opacity-30" />
+                      </div>
+                    ) : (phaseTasks[activePhaseId] || []).length === 0 ? (
+                      <div className="py-24 text-center bg-white dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/5">
+                        <div className="w-16 h-16 bg-slate-50 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                          <Film size={28} className="text-slate-200 dark:text-slate-700" />
+                        </div>
+                        <p className="font-black text-slate-400 uppercase text-[11px] tracking-widest">
+                          لا توجد فيديوهات في هذا الشهر بعد
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4 animate-in fade-in-50 duration-300">
+                        {(phaseTasks[activePhaseId] || []).map((task, idx) => (
+                          <TeamVideoCard
+                            key={task.id}
+                            task={task}
+                            index={idx}
+                            phaseId={activePhaseId}
+                            userId={user?.id}
+                            userPosition={userPosition}
+                            onMetaChange={handleMetaChange}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}

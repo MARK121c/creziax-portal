@@ -535,6 +535,11 @@ const WorkspaceDetail = () => {
   const [showAddTask, setShowAddTask] = useState(null);
   const [taskForm, setTaskForm] = useState({ title: '', deadline: '', assignedToId: '' });
 
+  // Month Accordion Collapse State
+  const [collapsedMonths, setCollapsedMonths] = useState({});
+  const isMonthCollapsed = !!collapsedMonths[activePhaseId];
+  const toggleMonthCollapse = () => setCollapsedMonths(prev => ({ ...prev, [activePhaseId]: !prev[activePhaseId] }));
+
   // Visibility toggling state
   const [togglingVisibility, setTogglingVisibility] = useState(null);
 
@@ -870,74 +875,100 @@ const WorkspaceDetail = () => {
             {activePhase && (
               <div className="space-y-4">
                 {/* Month Header */}
-                <div className="flex items-center justify-between mb-6 p-5 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-brand-600 text-white flex items-center justify-center font-black text-lg shadow-lg shadow-brand-600/30">
+                <div className="flex items-center justify-between mb-6 p-5 bg-white dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 shadow-sm">
+                  <div 
+                    onClick={toggleMonthCollapse}
+                    className="flex items-center gap-4 cursor-pointer select-none group"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-brand-600 text-white flex items-center justify-center font-black text-lg shadow-lg shadow-brand-600/30 group-hover:scale-105 transition-transform">
                       {new Date(activePhase.createdAt).getMonth() + 1}
                     </div>
                     <div>
-                      <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight">
-                        {activePhase.name}
-                      </h3>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tight group-hover:text-brand-500 transition-colors">
+                          {activePhase.name}
+                        </h3>
+                        <ChevronDown 
+                          size={18} 
+                          className={`text-slate-400 transition-transform duration-300 ${isMonthCollapsed ? '-rotate-90' : 'rotate-0'}`} 
+                        />
+                      </div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
                         {(phaseTasks[activePhaseId] || []).length} فيديو •{' '}
                         {(phaseTasks[activePhaseId] || []).filter(t => {
                           const m = parseVideoMeta(t.description);
                           return STAGES.some(s => m[s.key]?.visible);
                         }).length} مرئي للعميل
+                        {isMonthCollapsed && (
+                          <span className="text-brand-500 mr-2 font-bold">(مطوي - انقر للفتح)</span>
+                        )}
                       </p>
                     </div>
                   </div>
-                  {isStaff && (
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setShowAddTask(activePhaseId)}
-                      className="flex items-center gap-2 px-6 py-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20 hover:border-emerald-500 active:scale-95"
+                      onClick={toggleMonthCollapse}
+                      className="px-4 py-2.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5"
+                      title={isMonthCollapsed ? 'فتح الشهر' : 'طي الشهر'}
                     >
-                      <Plus size={16} />
-                      إضافة فيديو
+                      <span>{isMonthCollapsed ? 'عرض الفيديوهات' : 'طي الفيديوهات'}</span>
+                      <ChevronDown size={14} className={`transition-transform duration-300 ${isMonthCollapsed ? '-rotate-90' : 'rotate-0'}`} />
                     </button>
-                  )}
-                </div>
-
-                {/* Video Cards */}
-                {loadingTasks[activePhaseId] ? (
-                  <div className="py-24 flex flex-col items-center justify-center gap-4">
-                    <Loader2 size={40} className="animate-spin text-brand-500 opacity-30" />
-                  </div>
-                ) : (phaseTasks[activePhaseId] || []).length === 0 ? (
-                  <div className="py-24 text-center bg-white dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/5">
-                    <div className="w-16 h-16 bg-slate-50 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                      <Film size={28} className="text-slate-200 dark:text-slate-700" />
-                    </div>
-                    <p className="font-black text-slate-400 uppercase text-[11px] tracking-widest">
-                      لا توجد فيديوهات في هذا الشهر
-                    </p>
                     {isStaff && (
                       <button
                         onClick={() => setShowAddTask(activePhaseId)}
-                        className="mt-6 flex items-center gap-2 px-6 py-3 bg-brand-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest mx-auto hover:bg-brand-500 transition-all shadow-lg shadow-brand-600/20 active:scale-95"
+                        className="flex items-center gap-2 px-6 py-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20 hover:border-emerald-500 active:scale-95"
                       >
-                        <Plus size={16} /> أضف أول فيديو
+                        <Plus size={16} />
+                        إضافة فيديو
                       </button>
                     )}
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {(phaseTasks[activePhaseId] || []).map((task, idx) => (
-                      <VideoCard
-                        key={task.id}
-                        task={task}
-                        index={idx}
-                        phaseId={activePhaseId}
-                        isAdmin={isAdmin}
-                        teamMembers={teamMembers}
-                        onMetaChange={handleMetaChange}
-                        onDelete={handleDeleteTask}
-                        onVisibilityToggle={handleVisibilityToggle}
-                        togglingVisibility={togglingVisibility}
-                      />
-                    ))}
-                  </div>
+                </div>
+
+                {/* Video Cards (Collapsible) */}
+                {!isMonthCollapsed && (
+                  <>
+                    {loadingTasks[activePhaseId] ? (
+                      <div className="py-24 flex flex-col items-center justify-center gap-4">
+                        <Loader2 size={40} className="animate-spin text-brand-500 opacity-30" />
+                      </div>
+                    ) : (phaseTasks[activePhaseId] || []).length === 0 ? (
+                      <div className="py-24 text-center bg-white dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/5">
+                        <div className="w-16 h-16 bg-slate-50 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                          <Film size={28} className="text-slate-200 dark:text-slate-700" />
+                        </div>
+                        <p className="font-black text-slate-400 uppercase text-[11px] tracking-widest">
+                          لا توجد فيديوهات في هذا الشهر
+                        </p>
+                        {isStaff && (
+                          <button
+                            onClick={() => setShowAddTask(activePhaseId)}
+                            className="mt-6 flex items-center gap-2 px-6 py-3 bg-brand-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest mx-auto hover:bg-brand-500 transition-all shadow-lg shadow-brand-600/20 active:scale-95"
+                          >
+                            <Plus size={16} /> أضف أول فيديو
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-4 animate-in fade-in-50 duration-300">
+                        {(phaseTasks[activePhaseId] || []).map((task, idx) => (
+                          <VideoCard
+                            key={task.id}
+                            task={task}
+                            index={idx}
+                            phaseId={activePhaseId}
+                            isAdmin={isAdmin}
+                            teamMembers={teamMembers}
+                            onMetaChange={handleMetaChange}
+                            onDelete={handleDeleteTask}
+                            onVisibilityToggle={handleVisibilityToggle}
+                            togglingVisibility={togglingVisibility}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
