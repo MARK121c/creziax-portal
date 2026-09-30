@@ -31,6 +31,8 @@ import ProfilePage from './dashboard/shared/ProfilePage';
 import NotificationsPage from './dashboard/shared/NotificationsPage';
 import ExpensesPage from './dashboard/admin/ExpensesPage';
 import ContractsPage from './dashboard/admin/ContractsPage';
+import SalesPage from './dashboard/admin/SalesPage';
+import usePresenceStore from './store/presenceStore';
 
 import TeamDashboard from './dashboard/team/TeamDashboard';
 import TeamWorkspaceDetail from './dashboard/team/TeamWorkspaceDetail';
@@ -92,6 +94,7 @@ function AppContent() {
   const token = useAuthStore(state => state.token);
   const user = useAuthStore(state => state.user);
   const fetchProfile = useAuthStore(state => state.fetchProfile);
+  const fetchPresence = usePresenceStore(state => state.fetchPresence);
   const isInitializing = useAuthStore(state => state.isInitializing);
   
   const fetchActiveBroadcasts = useBroadcastStore(state => state.fetchActiveBroadcasts);
@@ -146,6 +149,7 @@ function AppContent() {
     console.log("%c Creziax Portal v20.6-MASTER %c Ready ", "background: #1e293b; color: #fff; border-radius: 5px 0 0 5px; padding: 2px 5px; font-weight: bold;", "background: #00E7FF; color: #000; border-radius: 0 5px 5px 0; padding: 2px 5px;");
     if (token) {
       fetchProfile();
+      fetchPresence();
     }
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -308,6 +312,8 @@ function AppContent() {
     socket.on('bonus_received', handleBonusReceived);
     const handleBroadcastUpdated = () => fetchActiveBroadcastsRef.current();
     socket.on('broadcast_updated', handleBroadcastUpdated);
+    const handlePresenceChange = ({ userId, isOnline, lastActiveAt }) => usePresenceStore.getState().updatePresence(userId, isOnline, lastActiveAt);
+    socket.on('user_presence_change', handlePresenceChange);
 
     return () => {
       socket.off('notification_created', handleNotificationCreated);
@@ -315,6 +321,7 @@ function AppContent() {
       socket.off('chat_deleted', handleChatDeletedGlobal);
       socket.off('bonus_received', handleBonusReceived);
       socket.off('broadcast_updated', handleBroadcastUpdated);
+      socket.off('user_presence_change', handlePresenceChange);
     };
   }, [token, user?.id, user?.role, incrementUnreadMessages, t, navigate, socket]); // fetchActiveBroadcasts removed - using stable ref
 
@@ -366,6 +373,7 @@ function AppContent() {
               <Route path="profile" element={<ProfilePage />} />
               <Route path="expenses" element={<ExpensesPage />} />
               <Route path="contracts" element={<ContractsPage />} />
+              <Route path="sales" element={<SalesPage />} />
               <Route path="notifications" element={<NotificationsPage />} />
             </Route>
 

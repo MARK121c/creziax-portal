@@ -30,7 +30,8 @@ import {
   Send, MessageSquare, Search, MoreHorizontal, Smile, Link as LinkIcon,
   Loader2, UserCircle, Plus, Filter, Clock, CheckCircle2, AlertCircle,
   Tag, ChevronRight, Briefcase, Calendar, ExternalLink, ShieldAlert,
-  UserPlus, X, Users, Check, Trash2, UserMinus, Paperclip, Pin, MessageSquareReply
+  UserPlus, X, Users, Check, Trash2, UserMinus, Paperclip, Pin, MessageSquareReply,
+  Copy, Video as VideoIcon, Image as ImageIcon, Download, FileText
 } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 
@@ -417,21 +418,112 @@ const MessagesPage = () => {
     finally { setGrantingAccess(false); }
   };
 
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef(null);
+
+  const handleFileUpload = async (file) => {
+    if (!file || !activeThread) return;
+    
+    // 1GB check
+    if (file.size > 1024 * 1024 * 1024) {
+      rToast.error("حجم الملف كبير جداً، الحد الأقصى هو 1 جيجابايت");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+    const toastId = rToast.loading(`جاري رفع الملف (${(file.size / (1024 * 1024)).toFixed(1)} MB)...`);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const { data: up } = await axios.post(`${API_URL}/upload/file`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(percent);
+          }
+        }
+      });
+
+      const fileUrl = up.url || up.fileUrl;
+      const mime = file.type || '';
+      let msgContent = `[FILE]${fileUrl}\n${file.name}`;
+      if (mime.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif)$/i.test(file.name)) {
+        msgContent = `[IMAGE]${fileUrl}`;
+      } else if (mime.startsWith('video/') || /\.(mp4|webm|mov|mkv)$/i.test(file.name)) {
+        msgContent = `[VIDEO]${fileUrl}`;
+      }
+
+      const isDM = activeThread.type === 'DM' || activeThread.type === 'TEAM';
+      const type = isDM ? 'PRIVATE' : 'GROUP';
+
+      const { data } = await sendMessageAPI({
+        content: msgContent,
+        type,
+        threadId: type === 'GROUP' ? activeThread.id : null,
+        receiverId: type === 'PRIVATE' ? activeThread.userId : null
+      });
+
+      socket.emit('send_message', { ...data, type, senderSocketId: socket.id });
+      setMessages(p => [...p, { ...data, sender: user }]);
+      rToast.update(toastId, { render: "تم إرسال الملف بنجاح", type: "success", isLoading: false, autoClose: 3000 });
+    } catch (err) {
+      rToast.update(toastId, { render: "فشل رفع الملف", type: "error", isLoading: false, autoClose: 3000 });
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handlePaste = async (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1 || items[i].kind === 'file') {
+        const file = items[i].getAsFile();
+        if (file) {
+          e.preventDefault();
+          rToast.info("جاري إرسال الصورة المنسوخة...");
+          await handleFileUpload(file);
+          return;
+        }
+      }
+    }
+  };
+
   const renderMessage = (m, i) => {
     const isBot = m.senderId === 'creziax-bot' || m.content?.startsWith('[BOT]');
-    let cleanVal = m.content; if (isBot) cleanVal = cleanVal.replace('[BOT]', '').trim();
-    const isDrive = m.content?.startsWith('[DRIVE_LINK]');
-    const isBooking = m.content?.startsWith('[MEETING_BOOKING]');
-    const isFile = m.content?.startsWith('[FILE]');
-    const isVoice = m.content?.startsWith('[VOICE]');
+    let cleanVal = m.content || ''; 
+    if (isBot) cleanVal = cleanVal.replace('[BOT]', '').trim();
+    const isDrive = cleanVal.startsWith('[DRIVE_LINK]');
+    const isBooking = cleanVal.startsWith('[MEETING_BOOKING]');
+    const isImage = cleanVal.startsWith('[IMAGE]') || /\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i.test(cleanVal);
+    const isVideo = cleanVal.startsWith('[VIDEO]') || /\.(mp4|webm|mov|mkv)(\?.*)?$/i.test(cleanVal);
+    const isFile = cleanVal.startsWith('[FILE]');
+    const isVoice = cleanVal.startsWith('[VOICE]');
     const isMine = String(m.senderId) === String(user?.id);
 
-    let driveUrl = isDrive ? m.content.replace('[DRIVE_LINK]', '').trim() : null;
-    let bData = isBooking ? { topic: m.content.split('\n')[1]?.replace('Topic: ', ''), dates: m.content.split('\n')[2]?.replace('Availability: ', '') } : null;
-    let fData = isFile ? { url: m.content.split('\n')[0].replace('[FILE]', ''), isImg: m.content.includes('jpg') || m.content.includes('png') || m.content.includes('webp') } : null;
+    let driveUrl = isDrive ? cleanVal.replace('[DRIVE_LINK]', '').trim() : null;
+    let bData = isBooking ? { topic: cleanVal.split('\n')[1]?.replace('Topic: ', ''), dates: cleanVal.split('\n')[2]?.replace('Availability: ', '') } : null;
+    let imageUrl = isImage ? resolveVoiceUrl(cleanVal.replace('[IMAGE]', '').trim()) : null;
+    let videoUrl = isVideo ? resolveVoiceUrl(cleanVal.replace('[VIDEO]', '').trim()) : null;
+    let fData = isFile ? { 
+      url: resolveVoiceUrl(cleanVal.split('\n')[0].replace('[FILE]', '').trim()), 
+      name: cleanVal.split('\n')[1] || 'ملف مرفق' 
+    } : null;
+    
     let vUrl = null, vDur = 0;
     if (isVoice) {
-      const p = m.content.replace('[VOICE]', '').trim();
+      const p = cleanVal.replace('[VOICE]', '').trim();
       if (p.includes('|')) { const s = p.split('|'); vDur = parseInt(s[0],10); vUrl = s.slice(1).join('|'); } else vUrl = p;
     }
 
@@ -444,9 +536,46 @@ const MessagesPage = () => {
           {m.parent && <div className="mb-1 p-2 rounded-t-xl bg-slate-100 dark:bg-white/5 border-r-4 border-brand-500/50 opacity-60 text-[10px]">{m.parent.content}</div>}
           <div className="group relative">
             <div className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold shadow-sm ${isMine ? 'bg-brand-600 text-white rounded-tr-none' : 'bg-white dark:bg-[#121215] text-slate-700 dark:text-slate-200 rounded-tl-none border border-slate-100 dark:border-white/5'}`}>
-              {isDrive ? <a href={driveUrl} target="_blank" rel="noreferrer" className="underline">{driveUrl}</a> : isBooking ? <div className="p-2 bg-black/10 rounded-lg">🗓 {bData.topic}<br/>⏰ {bData.dates}</div> : isFile ? (fData.isImg ? <img src={fData.url} className="max-w-[200px] rounded-lg" /> : <a href={fData.url} target="_blank" rel="noreferrer" className="flex items-center gap-2"><Paperclip size={14}/> File</a>) : isVoice ? <VoicePlayer src={vUrl} duration={vDur} isMine={isMine} /> : <p className="whitespace-pre-wrap">{cleanVal}</p>}
+              {isDrive ? (
+                <a href={driveUrl} target="_blank" rel="noreferrer" className="underline flex items-center gap-1.5"><LinkIcon size={14}/> {driveUrl}</a>
+              ) : isBooking ? (
+                <div className="p-2 bg-black/10 rounded-lg">🗓 {bData.topic}<br/>⏰ {bData.dates}</div>
+              ) : isImage ? (
+                <div className="space-y-1">
+                  <img src={imageUrl} alt="Attachment" className="max-w-[280px] sm:max-w-xs max-h-[300px] object-cover rounded-xl cursor-pointer hover:opacity-95 transition-opacity" onClick={() => window.open(imageUrl, '_blank')} />
+                  <span className="text-[8px] opacity-60 block text-left">صورة مرفقة (48h retention)</span>
+                </div>
+              ) : isVideo ? (
+                <div className="space-y-1">
+                  <video controls src={videoUrl} className="max-w-[280px] sm:max-w-sm rounded-xl max-h-[320px] bg-black" />
+                  <span className="text-[8px] opacity-60 block text-left">فيديو مرفق (48h retention)</span>
+                </div>
+              ) : isFile ? (
+                <a href={fData.url} target="_blank" rel="noreferrer" download className="flex items-center gap-2.5 p-2 bg-black/10 rounded-xl hover:bg-black/20 transition-all">
+                  <FileText size={18} className="text-brand-400 shrink-0" />
+                  <div className="overflow-hidden text-right">
+                    <p className="text-xs font-bold truncate max-w-[180px]">{fData.name}</p>
+                    <span className="text-[8px] opacity-60">اضغط للتحميل</span>
+                  </div>
+                  <Download size={14} className="shrink-0 mr-auto opacity-70" />
+                </a>
+              ) : isVoice ? (
+                <VoicePlayer src={vUrl} duration={vDur} isMine={isMine} />
+              ) : (
+                <p className="whitespace-pre-wrap select-text">{cleanVal}</p>
+              )}
             </div>
             <div className={`absolute -bottom-6 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-10 ${isMine ? 'right-0' : 'left-0'} bg-white dark:bg-[#1a1a1e] p-1 rounded-full border border-slate-100 dark:border-white/10 shadow-xl`}>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(cleanVal);
+                  rToast.success("تم نسخ الرسالة");
+                }} 
+                className="p-1.5 rounded-full hover:bg-brand-500/10 text-slate-400 hover:text-brand-500 transition-colors" 
+                title="نسخ الرسالة"
+              >
+                <Copy size={12}/>
+              </button>
               <button onClick={() => setReplyingTo(m)} className="p-1.5 rounded-full hover:bg-brand-500/10 text-slate-400 hover:text-brand-500 transition-colors" title="رد"><MessageSquareReply size={12}/></button>
               <button onClick={() => handleTogglePin(m.id)} className={`p-1.5 rounded-full hover:bg-brand-500/10 transition-colors ${m.isPinned ? 'text-brand-500' : 'text-slate-400 hover:text-brand-500'}`} title="تثبيت"><Pin size={12} className={m.isPinned ? 'fill-current' : ''}/></button>
               <button
@@ -663,7 +792,14 @@ const MessagesPage = () => {
              <div className="p-4 md:p-6 bg-white dark:bg-[#0d0d12] border-t border-slate-100 dark:border-white/10 shrink-0 relative">
                {replyingTo && <div className="absolute bottom-full mb-2 left-0 w-full px-6 animate-in slide-in-from-bottom-2"><div className="bg-slate-100 dark:bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center justify-between border-r-4 border-brand-500 shadow-xl"><div className="overflow-hidden"><p className="text-[8px] font-black text-brand-500 mb-0.5">رد على {replyingTo.sender?.firstName}</p><p className="text-[10px] font-bold opacity-60 truncate">{replyingTo.content}</p></div><button onClick={() => setReplyingTo(null)}><X size={14} /></button></div></div>}
                {showLinkModal && <div className="absolute bottom-full mb-4 left-0 w-full px-6 animate-in slide-in-from-bottom-4"><div className="bg-white dark:bg-[#121215] border border-white/10 rounded-2xl p-4 shadow-2xl flex flex-col gap-3"><input autoFocus value={driveLink} onChange={e=>setDriveLink(e.target.value)} placeholder="رابط Google Drive..." className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-white/10 rounded-xl text-xs font-bold outline-none" /><button onClick={handleSendDriveLink} className="py-3 bg-brand-600 text-white rounded-xl font-black text-xs">إرسال الرابط</button></div></div>}
-               <form onSubmit={handleSend} className="flex items-center gap-2 relative z-10">
+               <form onSubmit={handleSend} onPaste={handlePaste} className="flex items-center gap-2 relative z-10">
+                   <input
+                     type="file"
+                     ref={fileInputRef}
+                     onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
+                     className="hidden"
+                     accept="*/*"
+                   />
                   <div className="flex-1 min-w-0 bg-slate-100 dark:bg-white/5 border border-white/10 rounded-[1.5rem] px-3 py-2.5 sm:py-3 flex items-center gap-2 focus-within:ring-2 focus-within:ring-brand-500/20 transition-all">
                      <input value={content} onChange={e=>setContent(e.target.value)} placeholder="اكتب رسالتك..." className="flex-1 min-w-0 bg-transparent border-none text-xs sm:text-sm font-bold outline-none dark:text-white" />
                      <div className="flex items-center gap-1 sm:gap-2 shrink-0 opacity-50">

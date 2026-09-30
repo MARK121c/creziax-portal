@@ -20,6 +20,7 @@ import {
   FileSignature,
   Bell,
   BarChart3,
+  TrendingUp,
   ArchiveIcon
 } from 'lucide-react';
 
@@ -33,6 +34,7 @@ const adminLinks = [
   { to: '/admin/messages', icon: MessageSquare, labelKey: 'messages' },
   { to: '/admin/invoices', icon: Receipt, labelKey: 'invoices' },
   { to: '/admin/contracts', icon: FileBadge, labelKey: 'contracts' },
+  { to: '/admin/sales', icon: TrendingUp, labelKey: 'sales_crm' },
   { to: '/admin/finance', icon: BarChart3, labelKey: 'finance_hub' },
   { to: '/admin/profile', icon: UserRound, labelKey: 'my_profile' },
   { to: '/admin/notifications', icon: Bell, labelKey: 'notifications' },
@@ -44,6 +46,7 @@ const teamLinks = [
   { to: '/team/files', icon: FileText, labelKey: 'files' },
   { to: '/team/tasks', icon: CheckSquare, labelKey: 'tasks' },
   { to: '/team/messages', icon: MessageSquare, labelKey: 'messages' },
+  { to: '/team/sales', icon: TrendingUp, labelKey: 'sales_crm' },
   { to: '/team/contracts', icon: FileBadge, labelKey: 'contracts' },
   { to: '/team/invoices', icon: Receipt, labelKey: 'invoices' },
   { to: '/team/profile', icon: UserRound, labelKey: 'my_profile' },

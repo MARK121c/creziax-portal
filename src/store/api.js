@@ -183,4 +183,22 @@ export const createPublishScheduleAPI = (data) => api.post('/publish-schedules',
 export const updatePublishScheduleAPI = (id, data) => api.put(`/publish-schedules/${id}`, data);
 export const deletePublishScheduleAPI = (id) => api.delete(`/publish-schedules/${id}`);
 
+// CRM Leads & Sales (Phase 3)
+export const getLeadsAPI = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return api.get(`/leads${query ? `?${query}` : ''}`);
+};
+export const getLeadAPI = (id) => api.get(`/leads/${id}`);
+export const createLeadAPI = (data) => api.post('/leads', data);
+export const updateLeadAPI = (id, data) => api.put(`/leads/${id}`, data);
+export const deleteLeadAPI = (id) => api.delete(`/leads/${id}`);
+export const getNotificationSettingsAPI = () => api.get('/leads/settings/notification');
+export const updateNotificationSettingsAPI = (data) => api.put('/leads/settings/notification', data);
+export const testNotificationAPI = (data) => api.post('/leads/settings/test-notification', data);
+
+// Realtime Presence & Performance (Phase 5)
+export const getPresenceUsersAPI = () => api.get('/users/presence');
+export const getUserPerformanceAPI = (userId) => api.get(`/users/${userId}/performance`);
+
 export default api;
+

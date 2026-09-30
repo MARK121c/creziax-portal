@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
+import TeamPerformanceCard from '../../components/TeamPerformanceCard';
+import UserPresenceBadge from '../../components/UserPresenceBadge';
 
 const COUNTRY_FLAGS = {
   '+20': 'eg', '+966': 'sa', '+971': 'ae', '+974': 'qa', '+965': 'kw',
@@ -214,7 +216,8 @@ const TeamMemberProfilePage = () => {
                  }`}>
                    {member?.isActive === false ? t('inactive_account', 'Inactive Account') : t('active_member', 'Active Member')}
                  </div>
-                 <div className="text-xl" title={t('health_status', 'Health Status')}>
+                 <UserPresenceBadge userId={member?.id} initialOnline={member?.isOnline} initialLastActive={member?.lastActiveAt} />
+                  <div className="text-xl" title={t('health_status', 'Health Status')}>
                     {getHealthEmoji(member?.healthScore)}
                  </div>
               </div>
@@ -260,6 +263,9 @@ const TeamMemberProfilePage = () => {
            </div>
         </div>
       </div>
+
+      {/* Team Member Commitment & Performance */}
+      <TeamPerformanceCard performance={member?.performance} memberName={`${member?.firstName || ''} ${member?.lastName || ''}`} position={member?.position} />
 
       {/* Financial Hassala Stats & Performance */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

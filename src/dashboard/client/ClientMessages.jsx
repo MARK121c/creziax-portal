@@ -36,6 +36,7 @@ import {
   Smile,
   Link as LinkIcon,
   ChevronRight
+} Copy, Paperclip, FileText, Download, Video as VideoIcon, Image as ImageIcon
 } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 
@@ -223,6 +224,67 @@ const ClientMessages = () => {
   const scrollRef = useRef();
   const socket = useSocket();
   const activeThreadRef = useRef(activeThread);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleFileUpload = async (file) => {
+    if (!file || !activeThread) return;
+    if (file.size > 1024 * 1024 * 1024) {
+      rToast.error("حجم الملف كبير جداً، الحد الأقصى 1 جيجابايت");
+      return;
+    }
+    setIsUploading(true);
+    const toastId = rToast.loading("جاري رفع الملف...");
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const { data: up } = await axios.post(`${API_URL}/upload/file`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const fileUrl = up.url || up.fileUrl;
+      const mime = file.type || '';
+      let msgContent = `[FILE]${fileUrl}\n${file.name}`;
+      if (mime.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif)$/i.test(file.name)) {
+        msgContent = `[IMAGE]${fileUrl}`;
+      } else if (mime.startsWith('video/') || /\.(mp4|webm|mov|mkv)$/i.test(file.name)) {
+        msgContent = `[VIDEO]${fileUrl}`;
+      }
+
+      const { data } = await sendMessageAPI({
+        content: msgContent,
+        type: 'PRIVATE',
+        receiverId: activeThread.userId
+      });
+      socket.emit('send_message', { ...data, type: 'PRIVATE', senderSocketId: socket.id });
+      setMessages(p => [...p, { ...data, sender: user }]);
+      rToast.update(toastId, { render: "تم إرسال الملف بنجاح", type: "success", isLoading: false, autoClose: 3000 });
+    } catch(err) {
+      rToast.update(toastId, { render: "فشل الرفع", type: "error", isLoading: false, autoClose: 3000 });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handlePaste = async (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1 || items[i].kind === 'file') {
+        const file = items[i].getAsFile();
+        if (file) {
+          e.preventDefault();
+          rToast.info("جاري إرسال الصورة المنسوخة...");
+          await handleFileUpload(file);
+          return;
+        }
+      }
+    }
+  };
+
   activeThreadRef.current = activeThread;
 
   const fetchData = useCallback(async () => {
@@ -328,6 +390,7 @@ const ClientMessages = () => {
                <p className="whitespace-pre-wrap">{m.content}</p>}
             </div>
             <div className={`absolute -bottom-6 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-10 ${isMine ? 'right-0' : 'left-0'} bg-white dark:bg-[#1a1a1e] p-1 rounded-full border border-slate-100 dark:border-white/10 shadow-xl`}>
+              <button onClick={() => { navigator.clipboard.writeText(cleanVal); rToast.success("تم نسخ الرسالة"); }} className="p-1.5 rounded-full hover:bg-brand-500/10 text-slate-400 hover:text-brand-500 transition-colors" title="نسخ الرسالة"><Copy size={12}/></button>
               <button onClick={() => setReplyingTo(m)} className="p-1.5 rounded-full hover:bg-brand-500/10 text-slate-400 hover:text-brand-500 transition-colors" title="رد"><MessageSquareReply size={12} /></button>
               <button onClick={() => handleTogglePin(m.id)} className={`p-1.5 rounded-full hover:bg-brand-500/10 transition-colors ${m.isPinned ? 'text-brand-500' : 'text-slate-400 hover:text-brand-500'}`} title="تثبيت"><Pin size={12} className={m.isPinned ? 'fill-current' : ''} /></button>
               <button
@@ -430,7 +493,8 @@ const ClientMessages = () => {
                 <div className="flex-1 min-w-0 bg-slate-100 dark:bg-white/5 border border-white/10 rounded-[1.5rem] px-3 py-2.5 sm:py-3 flex items-center gap-2 focus-within:ring-2 focus-within:ring-brand-500/20 transition-all">
                   <input value={content} onChange={e => setContent(e.target.value)} placeholder="اكتب رسالتك..." className="flex-1 min-w-0 bg-transparent border-none text-xs sm:text-sm font-bold outline-none dark:text-white" />
                   <div className="flex items-center gap-1 sm:gap-2 opacity-50 shrink-0">
-                    <LinkIcon size={15} className="cursor-pointer hover:text-brand-500 text-slate-400 hover:opacity-100 transition-all shrink-0" onClick={() => setShowDrivePanel(true)} />
+                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="p-1 text-slate-400 hover:text-brand-500 transition-all" title="إرفاق ملف"><Paperclip size={16} className={isUploading ? 'animate-spin text-brand-500' : ''} /></button>
+                         <LinkIcon size={15} className="cursor-pointer hover:text-brand-500 text-slate-400 hover:opacity-100 transition-all shrink-0" onClick={() => setShowDrivePanel(true)} />
                     <button type="button" onClick={async () => {
                         if (isRecording) { mediaRecorderRef.current?.stop(); clearInterval(recordingTimerRef.current); setIsRecording(false); }
                         else {

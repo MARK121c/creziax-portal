@@ -11,6 +11,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../store/authStore';
 import { toast } from 'react-hot-toast';
+import UserPresenceBadge from '../../components/UserPresenceBadge';
 import useNotificationStore from '../../store/notificationStore';
 import { getBonusesAPI, createBonusAPI, deleteBonusAPI } from '../../store/api';
 import { Coins } from 'lucide-react';
@@ -403,6 +404,14 @@ const TeamPage = () => {
               <div className="px-4 py-1.5 bg-brand-500/10 text-brand-500 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border border-brand-500/20 mb-5">
                 {m.teamMemberInfo?.position || 'Team Member'}
               </div>
+
+              {/* Performance Commitment Badge */}
+              {m.performance && (
+                <div className="w-full flex items-center justify-between px-4 py-2 bg-brand-500/5 rounded-2xl border border-brand-500/10 text-[10px] font-black mb-3">
+                  <span className="text-slate-400">مؤشر الالتزام:</span>
+                  <span className="text-brand-500">{m.performance.commitmentScore}% ({m.performance.rating})</span>
+                </div>
+              )}
 
               {/* Finance Tracker */}
               <div className="w-full grid grid-cols-3 gap-2 p-5 bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-[2rem] mb-6">
