@@ -35,8 +35,13 @@ import {
   CalendarPlus2,
   Smile,
   Link as LinkIcon,
-  ChevronRight
-} Copy, Paperclip, FileText, Download, Video as VideoIcon, Image as ImageIcon
+  ChevronRight,
+  Copy,
+  Paperclip,
+  FileText,
+  Download,
+  Video as VideoIcon,
+  Image as ImageIcon
 } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
 
