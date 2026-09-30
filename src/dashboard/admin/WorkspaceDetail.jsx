@@ -12,15 +12,17 @@ import {
   deleteWorkspaceTaskAPI,
   toggleStageVisibilityAPI,
   getMessagesAPI,
-  sendMessageAPI
+  sendMessageAPI,
+  updateClientAPI
 } from '../../store/api';
 import { useSocket } from '../../context/SocketContext';
 import { 
   Plus, X, Trash2, Layout, Loader2, CheckCircle2, Clock, FileText, ExternalLink, 
   ChevronRight, Activity, ShieldCheck, MessageSquare, AlertCircle,
   Eye, EyeOff, FileCode, Film, Image as ImageIcon, Calendar, Link as LinkIcon,
-  Save, Send, Minimize2, ChevronDown
+  Save, Send, Minimize2, ChevronDown, Sliders, Youtube, Sparkles
 } from 'lucide-react';
+import PublishingScheduleSection from '../../components/PublishingScheduleSection';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 
@@ -535,6 +537,12 @@ const WorkspaceDetail = () => {
   const [showAddTask, setShowAddTask] = useState(null);
   const [taskForm, setTaskForm] = useState({ title: '', deadline: '', assignedToId: '' });
 
+  // Custom Production Pipeline Stages State (Requirement 4)
+  const [showStageConfigModal, setShowStageConfigModal] = useState(false);
+  const [customStages, setCustomStages] = useState([]);
+  const [stageInput, setStageInput] = useState('');
+  const [savingStages, setSavingStages] = useState(false);
+
   // Month Accordion Collapse State
   const [collapsedMonths, setCollapsedMonths] = useState({});
   const isMonthCollapsed = !!collapsedMonths[activePhaseId];
@@ -550,6 +558,25 @@ const WorkspaceDetail = () => {
   const [isSendingMini, setIsSendingMini] = useState(false);
   const socket = useSocket();
   const miniChatRef = useRef(null);
+
+  const handleSaveCustomStages = async () => {
+    const clientId = workspace?.client?.id || workspace?.clientId;
+    if (!clientId) {
+      toast.error('لم يتم العثور على معرّف العميل');
+      return;
+    }
+    setSavingStages(true);
+    try {
+      await updateClientAPI(clientId, { productionStages: customStages });
+      toast.success('تم حفظ مراحل الإنتاج المخصصة للعميل بنجاح');
+      setShowStageConfigModal(false);
+      fetchData();
+    } catch (err) {
+      toast.error('فشل حفظ مراحل الإنتاج');
+    } finally {
+      setSavingStages(false);
+    }
+  };
 
   // ── Chat ──
   const fetchMiniMessages = useCallback(async () => {
@@ -602,6 +629,9 @@ const WorkspaceDetail = () => {
       const results = await Promise.all(calls);
       const wData = results[0].data?.data || results[0].data;
       setWorkspace(wData);
+      if (wData?.client?.productionStages) {
+        setCustomStages(wData.client.productionStages);
+      }
       if (isStaff && results[1]) {
         setTeamMembers((results[1].data?.data || results[1].data || []).filter(u => u.role === 'TEAM'));
       }
@@ -786,7 +816,34 @@ const WorkspaceDetail = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0 flex-wrap">
+            {/* Channel Link */}
+            {(workspace.client?.channelLink || workspace.clientChannelLink) && (
+              <a 
+                href={(workspace.client?.channelLink || workspace.clientChannelLink).startsWith('http') 
+                  ? (workspace.client?.channelLink || workspace.clientChannelLink) 
+                  : `https://${workspace.client?.channelLink || workspace.clientChannelLink}`} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-3 sm:px-6 sm:py-4 bg-rose-600 hover:bg-rose-500 text-white rounded-xl sm:rounded-[1.5rem] font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all shadow-xl shadow-rose-600/20 active:scale-95"
+              >
+                <Youtube size={16} />
+                <span>القناة</span>
+              </a>
+            )}
+
+            {/* Custom Production Pipeline Settings Button (Requirement 4) */}
+            {isAdmin && (
+              <button
+                onClick={() => setShowStageConfigModal(true)}
+                className="flex items-center gap-2 px-4 py-3 sm:px-6 sm:py-4 bg-amber-500 hover:bg-amber-400 text-white rounded-xl sm:rounded-[1.5rem] font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all shadow-xl shadow-amber-500/20 active:scale-95"
+                title="تخصيص مراحل الإنتاج للعميل"
+              >
+                <Sliders size={16} />
+                <span>تخصيص المراحل</span>
+              </button>
+            )}
+
             {workspace.notionUrl && (
               <a href={workspace.notionUrl} target="_blank" rel="noopener noreferrer"
                 className="p-3 sm:px-6 sm:py-4 bg-white dark:bg-white/5 text-slate-500 hover:text-brand-500 rounded-xl sm:rounded-[1.5rem] transition-all border border-slate-200 dark:border-white/10 shadow-sm active:scale-95 group"
@@ -1091,6 +1148,119 @@ const WorkspaceDetail = () => {
           </div>
         </div>
       )}
+
+      {/* ── Custom Production Pipeline Modal (Requirement 4) ── */}
+      {showStageConfigModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-lg shadow-2xl p-6 sm:p-8 space-y-6 relative animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-4">
+              <h3 className="text-lg font-black text-slate-800 dark:text-white flex items-center gap-2">
+                <Sliders size={20} className="text-amber-500" />
+                تخصيص مراحل الإنتاج للعميل
+              </h3>
+              <button
+                onClick={() => setShowStageConfigModal(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-xl"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                حدد المراحل الإنتاجية المعتمدة لهذا العميل والتي تظهر له في لوحة التحكم (مثل: سكريبت - مونتاج - مراجعة - نشر).
+              </p>
+
+              <div className="flex gap-2">
+                <input
+                  value={stageInput}
+                  onChange={e => setStageInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const trimmed = stageInput.trim();
+                      if (trimmed && !customStages.includes(trimmed)) {
+                        setCustomStages([...customStages, trimmed]);
+                        setStageInput('');
+                      }
+                    }
+                  }}
+                  placeholder="اكتب اسم المرحلة ثم اضغط إضافة..."
+                  className="flex-1 px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const trimmed = stageInput.trim();
+                    if (trimmed && !customStages.includes(trimmed)) {
+                      setCustomStages([...customStages, trimmed]);
+                      setStageInput('');
+                    }
+                  }}
+                  className="px-5 py-3 bg-amber-500 text-white rounded-2xl font-black text-xs hover:bg-amber-400 transition-all"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+
+              {/* Active Stages Tags */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">المراحل النشطة حالياً:</label>
+                {customStages.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {customStages.map((st, idx) => (
+                      <span key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-xs font-black">
+                        {st}
+                        <button
+                          type="button"
+                          onClick={() => setCustomStages(customStages.filter((_, i) => i !== idx))}
+                          className="hover:text-rose-500"
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {['سكريبت', 'مونتاج', 'صور مصغرة', 'نشر'].map(st => (
+                      <button
+                        key={st}
+                        type="button"
+                        onClick={() => setCustomStages(prev => [...prev, st])}
+                        className="px-3 py-1.5 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-500 hover:bg-amber-500/10 hover:text-amber-500"
+                      >
+                        + {st}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-white/5">
+                <button
+                  onClick={handleSaveCustomStages}
+                  disabled={savingStages}
+                  className="flex-1 py-3.5 bg-amber-500 hover:bg-amber-400 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl shadow-amber-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  {savingStages ? <Loader2 size={16} className="animate-spin" /> : 'حفظ مراحل الإنتاج'}
+                </button>
+                <button
+                  onClick={() => setShowStageConfigModal(false)}
+                  className="px-6 py-3.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-2xl"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Fixed Publishing Schedule Section (Requirement 5) ── */}
+      <div className="mt-14">
+        <PublishingScheduleSection projectId={id} isAdmin={isAdmin} isRTL={true} />
+      </div>
 
       {/* ── Floating Mini Chat ── */}
       <div className="fixed bottom-4 right-4 sm:bottom-10 sm:right-10 z-[100] flex flex-col items-end gap-4 sm:gap-6">

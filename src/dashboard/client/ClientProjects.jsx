@@ -6,8 +6,9 @@ import { toast } from 'react-hot-toast';
 import {
   FolderKanban, Loader2, CheckCircle2, Film, AlertCircle,
   Calendar, FileCode, Image as ImageIcon, ExternalLink,
-  Clock, ChevronDown, ThumbsUp, Edit3, X, Send
+  Clock, ChevronDown, ThumbsUp, Edit3, X, Send, Sparkles
 } from 'lucide-react';
+import PublishingScheduleSection from '../../components/PublishingScheduleSection';
 
 // ─── JSON Schema Parser ───────────────────────────────────────────────────────
 const parseVideoMeta = (description) => {
@@ -298,16 +299,23 @@ const StageCard = ({ stageKey, stageMeta = {}, stageLabel, stageIcon: Icon, stag
 };
 
 // ─── Video Task Card ──────────────────────────────────────────────────────────
-const ClientVideoCard = ({ task, isRTL, onFeedbackSubmit }) => {
+const ClientVideoCard = ({ task, customStages = [], isRTL, onFeedbackSubmit }) => {
   const [expanded, setExpanded] = useState(true);
   const meta = parseVideoMeta(task.description);
 
-  const stagesList = [
-    { key: 'script',    label: isRTL ? 'مرحلة السكريبت'       : 'Script',     icon: FileCode,   color: 'blue',    isPublish: false },
-    { key: 'edit',      label: isRTL ? 'مرحلة المونتاج'       : 'Editing',    icon: Film,       color: 'purple',  isPublish: false },
-    { key: 'thumbnail', label: isRTL ? 'الصور المصغرة'        : 'Thumbnail',  icon: ImageIcon,  color: 'amber',   isPublish: false },
-    { key: 'publish',   label: isRTL ? 'مواعيد النشر'         : 'Schedule',   icon: Calendar,   color: 'emerald', isPublish: true  },
+  const allStages = [
+    { key: 'script',    matcher: ['script', 'سكريبت', 'اسكريبت', 'كتابة'], label: isRTL ? 'مرحلة السكريبت'       : 'Script',     icon: FileCode,   color: 'blue',    isPublish: false },
+    { key: 'edit',      matcher: ['edit', 'مونتاج', 'تعديل'],            label: isRTL ? 'مرحلة المونتاج'       : 'Editing',    icon: Film,       color: 'purple',  isPublish: false },
+    { key: 'thumbnail', matcher: ['thumbnail', 'صور', 'تصميم', 'بوستر'],  label: isRTL ? 'الصور المصغرة'        : 'Thumbnail',  icon: ImageIcon,  color: 'amber',   isPublish: false },
+    { key: 'publish',   matcher: ['publish', 'نشر', 'مواعيد', 'جدول'],     label: isRTL ? 'مواعيد النشر'         : 'Schedule',   icon: Calendar,   color: 'emerald', isPublish: true  },
   ];
+
+  const stagesList = (customStages && customStages.length > 0)
+    ? allStages.filter(s => customStages.some(cs => s.matcher.some(m => cs.toLowerCase().includes(m))))
+    : allStages;
+
+  // Fallback to all stages if filter resulted in empty
+  const activeStages = stagesList.length > 0 ? stagesList : allStages;
 
   return (
     <div className="bg-white dark:bg-[#0a0a0c]/80 border border-slate-100 dark:border-white/[0.05] rounded-[2rem] overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
@@ -327,7 +335,7 @@ const ClientVideoCard = ({ task, isRTL, onFeedbackSubmit }) => {
         </div>
         {/* Stage summary dots */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          {stagesList.map(s => {
+          {activeStages.map(s => {
             const st = meta[s.key] || {};
             const isVis = !!st.visible;
             const dotColor = !isVis ? 'bg-slate-200 dark:bg-white/10' :
@@ -339,10 +347,10 @@ const ClientVideoCard = ({ task, isRTL, onFeedbackSubmit }) => {
         <ChevronDown size={18} className={`text-slate-300 flex-shrink-0 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
       </div>
 
-      {/* Stage Cards Grid — Shows all 4 stages with accurate states */}
+      {/* Stage Cards Grid — Shows custom stages with accurate states */}
       {expanded && (
         <div className="px-5 pb-5 grid grid-cols-1 md:grid-cols-2 gap-3 animate-in slide-in-from-top-2 duration-300">
-          {stagesList.map(s => (
+          {activeStages.map(s => (
             <StageCard
               key={s.key}
               stageKey={s.key}
@@ -569,6 +577,9 @@ const ClientProjects = () => {
                   </div>
                 </div>
 
+                {/* Fixed Publishing Schedule Section (Requirement 5) */}
+                <PublishingScheduleSection projectId={project.id} isAdmin={false} isRTL={isRTL} />
+
                 {/* Phases (Months) with Videos */}
                 {!hasAnyTasks ? (
                   <div className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/[0.06] rounded-3xl p-10 text-center">
@@ -631,6 +642,7 @@ const ClientProjects = () => {
                                 <ClientVideoCard
                                   key={task.id}
                                   task={task}
+                                  customStages={project.client?.productionStages || []}
                                   isRTL={isRTL}
                                   onFeedbackSubmit={handleFeedbackSubmit}
                                 />

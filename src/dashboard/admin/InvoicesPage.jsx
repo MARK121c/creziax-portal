@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { getInvoicesAPI, createInvoiceAPI, updateInvoiceAPI, deleteInvoiceAPI, getClientsAPI, getExpensesAPI, createExpenseAPI, updateExpenseAPI, deleteExpenseAPI, getUsersAPI, getTeamDashboardStatsAPI } from '../../store/api';
-import { Plus, X, Trash2, Receipt, Search, Loader2, DollarSign, FileText, Gift, CheckCircle, Clock } from 'lucide-react';
+import { Plus, X, Trash2, Receipt, Search, Loader2, DollarSign, FileText, Gift, CheckCircle, Clock, Filter, Calendar, TrendingUp, Wallet, Layers, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
@@ -18,6 +18,11 @@ const InvoicesPage = () => {
   const [teamMembers, setTeamMembers] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
+  
+  // Filtering & Monthly Breakdown states
+  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'PAID' | 'PENDING'
+  const [selectedMonth, setSelectedMonth] = useState('ALL'); // 'ALL' | 'YYYY-MM'
+  const [groupByMonth, setGroupByMonth] = useState(false);
   
   // Role Detection
   const { user } = useAuthStore();
@@ -361,16 +366,69 @@ const InvoicesPage = () => {
     }
   };
 
-  const filteredInvoices = (invoices || []).filter(inv => 
-    (inv.invoiceNumber || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
-    (inv.service || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
-    `${inv.client?.user?.firstName || ''} ${inv.client?.user?.lastName || ''}`.toLowerCase().includes((searchQuery || '').toLowerCase())
-  );
+  // Available Months for filtering
+  const availableMonths = Array.from(new Set(
+    (invoices || []).map(inv => {
+      const d = new Date(inv.dueDate || inv.createdAt);
+      return isNaN(d.getTime()) ? null : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    }).filter(Boolean)
+  )).sort((a, b) => b.localeCompare(a));
 
-  const filteredDues = (teamDues || []).filter(due => 
-    (due.description || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
-    `${due.user?.firstName || ''} ${due.user?.lastName || ''}`.toLowerCase().includes((searchQuery || '').toLowerCase())
-  );
+  // Financial Stats for Admin
+  const totalPaidInvoices = (invoices || []).filter(i => i.status === 'PAID').reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+  const totalPendingInvoices = (invoices || []).filter(i => i.status !== 'PAID').reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
+  const totalSentExpenses = (teamDues || []).filter(d => d.status === 'SENT').reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+  const totalPendingExpenses = (teamDues || []).filter(d => d.status !== 'SENT').reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+  const netRemaining = totalPaidInvoices - totalSentExpenses;
+
+  const filteredInvoices = (invoices || []).filter(inv => {
+    const query = (searchQuery || '').toLowerCase();
+    const matchesSearch = 
+      (inv.invoiceNumber || '').toLowerCase().includes(query) ||
+      (inv.service || '').toLowerCase().includes(query) ||
+      `${inv.client?.user?.firstName || ''} ${inv.client?.user?.lastName || ''}`.toLowerCase().includes(query);
+    
+    if (!matchesSearch) return false;
+
+    if (statusFilter !== 'ALL' && inv.status !== statusFilter) return false;
+
+    if (selectedMonth !== 'ALL') {
+      const d = new Date(inv.dueDate || inv.createdAt);
+      const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (monthKey !== selectedMonth) return false;
+    }
+
+    return true;
+  });
+
+  // Grouped Invoices by Month
+  const groupedInvoices = filteredInvoices.reduce((groups, inv) => {
+    const d = new Date(inv.dueDate || inv.createdAt);
+    const monthKey = !isNaN(d.getTime()) ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` : 'Other';
+    if (!groups[monthKey]) groups[monthKey] = [];
+    groups[monthKey].push(inv);
+    return groups;
+  }, {});
+
+  const filteredDues = (teamDues || []).filter(due => {
+    const query = (searchQuery || '').toLowerCase();
+    const matchesSearch = 
+      (due.description || '').toLowerCase().includes(query) ||
+      `${due.user?.firstName || ''} ${due.user?.lastName || ''}`.toLowerCase().includes(query);
+    
+    if (!matchesSearch) return false;
+
+    if (statusFilter === 'PAID' && due.status !== 'SENT') return false;
+    if (statusFilter === 'PENDING' && due.status === 'SENT') return false;
+
+    if (selectedMonth !== 'ALL') {
+      const d = new Date(due.date || due.createdAt || due.created_at);
+      const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (monthKey !== selectedMonth) return false;
+    }
+
+    return true;
+  });
 
   return (
     <div className="space-y-8 md:space-y-10">
@@ -382,7 +440,7 @@ const InvoicesPage = () => {
             {isTeam && <span className="text-[10px] px-2 py-0.5 bg-brand-500/10 text-brand-500 rounded-full border border-brand-500/20 font-black tracking-widest uppercase animate-pulse">v21.1-ELITE</span>}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 font-medium mt-2 text-base md:text-lg">
-            {isTeam ? 'متابعة الأرباح والتحويلات الخاصة بك' : t('finance_invoices_desc', 'إدارة التحصيل ومستحقات فريق العمل')}
+            {isTeam ? 'متابعة الأرباح والتحويلات الخاصة بك' : t('finance_invoices_desc', 'إدارة التحصيل ومستحقات فريق العمل والفلترة الشهرية')}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
@@ -410,6 +468,69 @@ const InvoicesPage = () => {
           )}
         </div>
       </div>
+
+      {/* Admin Financial Summary Cards (Requirement 2) */}
+      {isAdmin && !loading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
+          {/* Card 1: Paid / Collected */}
+          <div className="bg-white dark:bg-[#0a0a0c]/40 border border-emerald-500/20 rounded-[2rem] p-6 shadow-sm backdrop-blur-md relative overflow-hidden">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">تم الدفع (المحصل)</p>
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                <CheckCircle size={20} />
+              </div>
+            </div>
+            <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+              ${totalPaidInvoices.toLocaleString()}
+            </p>
+            <p className="text-[10px] font-bold text-slate-400 mt-2">إجمالي الفواتير المسددة</p>
+          </div>
+
+          {/* Card 2: Pending / Unpaid */}
+          <div className="bg-white dark:bg-[#0a0a0c]/40 border border-amber-500/20 rounded-[2rem] p-6 shadow-sm backdrop-blur-md relative overflow-hidden">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">لم يدفع (قيد التحصيل)</p>
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                <Clock size={20} />
+              </div>
+            </div>
+            <p className="text-3xl font-black text-amber-500 tracking-tight">
+              ${totalPendingInvoices.toLocaleString()}
+            </p>
+            <p className="text-[10px] font-bold text-slate-400 mt-2">مستحقات على العملاء</p>
+          </div>
+
+          {/* Card 3: Expenses / Team Dues */}
+          <div className="bg-white dark:bg-[#0a0a0c]/40 border border-rose-500/20 rounded-[2rem] p-6 shadow-sm backdrop-blur-md relative overflow-hidden">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">المصروفات (من أخذ فلوس)</p>
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
+                <Gift size={20} />
+              </div>
+            </div>
+            <p className="text-3xl font-black text-rose-500 tracking-tight">
+              ${totalSentExpenses.toLocaleString()}
+            </p>
+            <p className="text-[10px] font-bold text-slate-400 mt-2">
+              مدفوع للفريق {totalPendingExpenses > 0 && `(+$${totalPendingExpenses.toLocaleString()} معلق)`}
+            </p>
+          </div>
+
+          {/* Card 4: Net Remaining */}
+          <div className="bg-slate-900 dark:bg-[#060608] border border-brand-500/30 rounded-[2rem] p-6 shadow-xl shadow-slate-900/20 text-white relative overflow-hidden">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">المتبقي / صافي الأرباح</p>
+              <div className="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center">
+                <Wallet size={20} />
+              </div>
+            </div>
+            <p className={`text-3xl font-black tracking-tight ${netRemaining >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+              ${netRemaining.toLocaleString()}
+            </p>
+            <p className="text-[10px] font-bold text-slate-400 mt-2">الصافي بعد خصم المصروفات</p>
+          </div>
+        </div>
+      )}
 
       {/* Team Specific Summary Cards */}
       {isTeam && !loading && (
@@ -456,25 +577,83 @@ const InvoicesPage = () => {
         </div>
       )}
 
-      {/* Tabs */}
-      {!isTeam && (
-        <div className="flex gap-1 p-1.5 bg-slate-100 dark:bg-white/5 rounded-2xl w-fit">
-          <button
-            onClick={() => setActiveTab('client')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'client' ? 'bg-white dark:bg-[#0a0a0c] text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-          >
-            <Receipt size={16} />
-            {t('client_invoices_tab', 'فواتير العملاء (التحصيل)')}
-          </button>
-          <button
-            onClick={() => setActiveTab('team')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'team' ? 'bg-white dark:bg-[#0a0a0c] text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-          >
-            <Gift size={16} />
-            {t('team_dues_tab', 'مستحقات الفريق (الإنفاق)')}
-          </button>
+      {/* Tabs & Comprehensive Filters */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        {!isTeam && (
+          <div className="flex gap-1 p-1.5 bg-slate-100 dark:bg-white/5 rounded-2xl w-fit">
+            <button
+              onClick={() => setActiveTab('client')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'client' ? 'bg-white dark:bg-[#0a0a0c] text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+            >
+              <Receipt size={16} />
+              {t('client_invoices_tab', 'فواتير العملاء (التحصيل)')}
+            </button>
+            <button
+              onClick={() => setActiveTab('team')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'team' ? 'bg-white dark:bg-[#0a0a0c] text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+            >
+              <Gift size={16} />
+              {t('team_dues_tab', 'مستحقات الفريق (المصروفات)')}
+            </button>
+          </div>
+        )}
+
+        {/* Filter Controls: Status + Month */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Status Filter */}
+          <div className="flex items-center gap-1 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-1 shadow-sm">
+            <button
+              onClick={() => setStatusFilter('ALL')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${statusFilter === 'ALL' ? 'bg-brand-500 text-white' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              الكل
+            </button>
+            <button
+              onClick={() => setStatusFilter('PAID')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${statusFilter === 'PAID' ? 'bg-emerald-500 text-white' : 'text-slate-500 hover:text-emerald-500'}`}
+            >
+              تم الدفع
+            </button>
+            <button
+              onClick={() => setStatusFilter('PENDING')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${statusFilter === 'PENDING' ? 'bg-amber-500 text-white' : 'text-slate-500 hover:text-amber-500'}`}
+            >
+              لم يدفع
+            </button>
+          </div>
+
+          {/* Month Selector */}
+          {availableMonths.length > 0 && (
+            <div className="flex items-center gap-2 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl px-3 py-2 shadow-sm">
+              <Calendar size={14} className="text-slate-400" />
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="bg-transparent text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+              >
+                <option value="ALL">جميع الشهور</option>
+                {availableMonths.map(m => (
+                  <option key={m} value={m}>
+                    شهر {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Group by Month Toggle */}
+          {activeTab === 'client' && (
+            <button
+              onClick={() => setGroupByMonth(!groupByMonth)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-black border transition-all ${groupByMonth ? 'bg-brand-500/10 border-brand-500 text-brand-500' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500'}`}
+              title="تقسيم الفواتير حسب الشهور"
+            >
+              <Layers size={14} />
+              تقسيم بالشهور
+            </button>
+          )}
         </div>
-      )}
+      </div>
 
       {/* CLIENT INVOICES TAB */}
       {activeTab === 'client' && (
@@ -722,9 +901,38 @@ const InvoicesPage = () => {
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('linked_client_label', 'العميل المرتبط')}</label>
                   <select value={invoiceForm.clientId} onChange={e => {
-                    const selectedClient = clients.find(c => c.id === e.target.value);
-                    const clientCurrency = selectedClient?.clientInfo?.preferredCurrency || 'USD';
-                    setInvoiceForm({...invoiceForm, clientId: e.target.value, currency: clientCurrency});
+                    const clientId = e.target.value;
+                    const selectedClient = clients.find(c => c.id === clientId || c.clientInfo?.id === clientId);
+                    const clientCurrency = selectedClient?.clientInfo?.preferredCurrency || selectedClient?.preferredCurrency || 'USD';
+                    const clientAmount = selectedClient?.clientInfo?.monthlyAmount ?? selectedClient?.monthlyAmount;
+                    const monthlyDueDay = selectedClient?.clientInfo?.monthlyDueDate ?? selectedClient?.monthlyDueDate;
+
+                    // Calculate auto due date from monthly due day or contract start date
+                    let autoDueDate = '';
+                    const now = new Date();
+                    if (monthlyDueDay && monthlyDueDay >= 1 && monthlyDueDay <= 31) {
+                      const curMonth = new Date(now.getFullYear(), now.getMonth(), monthlyDueDay);
+                      if (curMonth < now) {
+                        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, monthlyDueDay);
+                        autoDueDate = nextMonth.toISOString().split('T')[0];
+                      } else {
+                        autoDueDate = curMonth.toISOString().split('T')[0];
+                      }
+                    } else if (selectedClient?.clientInfo?.contractStartDate || selectedClient?.contractStartDate) {
+                      const startDate = new Date(selectedClient.clientInfo?.contractStartDate || selectedClient.contractStartDate);
+                      const day = startDate.getDate();
+                      const curMonth = new Date(now.getFullYear(), now.getMonth(), day);
+                      autoDueDate = curMonth.toISOString().split('T')[0];
+                    }
+
+                    setInvoiceForm(prev => ({
+                      ...prev,
+                      clientId,
+                      currency: clientCurrency,
+                      amount: prev.amount || (clientAmount ? String(clientAmount) : ''),
+                      dueDate: prev.dueDate || autoDueDate,
+                      invoiceNumber: prev.invoiceNumber || `INV-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(Math.floor(100 + Math.random() * 900))}`
+                    }));
                   }} required className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 appearance-none font-bold">
                     <option value="">{t('select_client_placeholder', 'اختر العميل المعني...')}</option>
                     {clients.map(c => <option key={c.id} value={c.id}>{c.user?.firstName} {c.user?.lastName}</option>)}

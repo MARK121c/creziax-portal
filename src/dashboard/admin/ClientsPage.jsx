@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { getUsersAPI, createUserAPI, deleteUserAPI, updateUserAPI, updateClientAPI, uploadImageAPI } from '../../store/api';
-import { Trash2, Plus, X, Building2, Mail, Phone, Calendar, Loader2, Search, UserPlus, Edit2, Star, Camera, UploadCloud, ExternalLink, Bell, FileText, Briefcase, Filter, ChevronRight, Receipt, Pause, Play } from 'lucide-react';
+import { Trash2, Plus, X, Building2, Mail, Phone, Calendar, Loader2, Search, UserPlus, Edit2, Star, Camera, UploadCloud, ExternalLink, Bell, FileText, Briefcase, Filter, ChevronRight, Receipt, Pause, Play, Youtube } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import useNotificationStore from '../../store/notificationStore';
@@ -62,11 +62,13 @@ const ClientsPage = () => {
   const [form, setForm] = useState({ 
     firstName: '', lastName: '', email: '', password: '', company: '', phone: '',
     tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', telegram: '', managedChannels: '',
-    contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: '', preferredCurrency: 'USD'
+    contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: '', preferredCurrency: 'USD',
+    channelLink: '', monthlyDueDate: '', monthlyAmount: '', productionStages: []
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [fileError, setFileError] = useState('');
   const [activeFilter, setActiveFilter] = useState({ tier: 'ALL', health: 'ALL' });
+  const [stageInput, setStageInput] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -145,7 +147,11 @@ const ClientsPage = () => {
           contractEndDate: form.contractEndDate,
           healthScore: form.healthScore,
           internalNotes: form.internalNotes,
-          preferredCurrency: form.preferredCurrency
+          preferredCurrency: form.preferredCurrency,
+          channelLink: form.channelLink,
+          monthlyDueDate: form.monthlyDueDate ? parseInt(form.monthlyDueDate) : null,
+          monthlyAmount: form.monthlyAmount ? parseFloat(form.monthlyAmount) : null,
+          productionStages: form.productionStages
         });
         toast.success(t('saved_successfully'), { id: loadingToast });
         addNotification(`${t('saved_successfully')}: ${form.firstName} ${form.lastName}`, 'success');
@@ -155,7 +161,7 @@ const ClientsPage = () => {
         addNotification(`${t('client_added')}: ${form.firstName} ${form.lastName}`, 'success');
       }
       setShowModal(false);
-      setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '', tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', telegram: '', managedChannels: '', contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: '', preferredCurrency: 'USD' });
+      setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '', tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', telegram: '', managedChannels: '', contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: '', preferredCurrency: 'USD', channelLink: '', monthlyDueDate: '', monthlyAmount: '', productionStages: [] });
       setIsEditing(false);
       setEditId(null);
       fetchClients();
@@ -201,7 +207,11 @@ const ClientsPage = () => {
       contractEndDate: formatDate(client.clientInfo?.contractEndDate),
       healthScore: client.clientInfo?.healthScore || 'GOOD',
       internalNotes: client.clientInfo?.internalNotes || '',
-      preferredCurrency: client.clientInfo?.preferredCurrency || 'USD'
+      preferredCurrency: client.clientInfo?.preferredCurrency || 'USD',
+      channelLink: client.clientInfo?.channelLink || '',
+      monthlyDueDate: client.clientInfo?.monthlyDueDate || '',
+      monthlyAmount: client.clientInfo?.monthlyAmount || '',
+      productionStages: client.clientInfo?.productionStages || []
     });
     setEditId(client.clientInfo?.id || client.id);
     setIsEditing(true);
@@ -436,6 +446,18 @@ const ClientsPage = () => {
                             <h4 className={`text-sm font-black truncate ${isPaused ? 'text-slate-500' : 'text-slate-800 dark:text-white'}`}>
                               {c.firstName} {c.lastName}
                             </h4>
+                            {c.clientInfo?.channelLink && (
+                              <a
+                                href={c.clientInfo.channelLink.startsWith('http') ? c.clientInfo.channelLink : `https://${c.clientInfo.channelLink}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-1 bg-rose-600/10 text-rose-600 hover:bg-rose-600 hover:text-white rounded-lg transition-all inline-flex items-center"
+                                title="قناة العميل"
+                              >
+                                <Youtube size={13} />
+                              </a>
+                            )}
                             {isPaused && (
                               <span className="px-1.5 py-0.5 text-[8px] font-black uppercase rounded-md bg-amber-500/15 text-amber-600 border border-amber-500/20">
                                 ⏸️ موقف
@@ -526,6 +548,18 @@ const ClientsPage = () => {
                                 <p className={`text-base font-bold leading-tight group-hover/item:text-brand-500 transition-colors ${isPaused ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-white'}`}>
                                   {c.firstName} {c.lastName}
                                 </p>
+                                {c.clientInfo?.channelLink && (
+                                  <a
+                                    href={c.clientInfo.channelLink.startsWith('http') ? c.clientInfo.channelLink : `https://${c.clientInfo.channelLink}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="p-1 bg-rose-600/10 text-rose-600 hover:bg-rose-600 hover:text-white rounded-lg transition-all inline-flex items-center"
+                                    title="قناة العميل"
+                                  >
+                                    <Youtube size={14} />
+                                  </a>
+                                )}
                                 {isPaused && (
                                   <div className="flex items-center gap-1 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/25">
                                     <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-tighter">⏸️ موقف مؤقتاً</span>
@@ -859,6 +893,125 @@ const ClientsPage = () => {
                   <div className="space-y-2 md:col-span-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('internal_notes')}</label>
                     <textarea name="internalNotes" value={form.internalNotes} onChange={handleChange} rows="3" className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold resize-none" placeholder={t('internal_notes_placeholder')} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 4: Channel & Payment Settings (Admin Only) */}
+              <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
+                    <Receipt size={16} />
+                  </div>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">الدفع والإنتاج <span className="text-[9px] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded-full ml-2">ADMIN ONLY</span></h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Channel Link */}
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">رابط القناة / Channel Link</label>
+                    <input 
+                      name="channelLink" 
+                      value={form.channelLink} 
+                      onChange={handleChange} 
+                      placeholder="https://youtube.com/@channel" 
+                      className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-bold" 
+                    />
+                  </div>
+
+                  {/* Monthly Due Date */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">يوم الاستحقاق الشهري (1-31)</label>
+                    <input 
+                      type="number" 
+                      name="monthlyDueDate" 
+                      min="1" 
+                      max="31"
+                      value={form.monthlyDueDate} 
+                      onChange={handleChange} 
+                      placeholder="مثال: 15"
+                      className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-amber-500/20 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-bold" 
+                    />
+                  </div>
+
+                  {/* Monthly Amount */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">المبلغ الشهري المطلوب</label>
+                    <input 
+                      type="number" 
+                      name="monthlyAmount" 
+                      step="0.01"
+                      value={form.monthlyAmount} 
+                      onChange={handleChange} 
+                      placeholder="مثال: 500"
+                      className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-amber-500/20 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-bold" 
+                    />
+                  </div>
+
+                  {/* Production Stages */}
+                  <div className="space-y-3 md:col-span-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">مراحل الإنتاج المخصصة / Custom Production Stages</label>
+                    <div className="flex gap-2">
+                      <input 
+                        value={stageInput}
+                        onChange={(e) => setStageInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const trimmed = stageInput.trim();
+                            if (trimmed && !form.productionStages.includes(trimmed)) {
+                              setForm(prev => ({ ...prev, productionStages: [...prev.productionStages, trimmed] }));
+                              setStageInput('');
+                            }
+                          }
+                        }}
+                        placeholder="اكتب مرحلة ثم اضغط Enter (مثال: سكريبت)"
+                        className="flex-1 px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const trimmed = stageInput.trim();
+                          if (trimmed && !form.productionStages.includes(trimmed)) {
+                            setForm(prev => ({ ...prev, productionStages: [...prev.productionStages, trimmed] }));
+                            setStageInput('');
+                          }
+                        }}
+                        className="px-5 py-3.5 bg-brand-600 text-white rounded-2xl font-black text-sm hover:bg-brand-500 transition-all"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                    {form.productionStages.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {form.productionStages.map((stage, idx) => (
+                          <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-brand-500/10 border border-brand-500/20 rounded-xl text-xs font-black text-brand-500">
+                            {stage}
+                            <button
+                              type="button"
+                              onClick={() => setForm(prev => ({ ...prev, productionStages: prev.productionStages.filter((_, i) => i !== idx) }))}
+                              className="text-brand-400 hover:text-rose-500 transition-colors"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {form.productionStages.length === 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {['سكريبت', 'مونتاج', 'مراجعة', 'نشر'].map(stage => (
+                          <button
+                            key={stage}
+                            type="button"
+                            onClick={() => setForm(prev => ({ ...prev, productionStages: [...prev.productionStages, stage] }))}
+                            className="px-3 py-1.5 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-500 hover:bg-brand-500/10 hover:text-brand-500 hover:border-brand-500/20 transition-all"
+                          >
+                            + {stage}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

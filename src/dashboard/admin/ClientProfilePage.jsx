@@ -5,10 +5,12 @@ import {
   Building2, Mail, Phone, Calendar, Star, ExternalLink, 
   ChevronLeft, FileText, Receipt, Briefcase, Activity,
   Download, Plus, Search, Filter, ArrowUpRight, Wallet, Shield,
-  FolderKanban, FileBadge, Building, Send, MessageCircle, SendHorizontal, MoreVertical, Loader2, StarHalf, Trash2, X
+  FolderKanban, FileBadge, Building, Send, MessageCircle, SendHorizontal, MoreVertical, Loader2, StarHalf, Trash2, X,
+  Youtube, Link2, DollarSign, Clock
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
+import useAuthStore from '../../store/authStore';
 
 const COUNTRY_FLAGS = {
   '+20': 'eg',
@@ -63,6 +65,10 @@ const getClientCompany = (c) => c?.clientInfo?.company || c?.company || '';
 const getClientLogo = (c) => c?.clientInfo?.logoUrl || c?.logoUrl || '';
 const getClientTier = (c) => c?.clientInfo?.tier || c?.tier || 'REGULAR';
 const getClientId = (c) => c?.clientInfo?.id || c?.id;
+const getClientChannel = (c) => c?.clientInfo?.channelLink || c?.channelLink || '';
+const getClientMonthlyDue = (c) => c?.clientInfo?.monthlyDueDate ?? c?.monthlyDueDate;
+const getClientMonthlyAmount = (c) => c?.clientInfo?.monthlyAmount ?? c?.monthlyAmount;
+const getClientProductionStages = (c) => c?.clientInfo?.productionStages || c?.productionStages || [];
 // Prioritize root email (flattened) for 100% guarantee
 const getClientEmail = (c) => c?.email || c?.user?.email || c?.clientInfo?.email || '';
 
@@ -70,6 +76,8 @@ const ClientProfilePage = () => {
   const { id } = useParams();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'OWNER';
   const [client, setClient] = useState(null);
   const [invoices, setInvoices] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -343,8 +351,19 @@ const ClientProfilePage = () => {
                 {getCountryFlagUrl(getClientPhone(client)) && (
                   <img src={getCountryFlagUrl(getClientPhone(client))} alt="flag" className="w-8 h-auto rounded-sm shadow-md" />
                 )}
-                <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-                  {client.firstName} {client.lastName}
+                <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-2">
+                  <span>{client.firstName} {client.lastName}</span>
+                  {getClientChannel(client) && (
+                    <a
+                      href={getClientChannel(client).startsWith('http') ? getClientChannel(client) : `https://${getClientChannel(client)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 bg-rose-600/10 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition-all inline-flex items-center justify-center"
+                      title="فتح رابط القناة"
+                    >
+                      <Youtube size={18} />
+                    </a>
+                  )}
                 </h1>
                 {client.clientInfo?.isVip && (
                   <div className="bg-amber-400/10 text-amber-500 px-3 py-1 rounded-full border border-amber-400/20 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
@@ -361,6 +380,18 @@ const ClientProfilePage = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+            {getClientChannel(client) && (
+              <a 
+               href={getClientChannel(client).startsWith('http') ? getClientChannel(client) : `https://${getClientChannel(client)}`} 
+               target="_blank" 
+               rel="noopener noreferrer"
+               className="px-6 py-4 bg-rose-600 text-white rounded-2xl font-bold shadow-lg shadow-rose-600/20 hover:-translate-y-1 transition-all flex items-center gap-2 active:scale-95"
+              >
+                <Youtube size={18} />
+                القناة / Channel
+              </a>
+            )}
+
             {getClientNotion(client) && (
               <a 
                href={getClientNotion(client)} 
@@ -498,6 +529,66 @@ const ClientProfilePage = () => {
                 </p>
             </div>
           </div>
+
+          {/* Admin Exclusive: Financial Due Date & Custom Pipeline Card */}
+          {isAdmin && (
+            <div className="bg-white dark:bg-[#0a0a0c]/40 border border-amber-500/20 rounded-[2.5rem] p-8 shadow-sm relative overflow-hidden">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-3">
+                  <Receipt size={20} className="text-amber-500" />
+                  بيانات الاستحقاق والإنتاج
+                  <span className="text-[9px] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2.5 py-1 rounded-full font-black uppercase tracking-widest">
+                    خاص بالأدمن
+                  </span>
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                {/* Monthly Due Date */}
+                <div className="p-5 rounded-3xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 font-black">
+                    <Clock size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">تاريخ الاستحقاق الشهري</p>
+                    <p className="text-lg font-black text-slate-800 dark:text-white mt-0.5">
+                      {getClientMonthlyDue(client) ? `يوم ${getClientMonthlyDue(client)} من كل شهر` : 'غير محدد'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Monthly Amount */}
+                <div className="p-5 rounded-3xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 font-black">
+                    <DollarSign size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">المبلغ المطلوب شهرياً</p>
+                    <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                      {getClientMonthlyAmount(client) ? `$${Number(getClientMonthlyAmount(client)).toLocaleString()}` : 'غير محدد'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Custom Production Stages */}
+              <div className="p-5 rounded-3xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">مراحل الإنتاج المخصصة للعميل (Production Pipeline)</p>
+                {getClientProductionStages(client).length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {getClientProductionStages(client).map((stage, idx) => (
+                      <span key={idx} className="px-4 py-2 bg-brand-500/10 border border-brand-500/20 rounded-2xl text-xs font-black text-brand-500 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-brand-500"></span>
+                        {stage}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs font-bold text-slate-400 italic">مراحل الإنتاج الافتراضية نشطة (اسكريبت - مونتاج - مراجعة - نشر)</p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Projects Table */}
           <div className="bg-white dark:bg-[#0a0a0c]/40 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-8 shadow-sm">

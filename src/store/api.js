@@ -177,4 +177,10 @@ export const getClientContactsAPI = () => api.get('/users/client-contacts');
 // v20.0 SUPREME: Team Dashboard Stats
 export const getTeamDashboardStatsAPI = () => api.get('/stats/team-dashboard');
 
+// Publish Schedules (v22 - Production Scheduling)
+export const getPublishSchedulesAPI = (projectId) => api.get(`/publish-schedules${projectId ? `?projectId=${projectId}` : ''}`);
+export const createPublishScheduleAPI = (data) => api.post('/publish-schedules', data);
+export const updatePublishScheduleAPI = (id, data) => api.put(`/publish-schedules/${id}`, data);
+export const deletePublishScheduleAPI = (id) => api.delete(`/publish-schedules/${id}`);
+
 export default api;
