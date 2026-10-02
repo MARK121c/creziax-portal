@@ -1235,10 +1235,7 @@ const WorkspaceDetail = () => {
         </div>
       )}
 
-      {/* ── Fixed Publishing Schedule Section (Requirement 5) ── */}
-      <div className="mt-14">
-        <PublishingScheduleSection projectId={id} isAdmin={isAdmin} isRTL={true} />
-      </div>
+
 
       {/* ── Floating Mini Chat ── */}
       <div className="fixed bottom-4 right-4 sm:bottom-10 sm:right-10 z-[100] flex flex-col items-end gap-4 sm:gap-6">
