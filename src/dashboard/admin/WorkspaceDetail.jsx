@@ -893,6 +893,9 @@ const WorkspaceDetail = () => {
           )}
         </div>
 
+        {/* ── Weekly Publishing Schedule Bar ── */}
+        <PublishingScheduleSection projectId={id} isAdmin={isAdmin} isRTL={true} />
+
         {/* ── Monthly Tab Bar ── */}
         {sortedPhases.length > 0 ? (
           <>

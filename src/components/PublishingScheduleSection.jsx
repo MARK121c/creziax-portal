@@ -1,23 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getPublishSchedulesAPI, createPublishScheduleAPI, deletePublishScheduleAPI, updatePublishScheduleAPI } from '../store/api';
-import { Calendar, Plus, Trash2, Clock, CheckCircle2, AlertCircle, Loader2, X, Film, Sparkles, SendHorizontal } from 'lucide-react';
+import { Calendar, Plus, Trash2, Clock, CheckCircle2, AlertCircle, Loader2, X, Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { useTranslation } from 'react-i18next';
+
+const DAYS_OF_WEEK = [
+  { id: 'sun', name: 'الأحد', nameEn: 'Sunday', dayIndex: 0 },
+  { id: 'mon', name: 'الإثنين', nameEn: 'Monday', dayIndex: 1 },
+  { id: 'tue', name: 'الثلاثاء', nameEn: 'Tuesday', dayIndex: 2 },
+  { id: 'wed', name: 'الأربعاء', nameEn: 'Wednesday', dayIndex: 3 },
+  { id: 'thu', name: 'الخميس', nameEn: 'Thursday', dayIndex: 4 },
+  { id: 'fri', name: 'الجمعة', nameEn: 'Friday', dayIndex: 5 },
+  { id: 'sat', name: 'السبت', nameEn: 'Saturday', dayIndex: 6 },
+];
 
 const PublishingScheduleSection = ({ projectId, isAdmin = false, isRTL = true }) => {
-  const { t } = useTranslation();
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
 
-  const [form, setForm] = useState({
-    title: '',
-    publishTime: '',
-    frequency: 'weekly',
-    notes: ''
-  });
+  const [selectedDay, setSelectedDay] = useState('wed');
+  const [publishTime, setPublishTime] = useState('18:00');
+  const [customTitle, setCustomTitle] = useState('');
 
   const fetchSchedules = useCallback(async () => {
     if (!projectId) return;
@@ -25,8 +29,7 @@ const PublishingScheduleSection = ({ projectId, isAdmin = false, isRTL = true })
     try {
       const { data } = await getPublishSchedulesAPI(projectId);
       const list = Array.isArray(data) ? data : (data?.data || []);
-      // Sort chronologically ascending
-      setSchedules(list.sort((a, b) => new Date(a.publishTime) - new Date(b.publishTime)));
+      setSchedules(list);
     } catch (err) {
       console.error('Failed to load publishing schedules:', err);
     } finally {
@@ -40,22 +43,39 @@ const PublishingScheduleSection = ({ projectId, isAdmin = false, isRTL = true })
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.title.trim() || !form.publishTime) {
-      toast.error('يرجى ملء عنوان الفيديو وتاريخ النشر');
-      return;
-    }
+    const dayObj = DAYS_OF_WEEK.find(d => d.id === selectedDay) || DAYS_OF_WEEK[3];
+    const title = customTitle.trim() || `فيديو يوم ${dayObj.name}`;
+
+    // Calculate next date for that weekday and time
+    const now = new Date();
+    const resultDate = new Date();
+    const currentDay = now.getDay();
+    const targetDay = dayObj.dayIndex;
+    let daysUntil = (targetDay - currentDay + 7) % 7;
+    if (daysUntil === 0) daysUntil = 7;
+    resultDate.setDate(now.getDate() + daysUntil);
+
+    const [hours, minutes] = publishTime.split(':');
+    resultDate.setHours(parseInt(hours || '18', 10), parseInt(minutes || '0', 10), 0, 0);
+
+    const timeFormatted = new Date(`2000-01-01T${publishTime}:00`).toLocaleTimeString(isRTL ? 'ar-EG' : 'en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+
     setSubmitting(true);
     try {
-      if (editingItem) {
-        await updatePublishScheduleAPI(editingItem.id, form);
-        toast.success('تم تحديث موعد النشر بنجاح');
-      } else {
-        await createPublishScheduleAPI({ ...form, projectId });
-        toast.success('تمت إضافة موعد النشر بنجاح');
-      }
+      await createPublishScheduleAPI({
+        projectId,
+        title,
+        publishTime: resultDate.toISOString(),
+        frequency: 'weekly',
+        notes: `الساعة ${timeFormatted}`
+      });
+      toast.success('تمت إضافة موعد النشر الأسبوعي بنجاح ✓');
       setShowModal(false);
-      setEditingItem(null);
-      setForm({ title: '', publishTime: '', frequency: 'weekly', notes: '' });
+      setCustomTitle('');
       fetchSchedules();
     } catch (err) {
       toast.error('فشل حفظ موعد النشر');
@@ -65,7 +85,7 @@ const PublishingScheduleSection = ({ projectId, isAdmin = false, isRTL = true })
   };
 
   const handleDelete = async (id, title) => {
-    if (!confirm(`هل أنت متأكد من حذف موعد نشر "${title}"؟`)) return;
+    if (!confirm(`هل تريد إزالة موعد "${title}" من جدول النشر؟`)) return;
     try {
       await deletePublishScheduleAPI(id);
       toast.success('تم الحذف بنجاح');
@@ -75,178 +95,84 @@ const PublishingScheduleSection = ({ projectId, isAdmin = false, isRTL = true })
     }
   };
 
-  const openEdit = (item) => {
-    setEditingItem(item);
-    const dateStr = item.publishTime ? new Date(item.publishTime).toISOString().slice(0, 16) : '';
-    setForm({
-      title: item.title || '',
-      publishTime: dateStr,
-      frequency: item.frequency || 'weekly',
-      notes: item.notes || ''
-    });
-    setShowModal(true);
-  };
-
-  const getStatus = (publishTime) => {
-    const now = new Date();
-    const target = new Date(publishTime);
-    const diffMs = target - now;
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffMs < 0) {
-      return { label: 'تم النشر', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' };
-    }
-    if (diffDays <= 2) {
-      return { label: 'قريب جداً (خلال 48 ساعة)', color: 'bg-rose-500/10 text-rose-600 border-rose-500/20 animate-pulse' };
-    }
-    return { label: `مجدول (بعد ${diffDays} يوم)`, color: 'bg-blue-500/10 text-blue-600 border-blue-500/20' };
-  };
-
   return (
-    <div className="bg-white dark:bg-[#0a0a0c]/80 border border-slate-200 dark:border-white/10 rounded-[2.5rem] p-6 sm:p-8 shadow-sm">
-      {/* Section Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <h3 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tight flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
-              <Calendar size={20} />
-            </div>
-            جدول مواعيد النشر الثابتة
-          </h3>
-          <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">
-            خطة مواعيد النشر المعتمدة مرتبة زمنياً
-          </p>
-        </div>
-
-        {isAdmin && (
-          <button
-            onClick={() => {
-              setEditingItem(null);
-              setForm({ title: '', publishTime: '', frequency: 'weekly', notes: '' });
-              setShowModal(true);
-            }}
-            className="flex items-center gap-2 px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
-          >
-            <Plus size={16} />
-            إضافة موعد نشر
-          </button>
-        )}
-      </div>
-
-      {/* Content */}
-      {loading ? (
-        <div className="py-16 flex flex-col items-center justify-center gap-3">
-          <Loader2 size={32} className="animate-spin text-emerald-500" />
-          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">جاري تحميل جدول النشر...</p>
-        </div>
-      ) : schedules.length === 0 ? (
-        <div className="text-center py-16 border-2 border-dashed border-slate-100 dark:border-white/5 rounded-3xl p-6">
-          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Film size={28} />
+    <div className="bg-white dark:bg-[#0a0a0c]/80 border border-slate-200 dark:border-white/10 rounded-3xl p-5 sm:p-6 shadow-sm mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Title / Header */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 flex-shrink-0">
+            <Calendar size={20} />
           </div>
-          <h4 className="text-base font-black text-slate-700 dark:text-slate-200">لا توجد مواعيد نشر مجدولة حالياً</h4>
-          <p className="text-xs font-bold text-slate-400 mt-1 max-w-sm mx-auto">
-            {isAdmin ? 'قم بإضافة أول موعد نشر للفيديو لتنظيم جدول الإطلاق للعميل.' : 'سيتم إدراج مواعيد نشر الفيديوهات هنا بناءً على الخطة المعتمدة مع الفريق.'}
-          </p>
+          <div>
+            <h3 className="text-sm sm:text-base font-black text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+              جدول مواعيد النشر الثابتة
+            </h3>
+            <p className="text-[10px] font-bold text-slate-400">
+              مواعيد النشر الأسبوعية المعتمدة لكل حلقة/فيديو
+            </p>
+          </div>
+        </div>
+
+        {/* Schedule Pills & Controls */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {loading ? (
+            <div className="flex items-center gap-2 text-slate-400 text-xs font-bold py-1 px-3">
+              <Loader2 size={14} className="animate-spin text-emerald-500" />
+              <span>جاري التحميل...</span>
+            </div>
+          ) : schedules.length === 0 ? (
+            <span className="text-xs font-bold text-slate-400 italic py-1 px-3 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-100 dark:border-white/5">
+              لم يتم تحديد جدول نشر ثابت بعد
+            </span>
+          ) : (
+            schedules.map(item => (
+              <div
+                key={item.id}
+                className="flex items-center gap-2 px-3.5 py-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 rounded-2xl text-xs font-black shadow-sm transition-all"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
+                <span>{item.title}</span>
+                {item.notes && (
+                  <span className="text-[10px] opacity-80 font-bold bg-emerald-500/15 px-2 py-0.5 rounded-lg">
+                    {item.notes}
+                  </span>
+                )}
+                <span className="text-[9px] bg-emerald-600 text-white px-2 py-0.5 rounded-md font-black">
+                  مكرر أسبوعياً
+                </span>
+                {isAdmin && (
+                  <button
+                    onClick={() => handleDelete(item.id, item.title)}
+                    className="p-1 hover:bg-rose-500/20 text-slate-400 hover:text-rose-500 rounded-lg transition-colors ml-0.5"
+                    title="حذف هذا الموعد"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+
           {isAdmin && (
             <button
-              onClick={() => {
-                setEditingItem(null);
-                setForm({ title: '', publishTime: '', frequency: 'weekly', notes: '' });
-                setShowModal(true);
-              }}
-              className="mt-4 px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-widest"
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
             >
-              + إضافة موعد
+              <Plus size={15} />
+              <span>إضافة موعد نشر أسبوعي</span>
             </button>
           )}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {schedules.map((item, idx) => {
-            const status = getStatus(item.publishTime);
-            const pubDate = new Date(item.publishTime);
-            return (
-              <div
-                key={item.id}
-                className="p-5 rounded-3xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 hover:border-emerald-500/30 transition-all flex flex-col justify-between group relative overflow-hidden"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="w-7 h-7 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-black flex-shrink-0">
-                      #{idx + 1}
-                    </span>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${status.color}`}>
-                      {status.label}
-                    </span>
-                  </div>
+      </div>
 
-                  <div>
-                    <h4 className="font-black text-slate-800 dark:text-white text-base leading-tight">
-                      {item.title}
-                    </h4>
-                    {item.frequency && (
-                      <span className="inline-block text-[10px] font-bold text-brand-500 uppercase tracking-widest mt-1">
-                        تكرار: {item.frequency === 'weekly' ? 'أسبوعي' : item.frequency === 'biweekly' ? 'مرتين أسبوعياً' : item.frequency === 'monthly' ? 'شهري' : item.frequency}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="p-3 bg-white dark:bg-black/20 rounded-2xl border border-slate-100 dark:border-white/5 flex items-center gap-3">
-                    <Clock size={16} className="text-emerald-500 flex-shrink-0" />
-                    <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">تاريخ وتوقيت النشر</p>
-                      <p className="text-xs font-bold text-slate-700 dark:text-slate-200 mt-0.5">
-                        {pubDate.toLocaleString(isRTL ? 'ar-EG' : 'en-US', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                    </div>
-                  </div>
-
-                  {item.notes && (
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 p-3 rounded-2xl leading-relaxed italic">
-                      💬 {item.notes}
-                    </p>
-                  )}
-                </div>
-
-                {isAdmin && (
-                  <div className="flex items-center justify-end gap-2 pt-4 mt-3 border-t border-slate-100 dark:border-white/5">
-                    <button
-                      onClick={() => openEdit(item)}
-                      className="px-3 py-1.5 bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold hover:bg-emerald-500 hover:text-white transition-all"
-                    >
-                      تعديل
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item.id, item.title)}
-                      className="p-2 text-rose-500 bg-rose-500/10 hover:bg-rose-500 hover:text-white rounded-xl transition-all"
-                      title="حذف"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Modal for Add / Edit */}
+      {/* Simple Add Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-lg shadow-2xl p-6 sm:p-8 space-y-6 relative animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#0a0a0c] border border-slate-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-md shadow-2xl p-6 sm:p-8 space-y-6 relative animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-4">
               <h3 className="text-lg font-black text-slate-800 dark:text-white flex items-center gap-2">
                 <Calendar size={20} className="text-emerald-500" />
-                {editingItem ? 'تعديل موعد النشر' : 'إضافة موعد نشر جديد'}
+                إضافة موعد نشر أسبوعي ثابت
               </h3>
               <button
                 onClick={() => setShowModal(false)}
@@ -257,53 +183,62 @@ const PublishingScheduleSection = ({ projectId, isAdmin = false, isRTL = true })
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Day of Week Selector */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">عنوان الفيديو / المحتوى</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  اختر يوم النشر الأسبوعي
+                </label>
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
+                  {DAYS_OF_WEEK.map(d => {
+                    const isSel = selectedDay === d.id;
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => setSelectedDay(d.id)}
+                        className={`py-2.5 px-1 rounded-xl text-xs font-black border transition-all flex flex-col items-center justify-center ${
+                          isSel
+                            ? 'bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20 scale-105'
+                            : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                        }`}
+                      >
+                        <span>{d.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Time Picker */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  وقت وتوقيت النشر
+                </label>
                 <input
-                  value={form.title}
-                  onChange={e => setForm({ ...form, title: e.target.value })}
+                  type="time"
+                  value={publishTime}
+                  onChange={e => setPublishTime(e.target.value)}
                   required
-                  placeholder="مثال: حلقة 15: أسرار المونتاج السريع"
                   className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">تاريخ ووقت النشر</label>
-                  <input
-                    type="datetime-local"
-                    value={form.publishTime}
-                    onChange={e => setForm({ ...form, publishTime: e.target.value })}
-                    required
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">التكرار (Frequency)</label>
-                  <select
-                    value={form.frequency}
-                    onChange={e => setForm({ ...form, frequency: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                  >
-                    <option value="weekly">أسبوعي (Weekly)</option>
-                    <option value="biweekly">مرتين أسبوعياً (Bi-weekly)</option>
-                    <option value="monthly">شهري (Monthly)</option>
-                    <option value="once">مرة واحدة (One-time)</option>
-                  </select>
-                </div>
+              {/* Custom Title (Optional) */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  ملاحظة / اسم الفيديو (اختياري)
+                </label>
+                <input
+                  type="text"
+                  value={customTitle}
+                  onChange={e => setCustomTitle(e.target.value)}
+                  placeholder="مثال: حلقة البودكاست الأسبوعية"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ملاحظات واستراتيجية النشر</label>
-                <textarea
-                  value={form.notes}
-                  onChange={e => setForm({ ...form, notes: e.target.value })}
-                  rows={3}
-                  placeholder="مثال: يرجى النشر في ذروة المشاهدات الساعة 7 مساءً وتجهيز الكومنت المثبت"
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 resize-none"
-                />
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+                ✓ سيظهر هذا الموعد كجدول ثابت مكرر أسبوعياً في أعلى مساحة العمل للعميل والتيم.
               </div>
 
               <div className="flex items-center gap-3 pt-3">
@@ -312,7 +247,7 @@ const PublishingScheduleSection = ({ projectId, isAdmin = false, isRTL = true })
                   disabled={submitting}
                   className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-600/20 transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
-                  {submitting ? <Loader2 size={16} className="animate-spin" /> : (editingItem ? 'حفظ التعديلات' : 'إضافة الموعد')}
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : 'حفظ موعد النشر'}
                 </button>
                 <button
                   type="button"
