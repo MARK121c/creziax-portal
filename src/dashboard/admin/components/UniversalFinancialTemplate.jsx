@@ -89,12 +89,7 @@ const UniversalFinancialTemplate = ({ data }) => {
               <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#666' }}>Document processed via Creziax Internal Financial Network.</p>
             </td>
             <td style={{ textAlign: 'right', paddingRight: '20px', fontSize: '20px', fontWeight: 900 }}>
-              {local_amount && currency && currency !== 'USD' ? `${local_amount} ${currency}` : `${amount} USD`}
-              {local_amount && currency && currency !== 'USD' && (
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#666', marginTop: '6px', textAlign: 'right' }}>
-                  Base: {amount} USD
-                </div>
-              )}
+              ${Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
             </td>
           </tr>
         </tbody>
@@ -109,16 +104,12 @@ const UniversalFinancialTemplate = ({ data }) => {
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '28px', fontWeight: 900 }}>
               <span style={{ fontSize: '18px', alignSelf: 'center', opacity: 0.8 }}>TOTAL</span>
               <span>
-                {local_amount && currency && currency !== 'USD' 
-                  ? `${local_amount} ${currency}` 
-                  : `${amount} USD`}
+                ${Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
-            {local_amount && currency && currency !== 'USD' && (
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#aaa', marginTop: '4px' }}>
-                Base Amount: {amount} USD
-              </div>
-            )}
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#aaa', marginTop: '4px' }}>
+              United States Dollar (USD)
+            </div>
           </div>
         </div>
       </div>

@@ -821,15 +821,11 @@ const ClientsPage = () => {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('preferred_curr', 'العملة المفضلة / Currency')}</label>
-                    <select name="preferredCurrency" value={form.preferredCurrency} onChange={handleChange} className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold">
-                      <option value="USD">USD ($)</option>
-                      <option value="EGP">EGP (جنيه مصري)</option>
-                      <option value="EUR">EUR (€)</option>
-                      <option value="SAR">SAR (ريال سعودي)</option>
-                      <option value="AED">AED (درهم إماراتي)</option>
-                      <option value="KWD">KWD (دينار كويتي)</option>
-                    </select>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('preferred_curr', 'العملة المعتمدة / Currency')}</label>
+                    <div className="w-full px-5 py-3.5 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-black text-emerald-600 dark:text-emerald-400 flex items-center justify-between">
+                      <span>USD ($)</span>
+                      <span className="text-[10px] text-slate-400 font-bold">دولار أمريكي</span>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('stat_managed_channels')}</label>

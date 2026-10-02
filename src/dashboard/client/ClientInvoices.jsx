@@ -58,9 +58,7 @@ const ClientInvoices = () => {
     } finally {
       setProcessingInvoice(null);
     }
-    const amount = inv.currency !== 'USD' && inv.exchangeRate && inv.exchangeRate > 1
-      ? `${Number(inv.amount * inv.exchangeRate).toLocaleString()} ${inv.currency}`
-      : `$${inv.amount?.toLocaleString()} USD`;
+    const amount = `$${Number(inv.amount || 0).toLocaleString()} USD`;
     const msg = `أريد دفع الفاتورة رقم ${inv.invoiceNumber}، قيمتها ${amount}. يرجى تزويدي ببيانات الدفع والتحويل.`;
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
   };
@@ -230,9 +228,7 @@ const ClientInvoices = () => {
                       <td className="px-6 md:px-10 py-6">
                         <div className="flex flex-col">
                           <span className="text-xl md:text-2xl font-black text-slate-800 dark:text-white tracking-tighter leading-none" dir="ltr">
-                            {inv.currency !== 'USD' && inv.exchangeRate && inv.exchangeRate > 1 
-                              ? `${Number(inv.amount * inv.exchangeRate).toLocaleString()} ${inv.currency}` 
-                              : `$${inv.amount.toLocaleString()}`}
+                            ${Number(inv.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
                       </td>
@@ -291,8 +287,8 @@ const ClientInvoices = () => {
             status_label: printingInvoice.status === 'PAID' ? 'PAID' : 'PENDING',
             service_name: printingInvoice.service ? printingInvoice.service.split(' / ')[0] : 'Professional Service',
             amount: Number(printingInvoice.amount),
-            local_amount: printingInvoice.currency !== 'USD' && printingInvoice.exchangeRate ? Number(printingInvoice.amount * printingInvoice.exchangeRate) : null,
-            currency: printingInvoice.currency || 'USD',
+            local_amount: null,
+            currency: 'USD',
             payment_method: printingInvoice.paymentMethod,
             payment_details: printingInvoice.paymentDetails
           }} />}

@@ -62,8 +62,6 @@ const TeamDashboard = () => {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [currency, setCurrency] = useState('USD');
-  const EGP_RATE = 50;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -86,10 +84,9 @@ const TeamDashboard = () => {
 
   const fmt = (n) => {
     let v = parseFloat(n) || 0;
-    if (currency === 'EGP') v = v * EGP_RATE;
     return v.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   };
-  const currSymbol = currency === 'USD' ? '$' : 'EGP';
+  const currSymbol = '$';
 
   if (loading) {
     return (
@@ -122,19 +119,8 @@ const TeamDashboard = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            <div className="flex bg-white dark:bg-[#111111] border border-slate-200 dark:border-white/10 rounded-xl shadow-sm p-1">
-              <button 
-                onClick={() => setCurrency('USD')}
-                className={`px-6 py-2 rounded-lg text-xs font-black transition-all ${currency === 'USD' ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-              >
-                USD
-              </button>
-              <button 
-                onClick={() => setCurrency('EGP')}
-                className={`px-6 py-2 rounded-lg text-xs font-black transition-all ${currency === 'EGP' ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-              >
-                EGP
-              </button>
+            <div className="px-4 py-2 bg-white dark:bg-[#111111] border border-slate-200 dark:border-white/10 rounded-xl shadow-sm text-xs font-black text-slate-600 dark:text-slate-300">
+              USD ($)
             </div>
           </div>
         </div>

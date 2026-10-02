@@ -329,16 +329,8 @@ const PaymentsPage = () => {
                       <td className="px-10 py-8">
                         <div className={`flex flex-col ${activeTab === 'revenue' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
                           <div className="text-2xl font-black tracking-tighter" dir="ltr">
-                            {activeTab === 'revenue' ? '+' : '-'}
-                            {activeTab === 'revenue' && item.currency !== 'USD' && item.exchangeRate && item.exchangeRate > 1
-                              ? `${Number(item.amount * item.exchangeRate).toLocaleString()} ${item.currency}`
-                              : `$${item.amount?.toLocaleString()}`}
+                            {activeTab === 'revenue' ? '+' : '-'}${Number(item.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </div>
-                          {activeTab === 'revenue' && item.currency !== 'USD' && item.exchangeRate && item.exchangeRate > 1 && (
-                            <div className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-tight" dir="ltr">
-                              Base: ${item.amount?.toLocaleString()} USD
-                            </div>
-                          )}
                         </div>
                       </td>
                       <td className="px-10 py-8 hidden sm:table-cell">

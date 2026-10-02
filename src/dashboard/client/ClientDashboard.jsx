@@ -147,9 +147,7 @@ const ClientDashboard = () => {
     } finally {
       setProcessingInvoice(null);
     }
-    const amount = inv.currency !== 'USD' && inv.exchangeRate && inv.exchangeRate > 1
-      ? `${Number(inv.amount * inv.exchangeRate).toLocaleString()} ${inv.currency}`
-      : `$${inv.amount?.toLocaleString()} USD`;
+    const amount = `$${Number(inv.amount || 0).toLocaleString()} USD`;
     const msg = isRTL 
       ? `أريد دفع الفاتورة رقم ${inv.invoiceNumber}، قيمتها ${amount}. يرجى تزويدي ببيانات التحويل.`
       : `I'd like to pay invoice #${inv.invoiceNumber} for ${amount}. Please share transfer details.`;
@@ -307,8 +305,8 @@ const ClientDashboard = () => {
                     {invoices.map(inv => (
                       <tr key={inv.id} className="group hover:bg-slate-50/50 dark:hover:bg-white/[0.01] transition-all">
                         <td className="px-4 md:px-10 py-5 md:py-7 font-black text-slate-800 dark:text-white font-mono uppercase text-xs md:text-sm">#{inv.invoiceNumber}</td>
-                        <td className="px-4 md:px-10 py-5 md:py-7 text-base md:text-lg font-black text-slate-800 dark:text-white tracking-tighter">
-                          {inv.currency !== 'USD' && inv.exchangeRate ? `${Number(inv.amount * inv.exchangeRate).toLocaleString()} ${inv.currency}` : `$${inv.amount?.toLocaleString()}`}
+                        <td className="px-4 md:px-10 py-5 md:py-7 text-base md:text-lg font-black text-slate-800 dark:text-white tracking-tighter" dir="ltr">
+                          ${Number(inv.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                         <td className="px-4 md:px-10 py-5 md:py-7 text-right">
                           {inv.status === 'PAID' || inv.status === 'PENDING' ? <InvoiceStatusBadge status={inv.status} /> : (

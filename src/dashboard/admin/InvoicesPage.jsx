@@ -709,18 +709,9 @@ const InvoicesPage = () => {
                       <td className="px-6 md:px-10 py-5 md:py-7">
                         <div className="flex flex-col">
                           <div className="inline-flex items-center justify-start gap-1 text-lg font-black text-slate-800 dark:text-white" dir="ltr">
-                            <span className="text-brand-500 text-sm">
-                              {inv.currency !== 'USD' && inv.exchangeRate && inv.exchangeRate > 1 ? inv.currency : 'USD'}
-                            </span>
-                            {inv.currency !== 'USD' && inv.exchangeRate && inv.exchangeRate > 1 
-                              ? Number(inv.amount * inv.exchangeRate) 
-                              : Number(inv.amount)}
+                            <span className="text-brand-500 text-sm font-bold">$</span>
+                            <span>{Number(inv.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           </div>
-                          {inv.currency !== 'USD' && inv.exchangeRate && inv.exchangeRate > 1 && (
-                            <div className="text-xs font-bold text-slate-400 mt-1" dir="ltr">
-                              Base: {Number(inv.amount)} USD
-                            </div>
-                          )}
                         </div>
                       </td>
                       <td className="px-6 md:px-10 py-5 md:py-7">
@@ -903,7 +894,6 @@ const InvoicesPage = () => {
                   <select value={invoiceForm.clientId} onChange={e => {
                     const clientId = e.target.value;
                     const selectedClient = clients.find(c => c.id === clientId || c.clientInfo?.id === clientId);
-                    const clientCurrency = selectedClient?.clientInfo?.preferredCurrency || selectedClient?.preferredCurrency || 'USD';
                     const clientAmount = selectedClient?.clientInfo?.monthlyAmount ?? selectedClient?.monthlyAmount;
                     const monthlyDueDay = selectedClient?.clientInfo?.monthlyDueDate ?? selectedClient?.monthlyDueDate;
 
@@ -928,7 +918,8 @@ const InvoicesPage = () => {
                     setInvoiceForm(prev => ({
                       ...prev,
                       clientId,
-                      currency: clientCurrency,
+                      currency: 'USD',
+                      exchangeRate: '',
                       amount: prev.amount || (clientAmount ? String(clientAmount) : ''),
                       dueDate: prev.dueDate || autoDueDate,
                       invoiceNumber: prev.invoiceNumber || `INV-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(Math.floor(100 + Math.random() * 900))}`
@@ -956,56 +947,13 @@ const InvoicesPage = () => {
                   <option value="Online Service">{t('online_service', 'خدمات أونلاين')}</option>
                 </select>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('base_amount_usd', 'المبلغ الأساسي (USD)')}</label>
-                  <div className="relative">
-                    <DollarSign size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-brand-500" />
-                    <input type="number" step="0.01" min="0" value={invoiceForm.amount} onChange={e => setInvoiceForm({...invoiceForm, amount: e.target.value})} required className="w-full pl-12 pr-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-black" placeholder="0.00" />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('parallel_currency_label', 'العملة الموازية (للفاتورة)')}</label>
-                  <select value={invoiceForm.currency} onChange={e => {
-                    const newCurrency = e.target.value;
-                    // Reset exchange rate to 1 if switched back to USD
-                    setInvoiceForm({
-                      ...invoiceForm, 
-                      currency: newCurrency, 
-                      exchangeRate: newCurrency === 'USD' ? '' : invoiceForm.exchangeRate
-                    });
-                  }} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-bold appearance-none cursor-pointer">
-                    <option value="USD">USD ($)</option>
-                    <option value="EGP">EGP</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="SAR">SAR</option>
-                    <option value="AED">AED</option>
-                    <option value="KWD">KWD</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('exchange_rate_label', 'سعر الصرف (Exchange Rate)')}</label>
-                  <input type="number" step="0.0001" min="0" value={invoiceForm.exchangeRate} onChange={e => setInvoiceForm({...invoiceForm, exchangeRate: e.target.value})} disabled={invoiceForm.currency === 'USD'} className="w-full px-5 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 disabled:opacity-50 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-black" placeholder={invoiceForm.currency === 'USD' ? '1.00' : "مثال: 50.5"} />
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('base_amount_usd', 'مبلغ الفاتورة (USD / $)')}</label>
+                <div className="relative">
+                  <DollarSign size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-brand-500" />
+                  <input type="number" step="0.01" min="0" value={invoiceForm.amount} onChange={e => setInvoiceForm({...invoiceForm, amount: e.target.value})} required className="w-full pl-12 pr-6 py-4 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 font-black" placeholder="0.00" />
                 </div>
               </div>
-
-              {/* LIVE CALCULATION PREVIEW */}
-              {invoiceForm.amount && invoiceForm.currency !== 'USD' && (
-                <div className="p-5 rounded-2xl bg-brand-500/5 border border-brand-500/10 flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('math_preview', 'معاينة الحساب الرياضي (Math Preview)')}</p>
-                    <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
-                      {Number(invoiceForm.amount)} USD × {invoiceForm.exchangeRate || 1}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-black text-brand-500 uppercase">{t('final_estimated_value', 'القيمة النهائية المقدرة')}</p>
-                    <p className="text-2xl font-black text-slate-800 dark:text-white">
-                      {Number(Number(invoiceForm.amount) * (invoiceForm.exchangeRate || 1)).toLocaleString()} {invoiceForm.currency}
-                    </p>
-                  </div>
-                </div>
-              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="sm:col-span-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block mb-2">{t('payment_method_label', 'طريقة الدفع (Payment Method)')}</label>
@@ -1125,8 +1073,8 @@ const InvoicesPage = () => {
             status_label: printingInvoice.status === 'PAID' ? 'PAID' : 'PENDING',
             service_name: printingInvoice.service ? printingInvoice.service.split(' / ')[0] : 'Professional Service',
             amount: Number(printingInvoice.amount),
-            local_amount: printingInvoice.currency !== 'USD' && printingInvoice.exchangeRate ? Number(printingInvoice.amount * printingInvoice.exchangeRate) : null,
-            currency: printingInvoice.currency || 'USD',
+            local_amount: null,
+            currency: 'USD',
             payment_method: printingInvoice.paymentMethod,
             payment_details: printingInvoice.paymentDetails
           }} />}
