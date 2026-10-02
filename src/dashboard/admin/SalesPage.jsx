@@ -3,9 +3,10 @@ import {
   Users, UserPlus, Phone, Calendar, Clock, DollarSign, ExternalLink, 
   Search, Filter, Settings, Send, CheckCircle, AlertCircle, Trash2, 
   Edit, MessageSquare, Video, Globe, Briefcase, Eye, BarChart3, 
-  Sparkles, Check, X, ShieldAlert, ArrowUpRight, ChevronDown, Layers
+  Sparkles, Check, X, ShieldAlert, ArrowUpRight, ChevronDown, Layers, UserCheck
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { 
   getLeadsAPI, 
   createLeadAPI, 
@@ -18,14 +19,6 @@ import {
   getTeamContactsAPI
 } from '../../store/api';
 import useAuthStore from '../../store/authStore';
-
-const STATUS_CONFIG = {
-  NEW: { label: 'جديد', bg: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
-  MEETING_SCHEDULED: { label: 'ميتنج محجوز', bg: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },
-  QUALIFIED: { label: 'مؤهل', bg: 'bg-purple-500/10 text-purple-500 border-purple-500/20' },
-  WON: { label: 'تم التعاقد', bg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' },
-  LOST: { label: 'ملغي / خسر', bg: 'bg-rose-500/10 text-rose-500 border-rose-500/20' },
-};
 
 const initialLeadForm = {
   name: '',
@@ -49,7 +42,18 @@ const initialLeadForm = {
 };
 
 export default function SalesPage() {
+  const { t, i18n } = useTranslation();
+  const isRTL = i18n.language === 'ar';
   const user = useAuthStore(state => state.user);
+
+  const STATUS_CONFIG = useMemo(() => ({
+    NEW: { label: t('lead_status_new', 'جديد'), bg: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
+    MEETING_SCHEDULED: { label: t('lead_status_meeting_scheduled', 'ميتنج محجوز'), bg: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },
+    QUALIFIED: { label: t('lead_status_qualified', 'مؤهل'), bg: 'bg-purple-500/10 text-purple-500 border-purple-500/20' },
+    WON: { label: t('lead_status_won', 'تم التعاقد'), bg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' },
+    LOST: { label: t('lead_status_lost', 'ملغي / خسر'), bg: 'bg-rose-500/10 text-rose-500 border-rose-500/20' },
+  }), [t]);
+
   const [leads, setLeads] = useState([]);
   const [stats, setStats] = useState({
     totalLeads: 0,
@@ -87,7 +91,7 @@ export default function SalesPage() {
         setStats(res.data.stats);
       }
     } catch (err) {
-      toast.error('فشل تحميل بيانات العملاء المحتملين');
+      toast.error(t('failed_to_load_leads', 'فشل تحميل بيانات العملاء المحتملين'));
     } finally {
       setLoading(false);
     }
@@ -135,7 +139,10 @@ export default function SalesPage() {
 
   const handleOpenAdd = () => {
     setEditingLead(null);
-    setFormData(initialLeadForm);
+    setFormData({
+      ...initialLeadForm,
+      assignedToId: user?.id || ''
+    });
     setIsFormOpen(true);
   };
 
@@ -167,7 +174,7 @@ export default function SalesPage() {
   const handleSubmitLead = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      toast.warning('يرجى إدخال اسم العميل');
+      toast.warning(t('please_enter_lead_name', 'يرجى إدخال اسم العميل'));
       return;
     }
 
@@ -196,38 +203,38 @@ export default function SalesPage() {
 
       if (editingLead) {
         await updateLeadAPI(editingLead.id, payload);
-        toast.success('تم تحديث بيانات العميل والميتنج بنجاح');
+        toast.success(t('lead_saved_success', 'تم حفظ بيانات العميل والميتنج بنجاح! 🚀'));
       } else {
         await createLeadAPI(payload);
-        toast.success('تم إضافة العميل والميتنج بنجاح! 🚀');
+        toast.success(t('lead_saved_success', 'تم إضافة العميل والميتنج بنجاح! 🚀'));
       }
       setIsFormOpen(false);
       fetchLeads();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'فشل حفظ البيانات');
+      toast.error(err.response?.data?.message || t('failed_to_save_lead', 'فشل حفظ البيانات'));
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDeleteLead = async (id) => {
-    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا العميل المحتمل؟')) return;
+    if (!window.confirm(t('delete_lead_confirm', 'هل أنت متأكد من رغبتك في حذف هذا العميل المحتمل؟'))) return;
     try {
       await deleteLeadAPI(id);
-      toast.success('تم حذف العميل');
+      toast.success(t('lead_deleted_success', 'تم حذف العميل بنجاح'));
       fetchLeads();
     } catch (err) {
-      toast.error('فشل حذف العميل');
+      toast.error(t('failed_to_delete_lead', 'فشل حذف العميل'));
     }
   };
 
   const handleQuickStatusChange = async (leadId, newStatus) => {
     try {
       await updateLeadAPI(leadId, { status: newStatus });
-      toast.success('تم تحديث حالة العميل');
+      toast.success(t('lead_status_updated', 'تم تحديث حالة العميل'));
       fetchLeads();
     } catch (err) {
-      toast.error('فشل تحديث الحالة');
+      toast.error(t('failed_to_update_status', 'فشل تحديث الحالة'));
     }
   };
 
@@ -235,10 +242,10 @@ export default function SalesPage() {
     e.preventDefault();
     try {
       await updateNotificationSettingsAPI(settingsData);
-      toast.success('تم حفظ إعدادات الإشعارات التلقائية بنجاح');
+      toast.success(t('settings_saved_success', 'تم حفظ إعدادات الإشعارات التلقائية بنجاح'));
       setIsSettingsOpen(false);
     } catch (err) {
-      toast.error('فشل حفظ الإعدادات');
+      toast.error(t('failed_to_save_settings', 'فشل حفظ الإعدادات'));
     }
   };
 
@@ -250,9 +257,9 @@ export default function SalesPage() {
         : { type: 'WHATSAPP', ...settingsData.whatsapp };
       
       const res = await testNotificationAPI(payload);
-      toast.success(res.data.message || 'تم إرسال الرسالة التجريبية بنجاح!');
+      toast.success(res.data.message || t('status_success', 'تم إرسال الرسالة التجريبية بنجاح!'));
     } catch (err) {
-      toast.error(err.response?.data?.message || 'فشل إرسال الرسالة التجريبية');
+      toast.error(err.response?.data?.message || t('error_general', 'فشل إرسال الرسالة التجريبية'));
     } finally {
       setTestingNotification(false);
     }
@@ -270,30 +277,32 @@ export default function SalesPage() {
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
-                لوحة المبيعات وإدارة العملاء المحتملين (CRM)
+                {t('sales_page_title', 'لوحة التسويق وإدارة الاجتماعات والعملاء (CRM)')}
               </h1>
               <p className="text-xs md:text-sm font-bold text-slate-400">
-                تسجيل ومتابعة العملاء، مواعيد الميتنج، والربط التلقائي للإشعارات عبر Telegram & WhatsApp
+                {t('sales_page_subtitle', 'تسجيل ومتابعة العملاء، مواعيد الاجتماعات، والربط التلقائي للإشعارات عبر Telegram & WhatsApp')}
               </p>
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-3 relative z-10">
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            className="flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 font-black text-xs transition-all active:scale-95"
-          >
-            <Settings size={16} className="text-brand-400" />
-            <span>إعدادات الإشعارات</span>
-          </button>
+          {(user?.role === 'ADMIN' || user?.role === 'OWNER') && (
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 font-black text-xs transition-all active:scale-95"
+            >
+              <Settings size={16} className="text-brand-400" />
+              <span>{t('notification_settings_btn', 'إعدادات الإشعارات')}</span>
+            </button>
+          )}
 
           <button
             onClick={handleOpenAdd}
             className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-black text-xs shadow-xl shadow-brand-600/30 transition-all active:scale-95"
           >
             <UserPlus size={16} />
-            <span>إضافة عميل محتمل</span>
+            <span>{t('add_lead_btn', 'إضافة عميل / ميتنج')}</span>
           </button>
         </div>
       </div>
@@ -302,47 +311,47 @@ export default function SalesPage() {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white/5 dark:bg-[#0d0d12] p-5 rounded-3xl border border-white/5 relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-bold">إجمالي العملاء</span>
+            <span className="text-xs font-bold">{t('stat_total_leads', 'إجمالي العملاء')}</span>
             <Users size={18} className="text-blue-400" />
           </div>
           <h3 className="text-2xl font-black text-white">{stats.totalLeads}</h3>
-          <p className="text-[10px] text-slate-500 font-bold mt-1">في قاعدة البيانات</p>
+          <p className="text-[10px] text-slate-500 font-bold mt-1">{t('stat_in_db', 'في قاعدة البيانات')}</p>
         </div>
 
         <div className="bg-white/5 dark:bg-[#0d0d12] p-5 rounded-3xl border border-white/5 relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-bold">مواعيد ميتنج</span>
+            <span className="text-xs font-bold">{t('stat_scheduled_meetings', 'مواعيد ميتنج')}</span>
             <Calendar size={18} className="text-amber-400" />
           </div>
           <h3 className="text-2xl font-black text-amber-400">{stats.meetingsScheduled}</h3>
-          <p className="text-[10px] text-slate-500 font-bold mt-1">اجتماعات محجوزة</p>
+          <p className="text-[10px] text-slate-500 font-bold mt-1">{t('stat_booked_meetings', 'اجتماعات محجوزة')}</p>
         </div>
 
         <div className="bg-white/5 dark:bg-[#0d0d12] p-5 rounded-3xl border border-white/5 relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-bold">تم التعاقد (فوز)</span>
+            <span className="text-xs font-bold">{t('stat_won_leads', 'تم التعاقد (فوز)')}</span>
             <CheckCircle size={18} className="text-emerald-400" />
           </div>
           <h3 className="text-2xl font-black text-emerald-400">{stats.wonLeads}</h3>
-          <p className="text-[10px] text-slate-500 font-bold mt-1">عملاء تم تحويلهم</p>
+          <p className="text-[10px] text-slate-500 font-bold mt-1">{t('stat_converted_clients', 'عملاء تم تحويلهم')}</p>
         </div>
 
         <div className="bg-white/5 dark:bg-[#0d0d12] p-5 rounded-3xl border border-white/5 relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-bold">قيمة العقود المقترحة</span>
+            <span className="text-xs font-bold">{t('stat_pipeline_value', 'قيمة العقود المقترحة')}</span>
             <DollarSign size={18} className="text-brand-400" />
           </div>
           <h3 className="text-2xl font-black text-brand-400">${Number(stats.totalPipelineValue).toLocaleString()}</h3>
-          <p className="text-[10px] text-slate-500 font-bold mt-1">إجمالي المبالغ المتوقعة</p>
+          <p className="text-[10px] text-slate-500 font-bold mt-1">{t('stat_expected_total', 'إجمالي المبالغ المتوقعة')}</p>
         </div>
 
         <div className="bg-white/5 dark:bg-[#0d0d12] p-5 rounded-3xl border border-white/5 col-span-2 lg:col-span-1 relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-bold">معدل التحويل</span>
+            <span className="text-xs font-bold">{t('stat_conversion_rate', 'معدل التحويل')}</span>
             <Sparkles size={18} className="text-purple-400" />
           </div>
           <h3 className="text-2xl font-black text-purple-400">{stats.conversionRate}%</h3>
-          <p className="text-[10px] text-slate-500 font-bold mt-1">نسبة النجاح الإجمالية</p>
+          <p className="text-[10px] text-slate-500 font-bold mt-1">{t('stat_overall_success', 'نسبة النجاح الإجمالية')}</p>
         </div>
       </div>
 
@@ -351,12 +360,12 @@ export default function SalesPage() {
         {/* Status Tabs */}
         <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 dark:bg-white/5 rounded-2xl border border-slate-200 dark:border-white/5 overflow-x-auto custom-scrollbar">
           {[
-            { id: 'ALL', label: 'الكل' },
-            { id: 'NEW', label: 'جديد' },
-            { id: 'MEETING_SCHEDULED', label: 'ميتنج محجوز' },
-            { id: 'QUALIFIED', label: 'مؤهل' },
-            { id: 'WON', label: 'تم التعاقد' },
-            { id: 'LOST', label: 'ملغي' },
+            { id: 'ALL', label: t('lead_status_all', 'الكل') },
+            { id: 'NEW', label: t('lead_status_new', 'جديد') },
+            { id: 'MEETING_SCHEDULED', label: t('lead_status_meeting_scheduled', 'ميتنج محجوز') },
+            { id: 'QUALIFIED', label: t('lead_status_qualified', 'مؤهل') },
+            { id: 'WON', label: t('lead_status_won', 'تم التعاقد') },
+            { id: 'LOST', label: t('lead_status_lost', 'ملغي / خسر') },
           ].map(tab => (
             <button
               key={tab.id}
@@ -374,13 +383,15 @@ export default function SalesPage() {
 
         {/* Search */}
         <div className="relative min-w-[280px]">
-          <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${isRTL ? 'right-4' : 'left-4'}`} />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="بحث بالاسم، النيش، الجنسية، الهاتف..."
-            className="w-full pl-4 pr-11 py-3 bg-white dark:bg-[#0d0d12] border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold outline-none focus:border-brand-500 text-slate-800 dark:text-white"
+            placeholder={t('search_leads_placeholder', 'بحث بالاسم، النيش، الجنسية، الهاتف...')}
+            className={`w-full py-3 bg-white dark:bg-[#0d0d12] border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold outline-none focus:border-brand-500 text-slate-800 dark:text-white ${
+              isRTL ? 'pl-4 pr-11' : 'pr-4 pl-11'
+            }`}
           />
         </div>
       </div>
@@ -389,14 +400,14 @@ export default function SalesPage() {
       {loading ? (
         <div className="py-20 flex flex-col items-center justify-center gap-4">
           <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">جاري تحميل بيانات العملاء...</p>
+          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('loading_leads', 'جاري تحميل بيانات العملاء والاجتماعات...')}</p>
         </div>
       ) : leads.length === 0 ? (
         <div className="py-20 bg-white dark:bg-[#0d0d12] rounded-3xl border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center p-8">
           <Users size={48} className="text-slate-500 mb-4 opacity-40" />
-          <h3 className="text-lg font-black text-slate-300">لا يوجد عملاء محتملين حالياً</h3>
+          <h3 className="text-lg font-black text-slate-300">{t('no_leads_found', 'لا يوجد عملاء محتملين حالياً')}</h3>
           <p className="text-xs text-slate-500 mt-1 max-w-sm">
-            قم بالضغط على زر "إضافة عميل محتمل" لإدخال بيانات أول عميل وإرسال تفاصيله تلقائياً.
+            {t('no_leads_sub', 'قم بالضغط على زر "إضافة عميل محتمل" لإدخال بيانات أول عميل وإرسال تفاصيله تلقائياً.')}
           </p>
         </div>
       ) : (
@@ -434,7 +445,9 @@ export default function SalesPage() {
                       <select
                         value={lead.status}
                         onChange={(e) => handleQuickStatusChange(lead.id, e.target.value)}
-                        className={`text-[10px] font-black px-3 py-1.5 rounded-xl border appearance-none outline-none cursor-pointer pr-6 ${statusInfo.bg}`}
+                        className={`text-[10px] font-black px-3 py-1.5 rounded-xl border appearance-none outline-none cursor-pointer ${
+                          isRTL ? 'pr-3 pl-6' : 'pl-3 pr-6'
+                        } ${statusInfo.bg}`}
                       >
                         {Object.entries(STATUS_CONFIG).map(([key, val]) => (
                           <option key={key} value={key} className="bg-slate-900 text-white">
@@ -442,7 +455,7 @@ export default function SalesPage() {
                           </option>
                         ))}
                       </select>
-                      <ChevronDown size={12} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-60" />
+                      <ChevronDown size={12} className={`absolute top-1/2 -translate-y-1/2 pointer-events-none opacity-60 ${isRTL ? 'left-2' : 'right-2'}`} />
                     </div>
                   </div>
 
@@ -452,9 +465,9 @@ export default function SalesPage() {
                       <div className="flex items-center gap-2.5">
                         <Calendar size={16} className="text-amber-400 shrink-0" />
                         <div>
-                          <p className="text-[10px] font-black text-amber-400 uppercase tracking-wider">موعد الاجتماع (Meeting)</p>
+                          <p className="text-[10px] font-black text-amber-400 uppercase tracking-wider">{t('meeting_schedule_box', 'موعد الاجتماع (Meeting)')}</p>
                           <p className="text-xs font-bold text-slate-200">
-                            {new Date(lead.meetingDate).toLocaleDateString('ar-EG', { weekday: 'short', month: 'short', day: 'numeric' })}
+                            {new Date(lead.meetingDate).toLocaleDateString(isRTL ? 'ar-EG' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                             {lead.meetingTime ? ` - ${lead.meetingTime}` : ''}
                           </p>
                         </div>
@@ -466,7 +479,7 @@ export default function SalesPage() {
                           rel="noreferrer"
                           className="px-3 py-1.5 rounded-xl bg-amber-500 text-black text-[10px] font-black flex items-center gap-1 hover:bg-amber-400 transition-colors"
                         >
-                          <span>دخول</span>
+                          <span>{t('enter_meeting_btn', 'دخول')}</span>
                           <ExternalLink size={11} />
                         </a>
                       )}
@@ -476,27 +489,34 @@ export default function SalesPage() {
                   {/* Metrics & Details Grid */}
                   <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-white/[0.02] p-3 rounded-2xl border border-slate-100 dark:border-white/5 mb-4 text-[11px]">
                     <div>
-                      <span className="text-slate-400 block text-[10px]">المبلغ المقترح:</span>
+                      <span className="text-slate-400 block text-[10px]">{t('proposed_price_label', 'المبلغ المقترح')}:</span>
                       <span className="font-black text-emerald-400">
-                        {lead.proposedPrice != null ? `$${lead.proposedPrice}` : 'غير محدد'}
+                        {lead.proposedPrice != null ? `$${lead.proposedPrice}` : t('not_specified', 'غير محدد')}
                       </span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block text-[10px]">المتابعون:</span>
+                      <span className="text-slate-400 block text-[10px]">{t('followers_label', 'المتابعون')}:</span>
                       <span className="font-bold text-slate-200">{lead.followersCount || '-'}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block text-[10px]">الفيديوهات:</span>
+                      <span className="text-slate-400 block text-[10px]">{t('videos_label', 'الفيديوهات')}:</span>
                       <span className="font-bold text-slate-200">{lead.videosCount || '-'}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block text-[10px]">متوسط المشاهدات:</span>
+                      <span className="text-slate-400 block text-[10px]">{t('avg_views_label', 'متوسط المشاهدات')}:</span>
                       <span className="font-bold text-slate-200">{lead.avgViews || '-'}</span>
                     </div>
                     {lead.hasOtherBusiness && lead.hasOtherBusiness !== 'لا' && (
                       <div className="col-span-2 pt-1 border-t border-white/5">
-                        <span className="text-slate-400 block text-[10px]">بزنس آخر:</span>
+                        <span className="text-slate-400 block text-[10px]">{t('other_business_label', 'بزنس آخر')}:</span>
                         <span className="font-bold text-indigo-300">{lead.hasOtherBusiness}</span>
+                      </div>
+                    )}
+                    {lead.assignedTo && (
+                      <div className="col-span-2 pt-1 border-t border-white/5 flex items-center gap-1.5 text-[10px] text-slate-400">
+                        <UserCheck size={12} className="text-brand-400" />
+                        <span>{t('assigned_specialist_label', 'المسؤول عن المتابعة (سيلز)')}:</span>
+                        <span className="font-bold text-slate-200">{lead.assignedTo.firstName} {lead.assignedTo.lastName}</span>
                       </div>
                     )}
                   </div>
@@ -519,7 +539,7 @@ export default function SalesPage() {
                         target="_blank"
                         rel="noreferrer"
                         className="p-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500 hover:text-white text-emerald-500 transition-all"
-                        title="محادثة واتساب"
+                        title={t('chat_whatsapp', 'محادثة واتساب')}
                       >
                         <MessageSquare size={14} />
                       </a>
@@ -530,7 +550,7 @@ export default function SalesPage() {
                         target="_blank"
                         rel="noreferrer"
                         className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 transition-all"
-                        title="رابط القناة"
+                        title={t('channel_link_tooltip', 'رابط القناة')}
                       >
                         <Video size={14} />
                       </a>
@@ -542,7 +562,7 @@ export default function SalesPage() {
                     <button
                       onClick={() => handleOpenEdit(lead)}
                       className="p-2 rounded-xl bg-slate-100 dark:bg-white/5 hover:bg-white/10 text-slate-300 transition-all"
-                      title="تعديل"
+                      title={t('edit_label', 'تعديل')}
                     >
                       <Edit size={14} />
                     </button>
@@ -550,7 +570,7 @@ export default function SalesPage() {
                       <button
                         onClick={() => handleDeleteLead(lead.id)}
                         className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 transition-all"
-                        title="حذف"
+                        title={t('delete', 'حذف')}
                       >
                         <Trash2 size={14} />
                       </button>
@@ -574,10 +594,10 @@ export default function SalesPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-slate-800 dark:text-white">
-                    {editingLead ? 'تعديل بيانات العميل المحتمل' : 'إضافة عميل محتمل جديد'}
+                    {editingLead ? t('edit_lead_title', 'تعديل بيانات العميل والميتنج') : t('add_lead_title', 'إضافة عميل محتمل وميتنج جديد')}
                   </h3>
                   <p className="text-xs text-slate-400 font-bold">
-                    سيتم إرسال التفاصيل تلقائياً عبر Telegram / WhatsApp فور الحفظ
+                    {t('auto_notify_hint', 'سيتم إرسال التفاصيل تلقائياً عبر Telegram / WhatsApp فور الحفظ')}
                   </p>
                 </div>
               </div>
@@ -592,97 +612,97 @@ export default function SalesPage() {
             <form onSubmit={handleSubmitLead} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">اسم العميل *</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">{t('client_name_required', 'اسم العميل *')}</label>
                   <input
                     type="text"
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="مثال: أحمد محمد"
+                    placeholder={t('client_name_placeholder', 'مثال: أحمد محمد')}
                     className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold outline-none focus:border-brand-500 text-slate-800 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">النيش / المجال</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">{t('niche_label', 'النيش / المجال')}</label>
                   <input
                     type="text"
                     value={formData.niche}
                     onChange={(e) => setFormData({ ...formData, niche: e.target.value })}
-                    placeholder="مثال: بودكاست تقني، تجارة إلكترونية"
+                    placeholder={t('niche_placeholder', 'مثال: بودكاست تقني، تجارة إلكترونية')}
                     className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold outline-none focus:border-brand-500 text-slate-800 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">جنسية العميل</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">{t('nationality_label', 'جنسية العميل')}</label>
                   <input
                     type="text"
                     value={formData.nationality}
                     onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
-                    placeholder="مثال: سعودي، مصري، إماراتي"
+                    placeholder={t('nationality_placeholder', 'مثال: سعودي، مصري، إماراتي')}
                     className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold outline-none focus:border-brand-500 text-slate-800 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">هل لديه بزنس آخر؟</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">{t('has_other_business_question', 'هل لديه بزنس آخر؟')}</label>
                   <input
                     type="text"
                     value={formData.hasOtherBusiness}
                     onChange={(e) => setFormData({ ...formData, hasOtherBusiness: e.target.value })}
-                    placeholder="مثال: نعم (متجر إلكتروني) أو لا"
+                    placeholder={t('has_other_business_placeholder', 'مثال: نعم (متجر إلكتروني) أو لا')}
                     className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold outline-none focus:border-brand-500 text-slate-800 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">عدد المتابعين</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">{t('followers_count_label', 'عدد المتابعين')}</label>
                   <input
                     type="text"
                     value={formData.followersCount}
                     onChange={(e) => setFormData({ ...formData, followersCount: e.target.value })}
-                    placeholder="مثال: 150K أو 50000"
+                    placeholder={t('followers_count_placeholder', 'مثال: 150K أو 50000')}
                     className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold outline-none focus:border-brand-500 text-slate-800 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">عدد الفيديوهات</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">{t('videos_count_label', 'عدد الفيديوهات')}</label>
                   <input
                     type="text"
                     value={formData.videosCount}
                     onChange={(e) => setFormData({ ...formData, videosCount: e.target.value })}
-                    placeholder="مثال: 45 فيديو"
+                    placeholder={t('videos_count_placeholder', 'مثال: 45 فيديو')}
                     className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold outline-none focus:border-brand-500 text-slate-800 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">متوسط المشاهدات</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">{t('avg_views_label', 'متوسط المشاهدات')}</label>
                   <input
                     type="text"
                     value={formData.avgViews}
                     onChange={(e) => setFormData({ ...formData, avgViews: e.target.value })}
-                    placeholder="مثال: 30K - 50K"
+                    placeholder={t('avg_views_placeholder', 'مثال: 30K - 50K')}
                     className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold outline-none focus:border-brand-500 text-slate-800 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">السعر / المبلغ المقترح ($)</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">{t('proposed_price_label', 'المبلغ المقترح')} ($)</label>
                   <input
                     type="number"
                     step="any"
                     value={formData.proposedPrice}
                     onChange={(e) => setFormData({ ...formData, proposedPrice: e.target.value })}
-                    placeholder="مثال: 1500"
+                    placeholder={t('proposed_price_placeholder', 'مثال: 1500')}
                     className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold outline-none focus:border-brand-500 text-slate-800 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">تاريخ الميتنج المحجوز</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">{t('meeting_date_label', 'تاريخ الميتنج المحجوز')}</label>
                   <input
                     type="date"
                     value={formData.meetingDate}
@@ -692,7 +712,7 @@ export default function SalesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">وقت الميتنج</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">{t('meeting_time_label', 'وقت الميتنج')}</label>
                   <input
                     type="time"
                     value={formData.meetingTime}
@@ -702,7 +722,7 @@ export default function SalesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">رابط الميتنج (Meet/Zoom)</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">{t('meeting_link_label', 'رابط الميتنج (Meet/Zoom)')}</label>
                   <input
                     type="url"
                     value={formData.meetingLink}
@@ -713,18 +733,18 @@ export default function SalesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">الهاتف / واتساب</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">{t('phone_label', 'الهاتف / واتساب')}</label>
                   <input
                     type="text"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="مثال: +966501234567"
+                    placeholder={t('phone_placeholder', 'مثال: +966501234567')}
                     className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold outline-none focus:border-brand-500 text-slate-800 dark:text-white"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">رابط القناة / الحساب</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">{t('channel_url_label', 'رابط القناة / الحساب')}</label>
                   <input
                     type="url"
                     value={formData.channelUrl}
@@ -735,7 +755,7 @@ export default function SalesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1">الحالة</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-1">{t('status_label', 'الحالة')}</label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -748,15 +768,31 @@ export default function SalesPage() {
                     ))}
                   </select>
                 </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-slate-400 mb-1">{t('assigned_specialist_label', 'المسؤول عن المتابعة (سيلز)')}</label>
+                  <select
+                    value={formData.assignedToId}
+                    onChange={(e) => setFormData({ ...formData, assignedToId: e.target.value })}
+                    className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold outline-none focus:border-brand-500 text-slate-800 dark:text-white"
+                  >
+                    <option value="">{t('select_specialist_placeholder', 'اختر مسؤول المتابعة...')}</option>
+                    {teamMembers.map(m => (
+                      <option key={m.id} value={m.id} className="bg-slate-900 text-white">
+                        {m.firstName} {m.lastName} {m.teamMemberInfo?.position ? `(${m.teamMemberInfo.position})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1">ملاحظات إضافية</label>
+                <label className="block text-xs font-bold text-slate-400 mb-1">{t('additional_notes_label', 'ملاحظات إضافية')}</label>
                 <textarea
                   rows={3}
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="أي تفاصيل أخرى تم الاتفاق عليها مع العميل..."
+                  placeholder={t('additional_notes_placeholder', 'أي تفاصيل أخرى تم الاتفاق عليها مع العميل...')}
                   className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold outline-none focus:border-brand-500 text-slate-800 dark:text-white resize-none"
                 />
               </div>
@@ -767,14 +803,14 @@ export default function SalesPage() {
                   onClick={() => setIsFormOpen(false)}
                   className="px-6 py-3 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-colors"
                 >
-                  إلغاء
+                  {t('cancel', 'إلغاء')}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-black text-xs shadow-xl shadow-brand-600/30 transition-all disabled:opacity-50"
                 >
-                  {submitting ? 'جاري الحفظ...' : editingLead ? 'حفظ التعديلات' : 'إضافة وإرسال الإشعار 🚀'}
+                  {submitting ? t('saving_btn', 'جاري الحفظ...') : editingLead ? t('save_changes_btn', 'حفظ التعديلات') : t('add_and_notify_btn', 'إضافة وإرسال الإشعار 🚀')}
                 </button>
               </div>
             </form>
@@ -793,10 +829,10 @@ export default function SalesPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-slate-800 dark:text-white">
-                    إعدادات الإشعارات التلقائية (Automation)
+                    {t('notification_settings_title', 'إعدادات الإشعارات التلقائية (Automation)')}
                   </h3>
                   <p className="text-xs text-slate-400 font-bold">
-                    إرسال بيانات العملاء تلقائياً عبر Telegram Bot أو WhatsApp فور إدخالها
+                    {t('notification_settings_subtitle', 'إرسال بيانات العملاء تلقائياً عبر Telegram Bot أو WhatsApp فور إدخالها')}
                   </p>
                 </div>
               </div>
@@ -811,13 +847,13 @@ export default function SalesPage() {
             <form onSubmit={handleSaveSettings} className="space-y-6">
               {/* Channel Selector */}
               <div>
-                <label className="block text-xs font-black text-slate-300 mb-2">قناة الإرسال المفضلة</label>
+                <label className="block text-xs font-black text-slate-300 mb-2">{t('preferred_dispatch_channel', 'قناة الإرسال المفضلة')}</label>
                 <div className="grid grid-cols-4 gap-2">
                   {[
                     { id: 'TELEGRAM', label: 'Telegram' },
                     { id: 'WHATSAPP', label: 'WhatsApp' },
-                    { id: 'BOTH', label: 'الاثنان معاً' },
-                    { id: 'NONE', label: 'تعطيل' },
+                    { id: 'BOTH', label: t('both_channels', 'الاثنان معاً') },
+                    { id: 'NONE', label: t('disable_notifications', 'تعطيل') },
                   ].map(ch => (
                     <button
                       key={ch.id}
@@ -839,7 +875,7 @@ export default function SalesPage() {
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-black text-slate-200">🤖 إعدادات Telegram Bot</span>
+                    <span className="text-sm font-black text-slate-200">🤖 {t('telegram_bot_settings', 'إعدادات Telegram Bot')}</span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -863,7 +899,7 @@ export default function SalesPage() {
                       ...settingsData,
                       telegram: { ...settingsData.telegram, botToken: e.target.value }
                     })}
-                    placeholder="Telegram Bot Token (مثال: 712345678:AAHkd...)"
+                    placeholder="Telegram Bot Token (e.g. 712345678:AAHkd...)"
                     className="w-full px-4 py-2.5 bg-slate-100 dark:bg-black/30 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-mono outline-none focus:border-brand-500 text-slate-800 dark:text-white"
                   />
                   <input
@@ -873,7 +909,7 @@ export default function SalesPage() {
                       ...settingsData,
                       telegram: { ...settingsData.telegram, chatId: e.target.value }
                     })}
-                    placeholder="Telegram Chat ID أو Group ID (مثال: -100123456789)"
+                    placeholder="Telegram Chat ID or Group ID (e.g. -100123456789)"
                     className="w-full px-4 py-2.5 bg-slate-100 dark:bg-black/30 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-mono outline-none focus:border-brand-500 text-slate-800 dark:text-white"
                   />
                 </div>
@@ -884,7 +920,7 @@ export default function SalesPage() {
                   disabled={testingNotification || !settingsData.telegram?.botToken || !settingsData.telegram?.chatId}
                   className="px-4 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500 hover:text-white text-indigo-400 text-xs font-black transition-all disabled:opacity-40"
                 >
-                  {testingNotification ? 'جاري الاختبار...' : '🧪 إرسال رسالة تجريبية لـ Telegram'}
+                  {testingNotification ? t('testing_in_progress', 'جاري الاختبار...') : t('test_telegram_btn', '🧪 إرسال رسالة تجريبية لـ Telegram')}
                 </button>
               </div>
 
@@ -892,7 +928,7 @@ export default function SalesPage() {
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-black text-slate-200">📱 إعدادات WhatsApp Webhook / API</span>
+                    <span className="text-sm font-black text-slate-200">📱 {t('whatsapp_settings', 'إعدادات WhatsApp Webhook / API')}</span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -926,7 +962,7 @@ export default function SalesPage() {
                       ...settingsData,
                       whatsapp: { ...settingsData.whatsapp, phoneNumber: e.target.value }
                     })}
-                    placeholder="رقم المستلم (مثال: 966501234567)"
+                    placeholder="e.g. 966501234567"
                     className="w-full px-4 py-2.5 bg-slate-100 dark:bg-black/30 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-mono outline-none focus:border-brand-500 text-slate-800 dark:text-white"
                   />
                   <input
@@ -936,7 +972,7 @@ export default function SalesPage() {
                       ...settingsData,
                       whatsapp: { ...settingsData.whatsapp, apiKey: e.target.value }
                     })}
-                    placeholder="API Token / Key (اختياري)"
+                    placeholder="API Token / Key (Optional)"
                     className="w-full px-4 py-2.5 bg-slate-100 dark:bg-black/30 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-mono outline-none focus:border-brand-500 text-slate-800 dark:text-white"
                   />
                 </div>
@@ -947,7 +983,7 @@ export default function SalesPage() {
                   disabled={testingNotification || (!settingsData.whatsapp?.apiUrl && !settingsData.whatsapp?.phoneNumber)}
                   className="px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500 hover:text-white text-emerald-400 text-xs font-black transition-all disabled:opacity-40"
                 >
-                  {testingNotification ? 'جاري الاختبار...' : '🧪 إرسال رسالة تجريبية لـ WhatsApp'}
+                  {testingNotification ? t('testing_in_progress', 'جاري الاختبار...') : t('test_whatsapp_btn', '🧪 إرسال رسالة تجريبية لـ WhatsApp')}
                 </button>
               </div>
 
@@ -957,13 +993,13 @@ export default function SalesPage() {
                   onClick={() => setIsSettingsOpen(false)}
                   className="px-6 py-3 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-colors"
                 >
-                  إلغاء
+                  {t('cancel', 'إلغاء')}
                 </button>
                 <button
                   type="submit"
                   className="px-8 py-3.5 rounded-2xl bg-brand-600 hover:bg-brand-500 text-white font-black text-xs shadow-xl shadow-brand-600/30 transition-all"
                 >
-                  حفظ الإعدادات
+                  {t('save_changes_btn', 'حفظ التعديلات')}
                 </button>
               </div>
             </form>

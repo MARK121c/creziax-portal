@@ -93,10 +93,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           if (link.to === '/admin/tasks' && user?.permissions?.includes('TASKS')) return true;
           if (link.to === '/admin/files' && user?.permissions?.includes('FILES')) return true;
           if (link.to === '/admin/messages' && user?.permissions?.includes('MESSAGES')) return true;
+          if (link.to === '/admin/sales' && (user?.permissions?.includes('SALES') || !user?.permissions || user?.permissions?.length === 0)) return true;
           if ((link.to === '/admin/invoices' || link.to === '/admin/payments') && user?.permissions?.includes('FINANCES')) return true;
+          if (link.to === '/admin/finance' && user?.permissions?.includes('FINANCES')) return true;
           return false;
         });
-      case 'TEAM': return teamLinks;
+      case 'TEAM':
+        return teamLinks;
       case 'CLIENT': return clientLinks;
       default: return [];
     }

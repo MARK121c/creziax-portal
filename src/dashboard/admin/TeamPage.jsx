@@ -6,7 +6,7 @@ import {
   ShieldAlert, ShieldCheck, Camera, UploadCloud, ExternalLink, 
   MessageCircle, SendHorizontal, DollarSign, Wallet, ArrowUpRight, 
   Key, RefreshCw, Power, Heart, Briefcase, ChevronRight, Filter, 
-  Settings, UserCheck, UserX, CreditCard, Layout
+  Settings, UserCheck, UserX, CreditCard, Layout, TrendingUp
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../store/authStore';
@@ -18,6 +18,7 @@ import { Coins } from 'lucide-react';
 
 const jobTitles = [
   { value: 'ALL', label: 'all_roles' },
+  { value: 'Sales', label: 'job_sales' },
   { value: 'Strategist', label: 'Strategist (استراتيجي)' },
   { value: 'Manager', label: 'Manager (مدير)' },
   { value: 'Scriptwriter', label: 'Scriptwriter (كاتب سكريبت)' },
@@ -91,6 +92,7 @@ const TeamPage = () => {
     { id: 'CLIENTS', label: 'manage_clients_perm', icon: ShieldCheck },
     { id: 'TEAM', label: 'manage_team_perm', icon: ShieldAlert },
     { id: 'PROJECTS', label: 'manage_projects_perm', icon: ShieldCheck },
+    { id: 'SALES', label: 'manage_sales_perm', icon: TrendingUp },
     { id: 'FINANCES', label: 'finances_invoices_perm', icon: ShieldAlert },
     { id: 'MESSAGES', label: 'messages_comm_perm', icon: Mail },
     { id: 'FILES', label: 'manage_files_perm', icon: ShieldCheck },
