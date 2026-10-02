@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
+import PublishingScheduleSection from '../../components/PublishingScheduleSection';
 
 // ─── Role → Stage Permission Map ─────────────────────────────────────────────
 const getEditableStage = (position) => {
@@ -643,6 +644,8 @@ const TeamWorkspaceDetail = () => {
             )}
           </div>
         </div>
+
+        <PublishingScheduleSection projectId={id} isAdmin={false} isRTL={true} />
 
         {/* ── Monthly Tab Bar ── */}
         {sortedPhases.length > 0 ? (
