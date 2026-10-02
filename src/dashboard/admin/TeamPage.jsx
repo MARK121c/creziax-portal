@@ -374,11 +374,9 @@ const TeamPage = () => {
                <ExternalLink size={16} />
             </Link>
 
-            {/* Status Badge */}
-            <div className={`absolute top-6 right-6 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
-              m.isActive === false ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-            }`}>
-              {m.isActive === false ? 'Inactive' : 'Active'}
+            {/* Real-time WhatsApp-style Presence Badge */}
+            <div className="absolute top-6 right-6">
+              <UserPresenceBadge userId={m.id} initialOnline={m.isOnline} initialLastActive={m.lastActiveAt} />
             </div>
 
             {/* Profile Info */}
@@ -395,23 +393,43 @@ const TeamPage = () => {
                     </div>
                   )}
                 </div>
+                {/* Live dot on avatar */}
+                <UserPresenceBadge userId={m.id} initialOnline={m.isOnline} initialLastActive={m.lastActiveAt} variant="dot" className="absolute bottom-1 right-1" />
                 {m.role === 'OWNER' && (
-                  <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white p-2 rounded-xl shadow-lg border-2 border-white dark:border-[#0a0a0c]">
+                  <div className="absolute -bottom-2 -left-2 bg-amber-500 text-white p-2 rounded-xl shadow-lg border-2 border-white dark:border-[#0a0a0c]">
                     <ShieldAlert size={16} />
                   </div>
                 )}
               </div>
 
               <h3 className="text-xl font-black text-slate-800 dark:text-white mb-1 uppercase tracking-tight">{m.firstName} {m.lastName}</h3>
-              <div className="px-4 py-1.5 bg-brand-500/10 text-brand-500 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border border-brand-500/20 mb-5">
+              <div className="px-4 py-1.5 bg-brand-500/10 text-brand-500 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border border-brand-500/20 mb-4">
                 {m.teamMemberInfo?.position || 'Team Member'}
               </div>
 
-              {/* Performance Commitment Badge */}
+              {/* Multi-factor Commitment & Engagement Score */}
               {m.performance && (
-                <div className="w-full flex items-center justify-between px-4 py-2 bg-brand-500/5 rounded-2xl border border-brand-500/10 text-[10px] font-black mb-3">
-                  <span className="text-slate-400">مؤشر الالتزام:</span>
-                  <span className="text-brand-500">{m.performance.commitmentScore}% ({m.performance.rating})</span>
+                <div className="w-full flex flex-col gap-1.5 p-3.5 bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5 rounded-2xl mb-4 text-[10px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400 font-bold">{t('commitment_score_label', 'مؤشر الالتزام والتواجد')}:</span>
+                    <span className="font-black text-brand-500 text-xs">{m.performance.commitmentScore}% ({m.performance.rating})</span>
+                  </div>
+                  {m.performance.breakdown && (
+                    <div className="grid grid-cols-3 gap-1 pt-2 border-t border-slate-200 dark:border-white/5 text-[9px] font-bold text-slate-500">
+                      <div className="text-center" title="إنجاز المهام والتسليمات">
+                        <span className="block text-slate-400">📌 المهام</span>
+                        <span className="text-slate-700 dark:text-slate-200 font-black">{m.performance.breakdown.taskScore}%</span>
+                      </div>
+                      <div className="text-center" title="التواجد والنشاط على المنصة">
+                        <span className="block text-slate-400">🟢 التواجد</span>
+                        <span className="text-emerald-500 font-black">{m.performance.breakdown.presenceScore}%</span>
+                      </div>
+                      <div className="text-center" title="المتابعة والتفاعل في الشات والعملاء">
+                        <span className="block text-slate-400">💬 المتابعة</span>
+                        <span className="text-indigo-400 font-black">{m.performance.breakdown.communicationScore}%</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

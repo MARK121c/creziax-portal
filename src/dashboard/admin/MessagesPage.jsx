@@ -34,6 +34,7 @@ import {
   Copy, Video as VideoIcon, Image as ImageIcon, Download, FileText
 } from 'lucide-react';
 import EmojiPicker from 'emoji-picker-react';
+import UserPresenceBadge from '../../components/UserPresenceBadge';
 
 // ──────────────────────────────────────────────
 // Pinned Message Bar (V18.1 Supreme)
@@ -731,8 +732,19 @@ const MessagesPage = () => {
                   </button>
                   {expandedSections.team && teamMembers.map(tm => (
                     <button key={tm.id} onClick={() => selectThread(tm, 'TEAM')} className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${activeThread?.userId === tm.id ? 'bg-brand-600 text-white shadow-lg' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}>
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeThread?.userId === tm.id ? 'bg-white/20' : 'bg-emerald-500/10 text-emerald-500'}`}><UserCircle size={18}/></div>
-                      <div className="flex-1 text-right overflow-hidden"><h4 className="text-xs font-black truncate">{user.role === 'TEAM' ? 'Creziax Support' : (tm.firstName + ' ' + tm.lastName)}</h4><p className="text-[9px] opacity-60">{tm.role}</p></div>
+                      <div className="relative">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeThread?.userId === tm.id ? 'bg-white/20' : 'bg-emerald-500/10 text-emerald-500'}`}><UserCircle size={18}/></div>
+                        <div className="absolute -bottom-0.5 -right-0.5">
+                          <UserPresenceBadge isOnline={tm.isOnline} lastActiveAt={tm.lastActiveAt} size="xs" showText={false} />
+                        </div>
+                      </div>
+                      <div className="flex-1 text-right overflow-hidden">
+                        <h4 className="text-xs font-black truncate">{user.role === 'TEAM' ? 'Creziax Support' : (tm.firstName + ' ' + tm.lastName)}</h4>
+                        <div className="flex items-center justify-between text-[9px] opacity-70">
+                          <span className="truncate">{tm.position || tm.role}</span>
+                          <UserPresenceBadge isOnline={tm.isOnline} lastActiveAt={tm.lastActiveAt} size="xs" showText={true} />
+                        </div>
+                      </div>
                       {unreadThreads[tm.id] > 0 && <span className="bg-rose-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">{unreadThreads[tm.id]}</span>}
                     </button>
                   ))}
@@ -745,12 +757,23 @@ const MessagesPage = () => {
                       <ChevronRight size={12} className={`transition-transform ${expandedSections.clients ? 'rotate-90' : 'rotate-180'}`} />
                     </button>
                     {expandedSections.clients && clients.map(c => (
-                      <button key={c.id} onClick={() => selectThread(c, 'DM')} className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${activeThread?.userId === c.user?.id ? 'bg-brand-600 text-white shadow-lg' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}>
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeThread?.userId === c.user?.id ? 'bg-white/20' : 'bg-brand-500/10 text-brand-500'}`}><UserCircle size={18}/></div>
-                        <div className="flex-1 text-right overflow-hidden"><h4 className="text-xs font-black truncate">{c.user?.firstName} {c.user?.lastName}</h4><p className="text-[9px] opacity-60">{c.company || 'عميل'}</p></div>
-                        {unreadThreads[c.user?.id] > 0 && <span className="bg-rose-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">{unreadThreads[c.user?.id]}</span>}
-                      </button>
-                    ))}
+                       <button key={c.id} onClick={() => selectThread(c, 'DM')} className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${activeThread?.userId === c.user?.id ? 'bg-brand-600 text-white shadow-lg' : 'hover:bg-slate-50 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}>
+                         <div className="relative">
+                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${activeThread?.userId === c.user?.id ? 'bg-white/20' : 'bg-brand-500/10 text-brand-500'}`}><UserCircle size={18}/></div>
+                           <div className="absolute -bottom-0.5 -right-0.5">
+                             <UserPresenceBadge isOnline={c.user?.isOnline} lastActiveAt={c.user?.lastActiveAt} size="xs" showText={false} />
+                           </div>
+                         </div>
+                         <div className="flex-1 text-right overflow-hidden">
+                           <h4 className="text-xs font-black truncate">{c.user?.firstName} {c.user?.lastName}</h4>
+                           <div className="flex items-center justify-between text-[9px] opacity-70">
+                             <span className="truncate">{c.company || 'عميل'}</span>
+                             <UserPresenceBadge isOnline={c.user?.isOnline} lastActiveAt={c.user?.lastActiveAt} size="xs" showText={true} />
+                           </div>
+                         </div>
+                         {unreadThreads[c.user?.id] > 0 && <span className="bg-rose-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">{unreadThreads[c.user?.id]}</span>}
+                       </button>
+                     ))}
                  </div>
                )}
              </>
@@ -771,8 +794,32 @@ const MessagesPage = () => {
              <div className="px-6 py-4 border-b border-slate-100 dark:border-white/10 bg-white dark:bg-[#0d0d12] flex items-center justify-between gap-4 shrink-0">
                <div className="flex items-center gap-4">
                   <button onClick={() => setActiveThread(null)} className="lg:hidden p-2 bg-slate-100 dark:bg-white/10 rounded-xl"><ChevronRight size={20} className="rotate-180" /></button>
-                  <div className="w-12 h-12 rounded-2xl bg-brand-600 text-white flex items-center justify-center shadow-xl shadow-brand-600/20"><UserCircle size={24}/></div>
-                  <div><h2 className="text-sm font-black uppercase tracking-tight leading-none mb-1 dark:text-white">{activeThread.name}</h2><div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Signal Locked</span></div></div>
+                   <div className="relative">
+                     <div className="w-12 h-12 rounded-2xl bg-brand-600 text-white flex items-center justify-center shadow-xl shadow-brand-600/20"><UserCircle size={24}/></div>
+                     {activeThread?.userId && (
+                       <div className="absolute -bottom-1 -right-1">
+                         <UserPresenceBadge 
+                           isOnline={teamMembers.find(m => m.id === activeThread.userId)?.isOnline ?? clients.find(c => c.user?.id === activeThread.userId)?.user?.isOnline ?? activeThread.targetUser?.isOnline}
+                           lastActiveAt={teamMembers.find(m => m.id === activeThread.userId)?.lastActiveAt ?? clients.find(c => c.user?.id === activeThread.userId)?.user?.lastActiveAt ?? activeThread.targetUser?.lastActiveAt}
+                           size="sm"
+                           showText={false}
+                         />
+                       </div>
+                     )}
+                   </div>
+                   <div>
+                     <h2 className="text-sm font-black uppercase tracking-tight leading-none mb-1.5 dark:text-white">{activeThread.name}</h2>
+                     {activeThread?.userId ? (
+                       <UserPresenceBadge 
+                         isOnline={teamMembers.find(m => m.id === activeThread.userId)?.isOnline ?? clients.find(c => c.user?.id === activeThread.userId)?.user?.isOnline ?? activeThread.targetUser?.isOnline}
+                         lastActiveAt={teamMembers.find(m => m.id === activeThread.userId)?.lastActiveAt ?? clients.find(c => c.user?.id === activeThread.userId)?.user?.lastActiveAt ?? activeThread.targetUser?.lastActiveAt}
+                         size="sm"
+                         showText={true}
+                       />
+                     ) : (
+                       <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Signal Locked</span></div>
+                     )}
+                   </div>
                </div>
                <div className="flex items-center gap-2">
                  {(user?.role==='ADMIN'||user?.role==='OWNER') && (
