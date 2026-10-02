@@ -14,7 +14,8 @@ import {
   getNotificationSettingsAPI,
   updateNotificationSettingsAPI,
   testNotificationAPI,
-  getUsersAPI
+  getUsersAPI,
+  getTeamContactsAPI
 } from '../../store/api';
 import useAuthStore from '../../store/authStore';
 
@@ -93,20 +94,26 @@ export default function SalesPage() {
   };
 
   const fetchSettings = async () => {
+    if (user?.role !== 'ADMIN' && user?.role !== 'OWNER') return;
     try {
       const res = await getNotificationSettingsAPI();
       if (res.data) setSettingsData(res.data);
     } catch (err) {
-      console.error(err);
+      console.error('Notification settings fetch error:', err);
     }
   };
 
   const fetchTeam = async () => {
     try {
-      const res = await getUsersAPI();
-      setTeamMembers(res.data.filter(u => u.role === 'TEAM' || u.role === 'ADMIN' || u.role === 'OWNER'));
+      if (user?.role === 'ADMIN' || user?.role === 'OWNER') {
+        const res = await getUsersAPI();
+        setTeamMembers(res.data.filter(u => u.role === 'TEAM' || u.role === 'ADMIN' || u.role === 'OWNER'));
+      } else {
+        const res = await getTeamContactsAPI();
+        setTeamMembers(res.data || []);
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Team fetch error:', err);
     }
   };
 
@@ -166,12 +173,33 @@ export default function SalesPage() {
 
     try {
       setSubmitting(true);
+      const payload = {
+        ...formData,
+        name: formData.name.trim(),
+        niche: formData.niche || null,
+        nationality: formData.nationality || null,
+        followersCount: formData.followersCount || null,
+        videosCount: formData.videosCount || null,
+        startDate: formData.startDate ? formData.startDate : null,
+        avgViews: formData.avgViews || null,
+        proposedPrice: formData.proposedPrice !== '' && formData.proposedPrice != null ? parseFloat(formData.proposedPrice) : null,
+        meetingDate: formData.meetingDate ? formData.meetingDate : null,
+        meetingTime: formData.meetingTime || null,
+        meetingLink: formData.meetingLink || null,
+        phone: formData.phone || null,
+        email: formData.email || null,
+        channelUrl: formData.channelUrl || null,
+        notes: formData.notes || null,
+        status: formData.status || 'NEW',
+        assignedToId: (formData.assignedToId && formData.assignedToId.trim() !== '') ? formData.assignedToId : null
+      };
+
       if (editingLead) {
-        await updateLeadAPI(editingLead.id, formData);
-        toast.success('تم تحديث بيانات العميل بنجاح');
+        await updateLeadAPI(editingLead.id, payload);
+        toast.success('تم تحديث بيانات العميل والميتنج بنجاح');
       } else {
-        await createLeadAPI(formData);
-        toast.success('تم إضافة العميل وإرسال الإشعار التلقائي بنجاح! 🚀');
+        await createLeadAPI(payload);
+        toast.success('تم إضافة العميل والميتنج بنجاح! 🚀');
       }
       setIsFormOpen(false);
       fetchLeads();

@@ -43,11 +43,14 @@ const getNotifMeta = (type) => {
 
 const NotificationsPage = () => {
   const { i18n } = useTranslation();
-  const { notifications = [], markAllRead, clearAll, resetUnreadNotifications } = useNotificationStore();
+  const { notifications = [], fetchNotifications, markAllRead, clearAll, resetUnreadNotifications } = useNotificationStore();
 
   useEffect(() => {
     resetUnreadNotifications();
-  }, [resetUnreadNotifications]);
+    if (typeof fetchNotifications === 'function') {
+      fetchNotifications();
+    }
+  }, [resetUnreadNotifications, fetchNotifications]);
 
   if (!notifications || !Array.isArray(notifications)) {
     return (

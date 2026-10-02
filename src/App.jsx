@@ -403,6 +403,7 @@ function AppContent() {
               <Route path="projects/:id" element={<TeamWorkspaceDetail />} />
               <Route path="tasks" element={<TeamTasksPage />} />
               <Route path="messages" element={<MessagesPage />} />
+              <Route path="sales" element={<SalesPage />} />
               <Route path="contracts" element={<ContractsPage />} />
               <Route path="invoices" element={<InvoicesPage />} />
               <Route path="files" element={<FilesPage />} />

@@ -63,12 +63,11 @@ const ClientsPage = () => {
     firstName: '', lastName: '', email: '', password: '', company: '', phone: '',
     tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', telegram: '', managedChannels: '',
     contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: '', preferredCurrency: 'USD',
-    channelLink: '', monthlyDueDate: '', monthlyAmount: '', productionStages: []
+    channelLink: '', monthlyDueDate: '', monthlyAmount: ''
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [fileError, setFileError] = useState('');
   const [activeFilter, setActiveFilter] = useState({ tier: 'ALL', health: 'ALL' });
-  const [stageInput, setStageInput] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -150,8 +149,7 @@ const ClientsPage = () => {
           preferredCurrency: form.preferredCurrency,
           channelLink: form.channelLink,
           monthlyDueDate: form.monthlyDueDate ? parseInt(form.monthlyDueDate) : null,
-          monthlyAmount: form.monthlyAmount ? parseFloat(form.monthlyAmount) : null,
-          productionStages: form.productionStages
+          monthlyAmount: form.monthlyAmount ? parseFloat(form.monthlyAmount) : null
         });
         toast.success(t('saved_successfully'), { id: loadingToast });
         addNotification(`${t('saved_successfully')}: ${form.firstName} ${form.lastName}`, 'success');
@@ -161,7 +159,7 @@ const ClientsPage = () => {
         addNotification(`${t('client_added')}: ${form.firstName} ${form.lastName}`, 'success');
       }
       setShowModal(false);
-      setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '', tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', telegram: '', managedChannels: '', contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: '', preferredCurrency: 'USD', channelLink: '', monthlyDueDate: '', monthlyAmount: '', productionStages: [] });
+      setForm({ firstName: '', lastName: '', email: '', password: '', company: '', phone: '', tier: 'REGULAR', budget: '', isVip: false, logoUrl: '', notionLink: '', telegram: '', managedChannels: '', contractStartDate: '', contractEndDate: '', healthScore: 'GOOD', internalNotes: '', preferredCurrency: 'USD', channelLink: '', monthlyDueDate: '', monthlyAmount: '' });
       setIsEditing(false);
       setEditId(null);
       fetchClients();
@@ -210,8 +208,7 @@ const ClientsPage = () => {
       preferredCurrency: client.clientInfo?.preferredCurrency || 'USD',
       channelLink: client.clientInfo?.channelLink || '',
       monthlyDueDate: client.clientInfo?.monthlyDueDate || '',
-      monthlyAmount: client.clientInfo?.monthlyAmount || '',
-      productionStages: client.clientInfo?.productionStages || []
+      monthlyAmount: client.clientInfo?.monthlyAmount || ''
     });
     setEditId(client.clientInfo?.id || client.id);
     setIsEditing(true);
@@ -473,7 +470,7 @@ const ClientsPage = () => {
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-3 mb-5">
+                    <div className="grid grid-cols-3 gap-2 mb-5">
                       <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('contract')}</p>
                         <p className={`text-[10px] font-black truncate ${contractStatus?.isCritical ? 'text-rose-500' : 'text-slate-600 dark:text-slate-300'}`}>
@@ -483,6 +480,15 @@ const ClientsPage = () => {
                       <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/5">
                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('total_paid')}</p>
                         <p className="text-[10px] font-black text-emerald-500 truncate">${(c.totalPaid || 0).toLocaleString()}</p>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-500/[0.05] border border-amber-100 dark:border-amber-500/10">
+                        <p className="text-[8px] font-black text-amber-500 uppercase tracking-widest mb-1">الاستحقاق</p>
+                        <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 truncate">
+                          {c.clientInfo?.monthlyAmount ? `$${Number(c.clientInfo.monthlyAmount).toLocaleString()}` : '--'}
+                        </p>
+                        {c.clientInfo?.monthlyDueDate && (
+                          <p className="text-[8px] font-bold text-slate-400 mt-0.5">يوم {c.clientInfo.monthlyDueDate}</p>
+                        )}
                       </div>
                     </div>
 
@@ -516,6 +522,7 @@ const ClientsPage = () => {
                     <th className="px-10 py-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">{t('contract')}</th>
                     <th className="px-10 py-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">{t('health_score')}</th>
                     <th className="px-10 py-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">{t('total_paid')}</th>
+                    <th className="px-10 py-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">الاستحقاق الشهري</th>
                     <th className="px-10 py-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] text-right">{t('actions')}</th>
                   </tr>
                 </thead>
@@ -606,6 +613,24 @@ const ClientsPage = () => {
                           <div className="flex flex-col">
                             <span className="text-base font-black text-slate-800 dark:text-white">${(c.totalPaid || 0).toLocaleString()}</span>
                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t('total_paid')}</span>
+                          </div>
+                        </td>
+                        <td className="px-10 py-7">
+                          <div className="space-y-1.5">
+                            {c.clientInfo?.monthlyAmount ? (
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-2">
+                                  <Receipt size={13} className="text-amber-500 shrink-0" />
+                                  <span className="text-xs font-black text-amber-500">${Number(c.clientInfo.monthlyAmount).toLocaleString()}</span>
+                                  <span className="text-[9px] font-bold text-slate-400">/شهر</span>
+                                </div>
+                                {c.clientInfo?.monthlyDueDate && (
+                                  <span className="text-[10px] font-bold text-slate-400">يوم {c.clientInfo.monthlyDueDate} من كل شهر</span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-xs font-bold text-slate-400 italic">غير محدد</span>
+                            )}
                           </div>
                         </td>
                         <td className="px-10 py-7 text-right">
@@ -948,71 +973,7 @@ const ClientsPage = () => {
                     />
                   </div>
 
-                  {/* Production Stages */}
-                  <div className="space-y-3 md:col-span-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">مراحل الإنتاج المخصصة / Custom Production Stages</label>
-                    <div className="flex gap-2">
-                      <input 
-                        value={stageInput}
-                        onChange={(e) => setStageInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            const trimmed = stageInput.trim();
-                            if (trimmed && !form.productionStages.includes(trimmed)) {
-                              setForm(prev => ({ ...prev, productionStages: [...prev.productionStages, trimmed] }));
-                              setStageInput('');
-                            }
-                          }
-                        }}
-                        placeholder="اكتب مرحلة ثم اضغط Enter (مثال: سكريبت)"
-                        className="flex-1 px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all font-bold" 
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const trimmed = stageInput.trim();
-                          if (trimmed && !form.productionStages.includes(trimmed)) {
-                            setForm(prev => ({ ...prev, productionStages: [...prev.productionStages, trimmed] }));
-                            setStageInput('');
-                          }
-                        }}
-                        className="px-5 py-3.5 bg-brand-600 text-white rounded-2xl font-black text-sm hover:bg-brand-500 transition-all"
-                      >
-                        <Plus size={16} />
-                      </button>
-                    </div>
-                    {form.productionStages.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {form.productionStages.map((stage, idx) => (
-                          <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-brand-500/10 border border-brand-500/20 rounded-xl text-xs font-black text-brand-500">
-                            {stage}
-                            <button
-                              type="button"
-                              onClick={() => setForm(prev => ({ ...prev, productionStages: prev.productionStages.filter((_, i) => i !== idx) }))}
-                              className="text-brand-400 hover:text-rose-500 transition-colors"
-                            >
-                              <X size={12} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {form.productionStages.length === 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {['سكريبت', 'مونتاج', 'مراجعة', 'نشر'].map(stage => (
-                          <button
-                            key={stage}
-                            type="button"
-                            onClick={() => setForm(prev => ({ ...prev, productionStages: [...prev.productionStages, stage] }))}
-                            className="px-3 py-1.5 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-500 hover:bg-brand-500/10 hover:text-brand-500 hover:border-brand-500/20 transition-all"
-                          >
-                            + {stage}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+
                 </div>
               </div>
 
