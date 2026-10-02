@@ -208,7 +208,10 @@ const ClientsPage = () => {
       preferredCurrency: client.clientInfo?.preferredCurrency || 'USD',
       channelLink: client.clientInfo?.channelLink || '',
       monthlyDueDate: client.clientInfo?.monthlyDueDate || '',
-      monthlyAmount: client.clientInfo?.monthlyAmount || ''
+      monthlyAmount: client.clientInfo?.monthlyAmount || '',
+      productionStages: (client.clientInfo?.productionStages && client.clientInfo.productionStages.length > 0)
+        ? client.clientInfo.productionStages
+        : (client.productionStages && client.productionStages.length > 0 ? client.productionStages : ['script', 'edit', 'thumbnail', 'publish'])
     });
     setEditId(client.clientInfo?.id || client.id);
     setIsEditing(true);
@@ -971,6 +974,53 @@ const ClientsPage = () => {
                       placeholder="مثال: 500"
                       className="w-full px-5 py-3.5 bg-slate-50 dark:bg-white/5 border border-amber-500/20 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-bold" 
                     />
+                  </div>
+
+                  {/* 4 Production Stages Selector */}
+                  <div className="space-y-3 md:col-span-2 pt-2 border-t border-slate-100 dark:border-white/5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                        مراحل الإنتاج المرتبطة بهذا العميل (Production Pipeline)
+                      </label>
+                      <span className="text-[9px] font-bold text-brand-500">
+                        تتحكم مباشرة في مراحل المشاريع في مساحة العمل
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[
+                        { key: 'script', label: 'السكريبت', icon: '📝', desc: 'Google Docs' },
+                        { key: 'edit', label: 'المونتاج', icon: '🎬', desc: 'Google Drive' },
+                        { key: 'thumbnail', label: 'صور مصغرة', icon: '🖼️', desc: 'التصاميم' },
+                        { key: 'publish', label: 'مواعيد النشر', icon: '📅', desc: 'الجدولة' },
+                      ].map(st => {
+                        const isSelected = form.productionStages?.includes(st.key);
+                        return (
+                          <button
+                            key={st.key}
+                            type="button"
+                            onClick={() => {
+                              const current = form.productionStages || [];
+                              const next = isSelected 
+                                ? current.filter(k => k !== st.key) 
+                                : [...current, st.key];
+                              setForm({ ...form, productionStages: next });
+                            }}
+                            className={`p-4 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all text-center ${
+                              isSelected
+                                ? 'bg-brand-500/10 border-brand-500 text-brand-500 shadow-lg shadow-brand-500/10 scale-[1.02]'
+                                : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 hover:border-slate-300 dark:hover:border-white/20 opacity-60'
+                            }`}
+                          >
+                            <span className="text-2xl mb-0.5">{st.icon}</span>
+                            <span className="text-xs font-black">{st.label}</span>
+                            <span className="text-[9px] font-bold opacity-75">{st.desc}</span>
+                            <span className={`text-[8px] font-black px-2 py-0.5 rounded-full mt-1 ${isSelected ? 'bg-brand-500 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-500'}`}>
+                              {isSelected ? '✓ مفعلة' : 'معطلة'}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
 

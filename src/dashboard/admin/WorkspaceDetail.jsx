@@ -426,7 +426,7 @@ const StagePanel = ({ stage, meta, taskId, phaseId, isAdmin, onMetaChange, onVis
 };
 
 // ─── Video Card Component ────────────────────────────────────────────────────
-const VideoCard = ({ task, index, phaseId, isAdmin, teamMembers, onMetaChange, onDelete, onVisibilityToggle, togglingVisibility }) => {
+const VideoCard = ({ task, index, phaseId, isAdmin, teamMembers, onMetaChange, onDelete, onVisibilityToggle, togglingVisibility, activeStages = STAGES }) => {
   const [expanded, setExpanded] = useState(true);
   const meta = parseVideoMeta(task.description);
 
@@ -455,7 +455,7 @@ const VideoCard = ({ task, index, phaseId, isAdmin, teamMembers, onMetaChange, o
 
         {/* Stage Summary Dots (visibility + approval status) */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          {STAGES.map(s => {
+          {activeStages.map(s => {
             const stageMeta = meta[s.key] || {};
             const isVis = !!stageMeta.visible;
             const approval = stageMeta.approvalStatus;
@@ -492,7 +492,7 @@ const VideoCard = ({ task, index, phaseId, isAdmin, teamMembers, onMetaChange, o
       {/* 4-Stage Panels */}
       {expanded && (
         <div className="px-5 pb-5 grid grid-cols-1 md:grid-cols-2 gap-3 animate-in slide-in-from-top-2 duration-300">
-          {STAGES.map(stage => (
+          {activeStages.map(stage => (
             <StagePanel
               key={stage.key}
               stage={stage}
@@ -542,6 +542,11 @@ const WorkspaceDetail = () => {
   const [customStages, setCustomStages] = useState([]);
   const [stageInput, setStageInput] = useState('');
   const [savingStages, setSavingStages] = useState(false);
+
+  // Active Stages filtered by Client's productionStages configuration
+  const activeStages = (workspace?.client?.productionStages && workspace.client.productionStages.length > 0)
+    ? STAGES.filter(s => workspace.client.productionStages.includes(s.key))
+    : STAGES;
 
   // Month Accordion Collapse State
   const [collapsedMonths, setCollapsedMonths] = useState({});
@@ -1021,6 +1026,7 @@ const WorkspaceDetail = () => {
                             onDelete={handleDeleteTask}
                             onVisibilityToggle={handleVisibilityToggle}
                             togglingVisibility={togglingVisibility}
+                            activeStages={activeStages}
                           />
                         ))}
                       </div>
@@ -1168,73 +1174,42 @@ const WorkspaceDetail = () => {
 
             <div className="space-y-4">
               <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                حدد المراحل الإنتاجية المعتمدة لهذا العميل والتي تظهر له في لوحة التحكم (مثل: سكريبت - مونتاج - مراجعة - نشر).
+                اختر مراحل الإنتاج الأربعة المطلوب تفعيلها وظهورها لمشاريع هذا العميل:
               </p>
 
-              <div className="flex gap-2">
-                <input
-                  value={stageInput}
-                  onChange={e => setStageInput(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      const trimmed = stageInput.trim();
-                      if (trimmed && !customStages.includes(trimmed)) {
-                        setCustomStages([...customStages, trimmed]);
-                        setStageInput('');
-                      }
-                    }
-                  }}
-                  placeholder="اكتب اسم المرحلة ثم اضغط إضافة..."
-                  className="flex-1 px-4 py-3 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/20"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const trimmed = stageInput.trim();
-                    if (trimmed && !customStages.includes(trimmed)) {
-                      setCustomStages([...customStages, trimmed]);
-                      setStageInput('');
-                    }
-                  }}
-                  className="px-5 py-3 bg-amber-500 text-white rounded-2xl font-black text-xs hover:bg-amber-400 transition-all"
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-
-              {/* Active Stages Tags */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">المراحل النشطة حالياً:</label>
-                {customStages.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {customStages.map((st, idx) => (
-                      <span key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-xs font-black">
-                        {st}
-                        <button
-                          type="button"
-                          onClick={() => setCustomStages(customStages.filter((_, i) => i !== idx))}
-                          className="hover:text-rose-500"
-                        >
-                          <X size={12} />
-                        </button>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { key: 'script', label: 'السكريبت', icon: '📝', desc: 'Google Docs' },
+                  { key: 'edit', label: 'المونتاج', icon: '🎬', desc: 'Google Drive' },
+                  { key: 'thumbnail', label: 'صور مصغرة', icon: '🖼️', desc: 'التصاميم' },
+                  { key: 'publish', label: 'مواعيد النشر', icon: '📅', desc: 'الجدولة' },
+                ].map(st => {
+                  const isSelected = customStages.includes(st.key);
+                  return (
+                    <button
+                      key={st.key}
+                      type="button"
+                      onClick={() => {
+                        const next = isSelected
+                          ? customStages.filter(k => k !== st.key)
+                          : [...customStages, st.key];
+                        setCustomStages(next);
+                      }}
+                      className={`p-4 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all text-center ${
+                        isSelected
+                          ? 'bg-amber-500/10 border-amber-500 text-amber-600 dark:text-amber-400 shadow-md shadow-amber-500/10 scale-[1.02]'
+                          : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 hover:border-slate-300 dark:hover:border-white/20 opacity-60'
+                      }`}
+                    >
+                      <span className="text-2xl">{st.icon}</span>
+                      <span className="text-xs font-black">{st.label}</span>
+                      <span className="text-[9px] font-bold opacity-75">{st.desc}</span>
+                      <span className={`text-[8px] font-black px-2 py-0.5 rounded-full mt-1 ${isSelected ? 'bg-amber-500 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-500'}`}>
+                        {isSelected ? '✓ مفعلة' : 'معطلة'}
                       </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {['سكريبت', 'مونتاج', 'صور مصغرة', 'نشر'].map(st => (
-                      <button
-                        key={st}
-                        type="button"
-                        onClick={() => setCustomStages(prev => [...prev, st])}
-                        className="px-3 py-1.5 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-500 hover:bg-amber-500/10 hover:text-amber-500"
-                      >
-                        + {st}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-white/5">

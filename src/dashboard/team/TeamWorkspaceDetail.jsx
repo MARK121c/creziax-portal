@@ -401,7 +401,7 @@ const TeamVideoCard = ({ task, index, phaseId, userId, userPosition, onMetaChang
       {/* Stage Panels */}
       {expanded && (
         <div className="px-5 pb-5 grid grid-cols-1 md:grid-cols-2 gap-3 animate-in slide-in-from-top-2 duration-300">
-          {STAGES.map(stage => (
+          {activeStages.map(stage => (
             <TeamStagePanel
               key={stage.key}
               stage={stage}
@@ -430,6 +430,9 @@ const TeamWorkspaceDetail = () => {
   const [workspace, setWorkspace] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activePhaseId, setActivePhaseId] = useState(null);
+  const activeStages = (workspace?.client?.productionStages && workspace.client.productionStages.length > 0)
+    ? STAGES.filter(s => workspace.client.productionStages.includes(s.key))
+    : STAGES;
   const [phaseTasks, setPhaseTasks] = useState({});
   const [loadingTasks, setLoadingTasks] = useState({});
 
